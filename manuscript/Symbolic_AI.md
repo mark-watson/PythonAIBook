@@ -394,7 +394,7 @@ for id in ids:
 
 Here is some example output:
 
-```
+```json
  {'Organization': 'bath_and_beyond_inc',
   'URI': 'https://bedbathandbeyond.gcs-web.com/news-releases/news-release-details/bed-bath-beyond-inc-provides-business-update'},
  {'Person': 'ryan_holiday',
@@ -584,7 +584,7 @@ The following figure shows the MiniZincIDE with simple constraint satisfaction p
 
 When I installed **minizinc** on macOS with **brew**, the solver **coinbc** was installed automatically so that is what we use here. Here is the MiniZinc source file **test1.mzn**:
 
-```basic
+```python
 int: n;
 int: m;
 var 1..n: x;
@@ -624,7 +624,7 @@ Solution(x=20, y=10, _checker='')
 
 Let's look at a more complex example: on the map of the USA, the states neighboring each other are colored differently than their adjoining states. We use integers to represent colors and the mapping of numbers to colors is unimportant. Here is a partial listing of us_states.mzn:
 
-```
+```python
 int: nc = 3; %% needs to be 4 to solve this problem
 
 var 1..nc: alabama;
@@ -655,7 +655,7 @@ The output is:
 
 So we need more than three colors. Let's try **int: nc = 4;**:
 
-```
+```python
 $ minizinc --solver coinbc us_states.mzn
 alabama = 2;
 alaska = 1;
