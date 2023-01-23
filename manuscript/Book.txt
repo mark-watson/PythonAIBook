@@ -1,3 +1,4 @@
 Preface.md
+Deep_Learning_The_Basics.md
 Reinforcement_Learning.md
-
+Text_Generation.md
