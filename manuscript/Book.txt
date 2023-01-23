@@ -1,4 +1,5 @@
 Preface.md
+Python_Development_Environment.md
 Deep_Learning_The_Basics.md
 Reinforcement_Learning.md
 Text_Generation.md
