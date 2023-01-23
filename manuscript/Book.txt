@@ -4,5 +4,8 @@ Machine_Learning.md
 Knowledge_Representation_Using_Graph_and_Relational_Databases.md
 Knowledge_Representation_Graph_and_Relational_Databases.md
 Knowledge_Representation_Semantic_Web_and_Linked Data.md
+Deep_Learning_The_Basics.md
+Deep_Learning_Natural_Language_Processing.md
+Deep_Learning_Image_Generation.md
 Reinforcement_Learning.md
 Text_Generation.md
