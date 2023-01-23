@@ -670,7 +670,7 @@ delaware = 4;
 
 Here is a Python script **us_states.py** that uses this model and picks out the assigned color indices from the solution object:
 
-``python
+```python
 from minizinc import Instance, Model, Solver
 
 coinbc = Solver.lookup("coinbc")
