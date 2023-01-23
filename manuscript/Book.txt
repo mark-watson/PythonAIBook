@@ -1,13 +1,2 @@
-Preface.md
-Python_Development_Environment.md
-Machine_Learning.md
-Symbolic_AI.md
-Knowledge_Representation_Using_Graph_and_Relational_Databases.md
-Knowledge Representation Graph and Relational Databases.md
-Knowledge Representation Semantic Web and Linked Data.md
-Deep Learning The Basics.md
-Deep Learning Natural Language Processing.md
-Deep Learning Image Generation.md
-Probabilistic_Programming.md
-Reinforcement_Learning.md
-Text Generation.md
+PPP.md
+
