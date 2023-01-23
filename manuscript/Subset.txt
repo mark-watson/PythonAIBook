@@ -1,2 +1,7 @@
 Preface.md
+Python_Development_Environment.md
+Machine_Learning.md
+Symbolic_AI.md
+Knowledge_Representation_Using_Graph_and_Relational_Databases.md
+Probabilistic_Programming.md
 Reinforcement_Learning.md
