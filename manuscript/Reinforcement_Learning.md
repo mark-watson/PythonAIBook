@@ -2,6 +2,8 @@
 
 Reinforcement Learning (RL) is a broad topic and we will only cover aspects RL that I use myself.
 
+{class: information}
+This is a common theme in this book: if I don't love a topic or I don't have much practical experience with it, I generally don't write about it or cover it lightly with references for further study. I used RL a few years ago on a project at Capital One and here I am guiding you on the same learning path that I took prior to working on that project.
 
 If you enjoy the tutorial material in this chapter I recommend that you consider investing the time in the Coursera RL specialization [https://www.coursera.org/learn/fundamentals-of-reinforcement-learning](https://www.coursera.org/learn/fundamentals-of-reinforcement-learning#instructors) taught by Martha and Adam White. There are [50+ RL courses on Coursera](https://www.coursera.org/courses?query=reinforcement%20learning). I took the courses taught by Martha and Adam White before starting my RL project at Capital One.
 
@@ -14,6 +16,7 @@ The core idea of RL is that we train a software agent to interact with and chang
 
 There are two general approaches to providing training environments to Reinforcement Learning trained agents: physically devices in the real world or simulated environments. This is not a book on robotics so we use the second option.
 
+The end goal for modeling a RL problem is calculating a policy that can be used to control an agent in environments that are similar to the training environment. In a model at time **t** we have a given state~t~. RL policies can be continually be updated during training and in production environments. A policy given a state~t~, calculates an action~t~ to execute and change the state to state~u~.
 
 ## Available RL Tools
 
