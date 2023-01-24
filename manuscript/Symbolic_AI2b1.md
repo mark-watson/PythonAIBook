@@ -15,10 +15,10 @@ Here I mention how to load the **semweb** library and refer you to the [library 
 The output is:
 
 ```
-Row = row('http://dbpedia.org/resource/Anabaptist_riot',
-          'http://dbpedia.org/ontology/combatant') ;
-Row = row('http://dbpedia.org/resource/Thirteen_Years_War_(1454–1466)',
-          'http://dbpedia.org/ontology/combatant') ;
-Row = row('http://dbpedia.org/resource/Womens_Euro_Hockey_League',
-          'http://dbpedia.org/ontology/participant').
+    Row = row('http://dbpedia.org/resource/Anabaptist_riot',
+              'http://dbpedia.org/ontology/combatant') ;
+    Row = row('http://dbpedia.org/resource/Thirteen_Years_War_(1454–1466)',
+              'http://dbpedia.org/ontology/combatant') ;
+    Row = row('http://dbpedia.org/resource/Womens_Euro_Hockey_League',
+              'http://dbpedia.org/ontology/participant').
 ```
