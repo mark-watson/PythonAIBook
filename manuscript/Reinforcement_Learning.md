@@ -16,7 +16,7 @@ The core idea of RL is that we train a software agent to interact with and chang
 
 There are two general approaches to providing training environments to Reinforcement Learning trained agents: physically devices in the real world or simulated environments. This is not a book on robotics so we use the second option.
 
-The end goal for modeling a RL problem is calculating a policy that can be used to control an agent in environments that are similar to the training environment. In a model at time **t** we have a given State~t~. RL policies can be continually be updated during training and in production environments. A policy given a State~t~, calculates an Action~t~ to execute and change the state to State~t+1~.
+The end goal for modeling a RL problem is calculating a policy that can be used to control an agent in environments that are similar to the training environment. In a model at time **t** we have a given State~t~. RL policies can be continually be updated during training and in production environments. A policy given a State~t~, calculates an Action~t~ to execute and changes the state to State~t+1~.
 
 ## Available RL Tools
 

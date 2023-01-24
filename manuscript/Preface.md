@@ -32,8 +32,10 @@ The example code is Apache 2 licensed so feel free to reuse it. Most of the deep
 
 The examples for this book are in the GitHub repository [https://github.com/mark-watson/PythonPracticalAIBookCode](https://github.com/mark-watson/PythonPracticalAIBookCode).
 
-
 A few of the examples use APIs from Hugging Face and OpenAI's GPT-3. I assume that you have signed up and have access keys that should be available in the environment variables **HF_API_TOKEN** and **OPENAI_KEY**. If you don't want to sign up for these services I still hope that you enjoy reading the sample code and example output.
+
+{class: warning}
+The GitHub repository [https://github.com/mark-watson/PythonPracticalAIBookCode](https://github.com/mark-watson/PythonPracticalAIBookCode) for my code examples will occasionally contain subdirectories containing code not in the current edition of this book but are likely to appear in future editions. These subdirectories contain a file named **NOT_YET_IN_BOOK.md**.
 
 I have not written original example code for all of the material in this book. In some cases there are existing libraries for such tasks as recommendation systems and generating images from text where I reference third party examples and discuss how and why you might want to use them.
 
