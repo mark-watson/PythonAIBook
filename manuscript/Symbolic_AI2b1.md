@@ -11,3 +11,14 @@ Here I mention how to load the **semweb** library and refer you to the [library 
                 Row,
                 host('dbpedia.org'), path('/sparql/')]).
 ```
+
+The output is:
+
+```
+Row = row('http://dbpedia.org/resource/Anabaptist_riot',
+          'http://dbpedia.org/ontology/combatant') ;
+Row = row('http://dbpedia.org/resource/Thirteen_Years\'_War_(1454–1466)',
+          'http://dbpedia.org/ontology/combatant') ;
+Row = row('http://dbpedia.org/resource/Women\'s_Euro_Hockey_League',
+          'http://dbpedia.org/ontology/participant').
+```
