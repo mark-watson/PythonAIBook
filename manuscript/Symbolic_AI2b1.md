@@ -78,3 +78,82 @@ with PrologMQI() as mqi:
 ```
 
 We can run this example to see all 92 possible answers:
+
+```prolog
+ $ p n_queens.py
+[{'Qs': [1, 5, 8, 6, 3, 7, 2, 4]},
+ {'Qs': [1, 6, 8, 3, 7, 4, 2, 5]},
+ {'Qs': [1, 7, 4, 6, 8, 2, 5, 3]},
+ {'Qs': [1, 7, 5, 8, 2, 4, 6, 3]},
+ {'Qs': [2, 4, 6, 8, 3, 1, 7, 5]},
+ ...
+ ]
+ 92
+ ```
+
+Here I call the Swi-Prolog system synchronously; that is, each call to **prolog_thread.query** waits until the answers are ready. If you can also run long running queries asynchronously then please read the [instructions online](https://www.swi-prolog.org/pldoc/doc_for?object=section(%27packages/mqi.html%27)).
+
+In the last example we simply ran an existing Prolog program from Python. Now let's look at an example for asserting facts and Prolog rules from a Python script. First we look at a simple example of Prolog rules, asserting facts, and applying rules to facts. We will use the Prolog source file **family.pl**:
+
+```prolog
+parent(X, Y) :- mother(X, Y).
+parent(X, Y) :- father(X, Y).
+grandparent(X, Z) :-
+  parent(X, Y),
+  parent(Y, Z).
+```
+
+Before using a Python script, let's run an example in the Swi-Prolog REPL:
+
+```bash
+$ swipl
+?- [family].
+true.
+
+?- assertz(mother(irene, ken)).
+true.
+
+?- assertz(father(ken, ron)).
+true.
+
+?- grandparent(A,B).
+A = irene,
+B = ron ;
+false.
+```
+
+Now we can write a Python script **family.py** that loads the Prolog rules file **family.pl**, asserts facts, run Prolog queries, and get the results back to the Python script:
+
+```python
+from swiplserver import PrologMQI
+from pprint import pprint
+
+with PrologMQI() as mqi:
+    with mqi.create_thread() as prolog_thread:
+        prolog_thread.query("[family].")
+        print("Assert a few initial facts:")
+        prolog_thread.query("assertz(mother(irene, ken)).")
+        prolog_thread.query("assertz(father(ken, ron)).")
+        result = prolog_thread.query("grandparent(A, B).")
+        pprint(result)
+        print(len(result))
+        print("Assert another test fact:")
+        prolog_thread.query("assertz(father(ken, sam)).")
+        result = prolog_thread.query("grandparent(A, B).")
+        pprint(result)
+        print(len(result))
+```
+
+The output looks like:
+
+```bash
+$ python family.py
+Assert a few initial facts:
+[{'A': 'irene', 'B': 'ron'}]
+1
+Assert another test fact:
+[{'A': 'irene', 'B': 'ron'}, {'A': 'irene', 'B': 'sam'}]
+2
+```
+
+Swi-Prolog is still under active development (the project was started in 1985) and used for new projects. If the declarative nature of Prolog programming appeals to you then I urge you to take the time to integrate Swi-Prolog into one of your Python-based projects.
