@@ -4,4 +4,5 @@ Machine_Learning.md
 Symbolic_AI1.md
 Symbolic_AI2a.md
 Symbolic_AI2b1.md
+Symbolic_AI2b2.md
 
