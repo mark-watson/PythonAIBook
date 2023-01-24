@@ -3,3 +3,22 @@
 We will not write any recommendation systems from scratch in this chapter. We will review two open source recommendation systems that I have used at work. Both are based on TensorFlow.
 
 TBD
+
+## TensorFlow Recommenders
+
+We will refer to the documentation and examples [https://www.tensorflow.org/recommenders](https://www.tensorflow.org/recommenders).
+
+TBD
+
+## A Transformer-based Recommendation System
+
+Here we use [an example provided with Keras](https://keras.io/examples/structured_data/movielens_recommendations_transformers/) that was written by [Khalid Salama](https://www.linkedin.com/in/khalid-salama-24403144/) that transforms input training data to a textual representation for input to a Transformer model.
+
+It may seem like we are asking a Transformer model to do a lot of work making product recommendations from textual data but given the great success of of the BERT, GPT-3, and ChatGPT Transformer models it is not surprising that Khalid Salama's model performs well. While I would use TensorFlow Recommenders in a new project, I find this Transformer-based recommendation system to be fascinating and it is something that I have revisted after using it for a prototype system at work.
+
+### Overview of TBD
+
+Khalid Salma based this example on the paper [Behavior Sequence Transformer for E-commerce Recommendation in Alibaba](https://arxiv.org/abs/1905.06874) by Qiwei Chen, Huan Zhao, Wei Li, Pipei Huang, and Wenwu Ou.
+
+TBD
+
