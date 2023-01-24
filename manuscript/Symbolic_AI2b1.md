@@ -4,4 +4,8 @@ In several ways reading the historic Scientific American Article from 2001 [The 
 
 Here I mention how to load the **semweb** library and refer you to the [library documentation](https://www.swi-prolog.org/pldoc/doc_for?object=section(%27packages/semweb.html%27)):
 
+```prolog
+?- use_module(library(semweb/rdf_db)).
+?- use_module(library(semweb/sparql_client)).
 
+```
