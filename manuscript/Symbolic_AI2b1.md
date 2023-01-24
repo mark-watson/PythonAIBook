@@ -7,5 +7,13 @@ Here I mention how to load the **semweb** library and refer you to the [library 
 ```prolog
 ?- use_module(library(semweb/rdf_db)).
 ?- use_module(library(semweb/sparql_client)).
-
+?- sparql_query('select * where { ?s ?p "Amsterdam" }',
+                Row,
+                host('dbpedia.org'), path('/sparql/')]).
+Row = row('http://dbpedia.org/resource/Anabaptist_riot',
+          'http://dbpedia.org/ontology/combatant') ;
+Row = row('http://dbpedia.org/resource/Thirteen_Years\'_War_(1454–1466)',
+          'http://dbpedia.org/ontology/combatant') ;
+Row = row('http://dbpedia.org/resource/Women\'s_Euro_Hockey_League',
+          'http://dbpedia.org/ontology/participant').
 ```
