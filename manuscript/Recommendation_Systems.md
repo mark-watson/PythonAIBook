@@ -6,7 +6,16 @@ TBD
 
 ## TensorFlow Recommenders
 
-We will refer to the documentation and examples [https://www.tensorflow.org/recommenders](https://www.tensorflow.org/recommenders).
+We will refer to the documentation and examples [https://www.tensorflow.org/recommenders](https://www.tensorflow.org/recommenders) and follow the last Movie Lens example.
+
+There are several types of data that could be used for recommending movies:
+
+- User interactions (selecting movies).
+- User data. User data is not used in this example, but for a product recommendation system I have created embeddings of all available data features associated with users.
+- Movie data based on text embedding of movie titles. Note: for product recommendationb systems you might still use text embedding of product descripts, but you would also likely create embeddings based on product features.
+
+
+
 
 TBD
 
