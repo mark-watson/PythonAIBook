@@ -476,11 +476,12 @@ We will cover [Reinforcement Learning](https://en.wikipedia.org/wiki/Reinforceme
 There are two main components of the Soar architecture:
 
 - Working Memory - this is the data that specifies the current state of the environment. Actions in the environment change the data in working memory, either by modifiaction, addition, or deletion. At the risk of over-anthropomorphism, consider this like human short term meory.
-- Production Memory - this data is a form of production rules where the left-hand side of rules consist of patterns that if matched against worign memory, the the actions on the right-hand side of a rule are executed. Consider these production rules as long-term memory.
+- Production Memory - this data is a form of production rules where the left-hand side of rules consist of patterns that if matched against working memory, the the actions on the right-hand side of a rule are executed. Consider these production rules as long-term memory.
 
 Both Soar working memory and production memory are symbolic data. As a contrast, data in RL is numeric, mostly tensors. This symbolic data comprises goals (G), problem spaces (PS), states (S) and operators (O).
 
-![Soar Operator transitioning from one state to another](Soararchitecture-transitions.png)
+Soar Operator transitioning from one state to another (from the Soar Tutorial):
+![](Soararchitecture-transitions.png)
 
 ### Setup Python and Soar Development Environment
 
@@ -756,6 +757,6 @@ Solution(alabama=2, alaska=1, arizona=3, arkansas=4, california=4, colorado=4, c
  wyoming 	: 	3
 ```
 
-## Good Old Fashioned Symbolic AI Wrap-up
+## Good Old Fashioned Symbolic AI Wrapup
 
 As a practical matter almost all of my work in the last ten years used either deep learning or was comprised of semantic web and linked data projects. While the material in this chapter is optional for the modern AI practitioner, I still find using MiniZinc for constraint programming and Prolog to be useful. I included the material for the Soar cognitive architecture because I both find it interesting and I believe the any future development of "real AI" (or AGI) will involve hybrid approaches and there are many good ideas in the Soar implementation.
