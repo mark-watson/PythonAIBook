@@ -1,8 +1,16 @@
 # Semantic Web, Linked Data and Knowledge Graphs
 
+Knowledge representation using the Semantic Web and Linked Data involves the use of web standards and technologies to represent and interlink data on the internet in a structured, machine-readable format.
+
 We will start with a tutorial on Semantic Web data standards like RDF, RDFS, and OWL. As we saw in the setup examples in the last chapter we build Python clients using two approaches: using the Python libraries **SPARQLWrapper** and **rdflib**, and also by using general purpose Python libraries **requests** and **json**. We take a deeper dive into an example application Knowledge Graph Navigator.
 
-The scope of the Semantic Web is comprised of all public data sources on the Internet that follow specific standards like RDF. Knowledge Graphs may be large scale, as the graphs that drive Google’s and Facebook’s businesses, or they can be specific to an organization. Knowledge Graphs may be in customer-facing applications or part of internale engineering infrastructure.
+The scope of the Semantic Web is comprised of all public data sources on the Internet that follow specific standards like RDF. Knowledge Graphs may be large scale, as the graphs that drive Google’s and Facebook’s businesses, or they can be specific to an organization. Knowledge Graphs may be in customer-facing applications or part of internal engineering infrastructure.
+
+The Semantic Web is a vision for the future of the World Wide Web, where data on the web is represented in a way that machines can understand, reason about, and use to perform tasks. It is built on top of the existing web and is designed to be backward-compatible. The Semantic Web relies on the use of ontologies, which are formal representations of a domain of knowledge, and the Resource Description Framework (RDF), which is a standard for expressing ontologies in a machine-readable format.
+
+Linked Data is a set of best practices for publishing and linking data on the web using RDF. It involves the use of URIs (Uniform Resource Identifiers) to identify resources on the web and the use of links (also known as triples) to connect resources. This allows for the creation of a web of interconnected data, where each resource can be linked to other resources in a way that machines can understand and follow.
+
+Together, the Semantic Web and Linked Data provide a framework for representing and interlinking data on the web in a structured and machine-readable format, allowing for the integration, querying, and reasoning over large amounts of information. This helps to make data on the web more accessible and useful to both humans and machines, enabling more powerful and intelligent applications and services.
 
 As a developer you are likely familiar with the term *data lake* for enterprise-wide relational and other types of databases. Quite simply, graph databases like Fuseki and Neo4J that we previoulsly setup are just another tool to implement *data lakes* but I prefer using the term Knowledge Graph for RDF/RDFS/OWL/SPARQL based datastores because of the ability to infer data that is not explicitly stated as well as providing abstractions for merging different data sources in-place, that is, without the requirement to convert data to other formats or database infrastructure.
 

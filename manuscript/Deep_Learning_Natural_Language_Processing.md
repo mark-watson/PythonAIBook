@@ -1,16 +1,34 @@
 # Natural Language Processing
 
-I spent several years in the 1980s using symbolic AI approaches to Natural Language Processing (NLP) like augmented transition networks and conceptual dependency theory with mixed results. For small vocabularies and small domains of discourse these techniques yielded modestly successful results.
+I spent several years in the 1980s using symbolic AI approaches to Natural Language Processing (NLP) like augmented transition networks and conceptual dependency theory with mixed results. For small vocabularies and small domains of discourse these techniques yielded modestly successful results. I now only use Deep Learning approaches to NLP in my work.
+
+Deep Learning in NLP is a branch of machine learning that utilizes deep neural networks to understand, interpret and generate human language. It has revolutionized the field of NLP by improving the accuracy of various NLP tasks such as text classification, language translation, sentiment analysis, and natural language generation (e.g., ChatGPT).
+
+Deep learning models such as Recurrent Neural Networks (RNNs), Convolutional Neural Networks (CNNs), and Transformer models have been used to achieve state-of-the-art performance on various NLP tasks. These models have been trained on large amounts of text data, which has allowed them to learn complex patterns in human language and improve their understanding of the context and meaning of words.
+
+The use of pre-trained models, such as BERT and GPT-3, has also become popular in NLP and I use both frequently for my work. These models have been pre-trained on a large corpus of text data, and can be fine-tuned for a specific task, which significantly reduces the amount of data and computing resources required to train a derived model.
+
+Deep learning in NLP has been applied in various industries such as chatbots, automated customer service, and language translation services. It has also been used in research areas such as natural language understanding, question answering, and text summarization.
+
+So, Deep Learning in NLP has greatly improved the performance of various NLP tasks by utilizing deep neural networks to understand and interpret human language. The use of pre-trained models has also made it easier to fine-tune models for specific tasks, which has led to a wide range of applications in industry and research.
 
 In the last decade deep learning techniques have solved most NLP problems, at least in a "good enough" engineering sense. As I write this the ChatGPT model has scored 80% accuracy on the verbal SAT college admissions test. In this chapter we will experiment with a few useful public models that can be used as paid for API calls or in many cases you can run the models yourself.
 
 ## OpenAI GPT-3 APIs
 
-There are three general classes of OpenAI API services:
+OpenAI GPT-3 (Generative Pre-trained Transformer 3) is an advanced language processing model developed by OpenAI. There are three general classes of OpenAI API services:
 
 - GPT-3 which performs a variety of natural language tasks.
 - Codex which translates natural language to code.
 - DALL·E which creates and edits original images.
+
+GPT-3 is capable of generating human-like text, completing tasks such as language translation, summarization, and question answering, and much more. OpenAI offers GPT-3 APIs, which allow developers to easily integrate GPT-3's capabilities into their applications.
+
+The GPT-3 API provides a simple and flexible interface for developers to access GPT-3's capabilities such as text completion, language translation, and text generation. The API can be accessed using a simple API call, and can be integrated into a wide range of applications such as chatbots, language translation services, and text summarization.
+
+Additionally, OpenAI provides a number of pre-built models that developers can use, such as the GPT-3 language model, the GPT-3 translation model, and the GPT-3 summarization model. These pre-built models allow developers to quickly and easily access GPT-3's capabilities without the need to train their own models.
+
+Overall, the OpenAI GPT-3 APIs provide a powerful and easy-to-use tool for developers to integrate advanced language processing capabilities into their applications, and can be a game changer for developers looking to add natural language processing capabilities to their projects.
 
 We will only use the GPT-3 APIs here. The following examples are derived from the official set of cookbook examples at [https://github.com/openai/openai-cookbook](https://github.com/openai/openai-cookbook). The first example calls the OpenAI GPT-3 Completion API with a sample of input text and the model completes the text (deep-learning/openai/openai-example.py):
 
@@ -18,7 +36,7 @@ We will only use the GPT-3 APIs here. The following examples are derived from th
 {format: python}
 ![](openai-example.py)
 
-Everytie you run this example you get different output. Here is one example run:
+Everytime you run this example you get different output. Here is one example run:
 
 ```
 $ python openai-example.py
@@ -27,7 +45,7 @@ $ python openai-example.py
 
 ### Using GPT-3 to Name K-Means Clusters
 
-I get a lot of enjoyment finding simple application examples that solve problems that I had previously spent a lot of time solving with other techniques. As an example, around 2010 a customer and I created some ad hoc ways to name K-Means clusters with meaningful cluster names. Several years later at Capital One, my team brainstormed other techniques for asssigning meaningful cluster names for the patent [SYSTEM TO LABEL K-MEANS CLUSTERS WITH HUMAN UNDERSTANDABLE LABELS](https://patents.justia.com/patent/20210357429).
+I get a lot of enjoyment finding simple application examples that solve problems that I had previously spent a lot of time solving with other techniques. As an example, around 2010 a customer and I created some ad hoc ways to name K-Means clusters with meaningful cluster names. Several years later at Capital One, my team brainstormed other techniques for assigning meaningful cluster names for the patent [SYSTEM TO LABEL K-MEANS CLUSTERS WITH HUMAN UNDERSTANDABLE LABELS](https://patents.justia.com/patent/20210357429).
 
 One of the OpenAI example Jupyter notebooks [https://github.com/openai/openai-cookbook/blob/main/examples/Clustering.ipynb](https://github.com/openai/openai-cookbook/blob/main/examples/Clustering.ipynb) solves this problem elegantly using a text prompt like:
 
@@ -69,7 +87,7 @@ HAVING COUNT(*) > 10
 
 ## Hugging Face APIs
 
-Hugging Face maintains a task page listing all kinds of machine learning that they support [https://huggingface.co/tasks](https://huggingface.co/tasks) for task domains:
+Hugging Face provides an extensive library of pre-trained models and a set of easy-to-use APIs that allow developers to quickly and easily integrate NLP capabilities into their applications. The pre-trained models are based on the state-of-the-art transformer architectures, which have been trained on large corpus of data and can be fine-tuned for specific tasks, making it easy for developers to add NLP capabilities to their projects. Hugging Face maintains a task page listing all kinds of machine learning that they support [https://huggingface.co/tasks](https://huggingface.co/tasks) for task domains:
 
 - Computer Vision
 - Natural Language Processing
@@ -77,6 +95,12 @@ Hugging Face maintains a task page listing all kinds of machine learning that th
 - Tabular Data
 - Multimodal
 - Reinforcement Learning
+
+As a open source and open model company, Hugging Face is a provider of NLP technology, with a focus on developing and providing state-of-the-art pre-trained models and tools for NLP tasks. They have developed a library of pre-trained models, including models based on transformer architectures such as BERT, GPT-2, and GPT-3, which can be fine-tuned for various tasks such as language understanding, language translation, and text generation.
+
+Hugging Face also provides a set of APIs, which allows developers to easily access the functionality of these pre-trained models. The APIs provide a simple and flexible interface for developers to access the functionality of these models, such as text completion, language translation, and text generation. This allows developers to quickly and easily integrate NLP capabilities into their applications, without the need for extensive knowledge of NLP or deep learning.
+
+The Hugging Face APIs are available via a simple API call and are accessible via an API key. They support a wide range of programming languages such as Python, Java and JavaScript, making it easy for developers to integrate them into their application.
 
 Since my personal interests are mostly in Natural Language Processing (NLP) as used for processing text data, automatic extraction of structured data from text, and question answering systems, I will just list their NLP task types:
 

@@ -12,6 +12,18 @@ The material in this chapter is optional for the modern AI practitioner but I ho
 
 We will start with one "pure Python" example in the next section.
 
+## Comparison of Symbolic AI and Deep Learning
+
+Symbolic AI, also known as "good old-fashioned AI" (GOFAI), is a form of artificial intelligence that uses symbolic representations and logical reasoning to solve problems. It is based on the idea that a computer can be programmed to manipulate symbols in the same way that humans manipulate symbols in their minds, such as in the process of logical reasoning.
+
+The symbolic AI systems consist of a set of rules, facts, and procedures that are used to represent knowledge, and a reasoning engine that uses these representations to make inferences and decisions. Some examples of symbolic AI systems include expert systems, rule-based systems, and decision trees. These systems are typically based on a set of predefined rules, and the performance of the system is based on the knowledge manually encoded (or learned) in these rules.
+
+On the other hand, deep learning is a subset of machine learning that uses neural networks with many multiple layers (the term "deep" comes from the idea of having dozens or even hundreds of layers, which differs from early neural network models comprised of just a few layers) to learn from data and make predictions or decisions. The basic building block of a deep learning model is the artificial neuron, which is a simple mathematical function that receives input, applies a transformation, and produces an output. Neural networks can learn to perform a wide variety of tasks, such as image recognition, natural language processing, and game playing, by adjusting the weights of the neurons.
+
+The key difference between these two is that, while Symbolic AI relies on hand-coded rules and logical reasoning, deep learning relies on learning from data. Symbolic AI systems typically have a high level of interpretability and transparency, as the rules and knowledge are explicitly encoded and can be inspected by humans, while deep learning models are often considered "black boxes" due to their complexity and the difficulty of understanding how they arrived at a decision.
+
+So, Symbolic AI uses symbolic representations and logical reasoning, while deep learning uses neural networks to learn from data. The first one is more interpretable but less flexible, while the second one is more flexible, much more powerful for most applications, but is less interpretable.
+
 ## Implementing Frame Data Structures in Python
 
 Most of my learning experiments and AI projects in the early 1980s were built from scratch in Common Lisp and nested frame data structures were a common building block. Here we allow three types of data to be stored in frames:
@@ -126,6 +138,19 @@ I no longer use frames preferring the use off the shelf graph databases that we 
 Please skip this section if you either don't know how to program in Prolog or if you have no interest in learning Prolog. I have a writing project for a book titled Prolog for AI applications that is a work in progress. When that book is released I will add a link here. Before my Python book is released Sheila McIlraith has a [Swi-Prolog tutorial](https://www.cs.toronto.edu/~sheila/324/f05/tuts/swi.pdf) written for her students that is a good starting point and you can use the official [Swi-Prolog manual](https://www.swi-prolog.org/pldoc/doc_for?object=manual) for specific information. I will make this section self-contained if you just want to read the material without writing any Python + Prolog applications.
 
 You can start by reading the documentation for [setting up Swi-Prolog so it can be called from Python](https://www.swi-prolog.org/pldoc/man?section=mqi-python-installation). 
+
+I own many books on Prolog but my favorite that I recommend is ["The Art Of Prolog"](https://mitpress.mit.edu/9780262691635/the-art-of-prolog/) by Leon S. Sterling and Ehud Y. Shapiro. Here are a few benefits to using Prolog:
+
+- Natural fit for symbolic reasoning: Prolog is a logic programming language, which means that it is particularly well-suited for tasks that involve symbolic reasoning and manipulation of symbols. This makes it an excellent choice for tasks such as natural language processing, knowledge representation, and expert systems.
+- Built-in support for logic and rule-based systems: Prolog has built-in support for logic and rule-based systems, which makes it easy to represent knowledge and perform inferences. The syntax of Prolog is based on first-order logic, which means that it is similar to the way humans think and reason.
+- High-level and expressive: Prolog provides a high-level and expressive syntax, which makes it relatively easy to write and understand code. The declarative nature of Prolog also makes it more readable and maintainable than some other languages.
+- Automatic backtracking and search: Prolog provides automatic backtracking and search, which makes it easy to implement algorithms that require searching through large spaces of possible solutions.
+- Support for natural language processing: Prolog has a set of built-in predicates and libraries that support natural language processing, which makes it an ideal choice for tasks such as natural language understanding and generation.
+- Large community and open-source libraries: Prolog has a large community of users and developers, which means that there are many open-source libraries and tools available for use in Prolog projects.
+- Easy integration with other languages: Prolog can be easily integrated with other programming languages, such as Python, C, C++, Common Lisp, and Java, which makes it a good choice for projects that require a combination of different languages.
+- Concise and less prone to errors: Prolog code is concise, which means less lines of code to write. Also, some programmers find that the declarative nature of the language makes it less prone to errors.
+
+
 ### Using Swi-Prolog for the Semantic Web, Fetching Web Pages, and Handling JSON
 
 In several ways reading the historic Scientific American Article from 2001 [The Semantic Web - A new form of Web content that is meaningful to computers will unleash a revolution of new possibilities](https://www-sop.inria.fr/acacia/cours/essi2006/Scientific%20American_%20Feature%20Article_%20The%20Semantic%20Web_%20May%202001.pdf) by Tim Berners-Lee, James Hendler, and Ora Lassila changed my life. I spent a lot of time experimenting with the Swi-Prolog **semweb** library that I found to be the easiest way to experiment with RDF. We will cover the open source Apache Jena/Fuseki RDF data store and query engine in a later chapter. The Common Lisp and Semantic Web tools company [Franz Inc.](https://franz.com)very kindly subsidized my work writing two Semantic Web books that cover Common Lisp, Java, Clojure, and Scala (available as downloadable PDFs on my [web site](https://markwatson.com)). Writing these books lead directly to being invited to work at Google as a consultant using their Knowledge Graph.
@@ -288,7 +313,7 @@ Swi-Prolog is still under active development (the project was started in 1985) a
 
 ## Swi-Prolog and Python Deep Learning Interop
 
-Good usecases for Python and Prolog applications involve using Pyhton code to fetch and process data that is imported to Prolog. Applications can then use Prolog's reasoning and other capabilities.
+Good use cases for Python and Prolog applications involve using Python code to fetch and process data that is imported to Prolog. Applications can then use Prolog's reasoning and other capabilities.
 
 Here we look at a simple example that:
 
@@ -426,11 +451,21 @@ Later we will use deep learning models to summarize text and other NLP tasks. Th
 
 ## Soar Cognitive Architecture
 
-[Soar](https://soar.eecs.umich.edu/) is a flexible and general purpose reasoning and knowledge management system for building intelligent software agents. The Soar project is a classic AI tool and has the advantage of being kept up to date. As I write this the [Soar GitHub repositoryt](https://github.com/SoarGroup/Soar) was just updated a few days ago.
+[Soar](https://soar.eecs.umich.edu/) is a flexible and general purpose reasoning and knowledge management system for building intelligent software agents. The Soar project is a classic AI tool and has the advantage of being kept up to date. As I write this the [Soar GitHub repository](https://github.com/SoarGroup/Soar) was just updated a few days ago. Here is a bit of history:
 
-I am writing this material many years after my previous use of Soar. My primary reference for preparing the following material is the short paper [Introduction to the Soar Cognitive Architecture](https://arxiv.org/pdf/2205.03854.pdf) by John E. Laird. For self-study you can start at the [Soar Tutorial Page](https://soar.eecs.umich.edu/articles/downloads/soar-suite/228-soar-tutorial-9-6-0) that provides a download for an eight part tutorial in separate PDF files, binary Soar executables for Linux, Windows, and macOS, and all of the code for the tutorials.
+Soar is a cognitive architecture that was origianlly developed at Carnegie Mellon University. It is a rule-based system that simulates the problem-solving abilities of human cognition. The architecture is composed of several interacting components, including a production system, an episodic memory, and a working memory.
 
-I consider Soar to be important because it proposes and implements a general purpose cognitive architecture. A warning to the reader: Soar has a steep learning curve and there are simpler frameworks for solving practical problems. Later we will look at an example from the Soar Tutorial for the classic "blocks world" problem of moving blocks on a table subject to constraints like not being alowed to move a block if it has another object on top of it. Solving this fairly simple problem requires about 400 lines of Soar source code.
+The production system is the core component of Soar and is responsible for making decisions and performing actions. It is based on the idea of a production rule, which is a rule that describes a condition and an action to be taken when that condition is met. The production system uses these rules to make decisions and perform actions based on the current state of the system.
+
+The episodic memory is a component that stores information about past events and experiences. It allows the system to remember past events and use that information to make decisions in the future. The working memory is a component that stores information about the current state of the system and is used by the production system to make decisions.
+
+Soar also includes several other components, such as an explanation facility, which allows the system to explain its decisions and actions, and a learning facility, which allows the system to learn from its experiences.
+
+Soar is a general-purpose architecture that can be applied to a wide range of tasks and domains. It is particularly well-suited for tasks that involve planning, problem-solving, and decision-making. It has been used in a variety of applications, including robotics, natural language understanding, and intelligent tutoring systems.
+
+I am writing this material many years after my original use of the Soar project. My primary reference for preparing the following material is the short paper [Introduction to the Soar Cognitive Architecture](https://arxiv.org/pdf/2205.03854.pdf) by John E. Laird. For self-study you can start at the [Soar Tutorial Page](https://soar.eecs.umich.edu/articles/downloads/soar-suite/228-soar-tutorial-9-6-0) that provides a download for an eight part tutorial in separate PDF files, binary Soar executables for Linux, Windows, and macOS, and all of the code for the tutorials.
+
+I consider Soar to be important because it proposes and implements a general purpose cognitive architecture. A warning to the reader: Soar has a steep learning curve and there are simpler frameworks for solving practical problems. Later we will look at an example from the Soar Tutorial for the classic "blocks world" problem of moving blocks on a table subject to constraints like not being allowed to move a block if it has another object on top of it. Solving this fairly simple problem requires about 400 lines of Soar source code.
 
 ### Background Theory
 
@@ -581,6 +616,18 @@ As with Soar, our excursion into constraint programming will be brief, hopefully
 
 You may want to use the [MiniZinc Python](https://minizinc-python.readthedocs.io/en/latest/getting_started.html) documentation as a reference for the Python interface and [The MiniZink Handbook](https://www.minizinc.org/doc-2.6.4/en/index.html) as a reference to the MiniZinc language and its use.
 
+Constraint Programming (CP) is a paradigm of problem-solving that involves specifying the constraints of a problem, and then searching for solutions that satisfy those constraints. MiniZinc is a high-level modeling language for constraint programming that allows users to specify constraints and objectives in a compact and expressive way.
+
+In MiniZinc, a model is defined by a set of variables and a set of constraints that restrict the possible values of those variables. The variables can be of different types, such as integers, booleans, and sets, and the constraints can be specified using a variety of built-in predicates and operators. The model can also include an objective function that the solver tries to optimize.
+
+Once a model is defined in MiniZinc, it can be solved using a constraint solver, which is a software program that takes the model as input and returns solutions that satisfy the constraints. MiniZinc supports several constraint solvers, including Gecode, Chuffed, and OR-Tools, each of which has its own strengths and weaknesses.
+
+MiniZinc also provides several built-in constructs that can be used to express common constraint programming problems, such as alldifferent, global_cardinality, and element. These constructs make it easier to express common constraints and to model problems in a more natural way.
+
+Additionally, MiniZinc provides a feature called "Annotations", which allows the user to specify additional information to the solver, such as the way to search for solutions, or the maximum time for the solver to run.
+
+So, MiniZinc is a high-level constraint programming language that allows users to express complex constraints and objectives in a concise and expressive way. It can be used with a variety of constraint solvers to find solutions that satisfy the constraints of a problem, and it provides several built-in constructs and annotations to make it easier to model and solve constraint problems.
+
 ### Installation and Setup for MiniZinc and Python
 
 You need to first install the MiniZinc system. For macOS this can be done with **brew install minizinc** or can be [installed from source code on macOs and Linux](https://www.minizinc.org/doc-2.5.5/en/installation_detailed_linux.html). The Python interface can be installed with **pip install minizinc**.
@@ -709,6 +756,6 @@ Solution(alabama=2, alaska=1, arizona=3, arkansas=4, california=4, colorado=4, c
  wyoming 	: 	3
 ```
 
-## Good Old Fashioned Symbolic AI Wrapup
+## Good Old Fashioned Symbolic AI Wrap-up
 
 As a practical matter almost all of my work in the last ten years used either deep learning or was comprised of semantic web and linked data projects. While the material in this chapter is optional for the modern AI practitioner, I still find using MiniZinc for constraint programming and Prolog to be useful. I included the material for the Soar cognitive architecture because I both find it interesting and I believe the any future development of "real AI" (or AGI) will involve hybrid approaches and there are many good ideas in the Soar implementation.

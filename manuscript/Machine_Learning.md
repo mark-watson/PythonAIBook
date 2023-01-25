@@ -1,5 +1,25 @@
 # "Classic" Machine Learning (Optional Material)
 
+"Classic" Machine Learning (ML) is a broad field that encompasses a variety of algorithms and techniques for learning from data. These techniques are used to make predictions, classify data, and uncover patterns and insights. Some of the most common types of classic ML algorithms include:
+
+- Linear regression: A method for modeling the relationship between a dependent variable and one or more independent variables by fitting a linear equation to the observed data.
+- Logistic regression: A method for modeling the relationship between a binary dependent variable and one or more independent variables by fitting a logistic function to the observed data.
+- Decision Trees: A method for modeling decision rules based on the values of the input variables, which are organized in a tree-like structure.
+- Random Forest: A method that creates multiple decision trees and averages the results to improve the overall performance of the model
+- K-Nearest Neighbors (K-NN): A method for classifying data by finding the K-nearest examples in the training data and assigning the most similar common class among them.
+- Naive Bayes: A method for classifying data based on Bayes' theorem and the assumption of independence between the input variables.
+
+We will be covering a subset of ML, Deep Learning, in later chapters. Deep Learning differs from classic ML in several ways:
+
+- Scale: Classic ML algorithms are typically designed to work with small to medium-sized datasets, while deep learning algorithms are designed to work with large-scale datasets, such as millions or billions of examples.
+- Architecture: Classic ML algorithms have a relatively shallow architecture, with a small number of layers and parameters, while deep learning algorithms have a deep architecture, with many layers and millions or billions of parameters.
+- Non-linearity: Classic ML algorithms are sometimes linear, (i.e., the relationship between the input and output is modeled by a linear equation), while deep learning algorithms are non-linear, (i.e., the relationship is modeled by a non-linear function).
+- Feature extraction: "Classic" ML requires feature extraction, which is the process of transforming the raw input data into a set of features that can be used by the algorithm. Deep learning can automatically learn features from raw data, so it does not usually require feature extraction.
+
+So, Deep Learning is a subfield of machine learning that is focused on the design and implementation of artificial neural networks with multiple layers, which are capable of learning from large-scale, complex data. It is characterized by its deep architecture, non-linearity, and ability to learn features from raw data, which sets it apart from "classic" machine learning algorithms.
+
+## Example Material
+
 Here we cover just a single example of what I think of as "classic machine learning" using the [scikit-learn](https://scikit-learn.org/stable/) Python library. Later we cover deep learning in three separate chapters. Deep learning models are more general and powerful but it is important to recognize the types of problems that can be solved using the simpler techniques.
 
 They only requirements for this chapter is **pip install scikit-learn pandas**.
@@ -11,6 +31,21 @@ We will use the same Wisconsin cancer dataset for both the following classificat
 ![](wisconsindata-1.png)
 
 The last column **class* indicates the class of the sample, 0 for non-malignant and 1 for malignant. The scikit-learn library has high level and simple to use utilities for reading CSV (spreadsheet) data and for preparing the data for training and testing. I don't use these utilities here because I am reusing the data loading code from the later deep learning example.
+
+We will use the Pandas library and if you have not used Pandas before you might want to reference the [Pandas documentation](). Here is a summary of why Pandas is generally useful: it is a popular Python library for data manipulation and analysis that provides data structures and data analysis tools for working with structured data (often spreadsheet data). One of the key data structures in Pandas is the DataFrame, which is a two-dimensional table of data with rows and columns.
+
+A DataFrame is essentially a labeled, two-dimensional array, where each column has a name and each row has an index. DataFrames are similar to tables in a relational database or data in a spreadsheet. They can be created from a variety of data sources such as CSV, Excel, SQL databases, or even Python lists and dictionaries. They can also be transformed, cleaned, and manipulated using a wide range of built-in methods and functionalities.
+
+Pandas DataFrames provide a lot of functionalities to handle and process data. The most common ones are:
+
+- Indexing: data can be selected by its label or index.
+- Filtering: data can be filtered by any condition.
+- Grouping: data can be grouped by any column.
+- Merging and joining: data can be joined or merged with other data.
+- Data type conversion: data can be converted to any data type.
+- Handling missing data: data can be filled or dropped based on any condition.
+
+DataFrames are widely used in data science and machine learning projects for loading, cleaning, processing, and analyzing data. They are also used for data visualization, data preprocessing, and feature engineering tasks.
 
 Listing of **load_data.py**:
 
@@ -34,11 +69,23 @@ def load_data():
     return (X_train, Y_train, X_test, Y_test)
 ```
 
-TBD
+In line 8 we fetch the values array from the dataframe and in line 9 we copy all rows of data, skipping the last column (target classification we want to be able to predict) and converting all data to floating point numbers. In line 14 we copy just the last column of the training data array for use as the target classification.
 
-## Classification Models
+## Classification Models using Scikit-learn
 
-TBD
+Classification is a type of supervised machine learning problem where the goal is to predict the class or category of an input sample based on a set of features. The goal of a classification model is to learn a mapping from the input features to the output class labels.
+
+Scikit-learn (sklearn) is a popular Python library for machine learning that is effective for several reasons (partially derived from the [Skikit-learn documentation](https://scikit-learn.org/0.21/documentation.html)):
+
+- Consistent API: Scikit-learn provides a consistent and intuitive API for a wide range of machine learning models, which makes it easy to switch between different algorithms and experiment with different approaches.
+- Large collection of models: Scikit-learn includes a large collection of models for supervised, unsupervised, and semi-supervised learning (e.g., linear and non-linear models, clustering, and dimensionality reduction).
+- Preprocessing and data transformation: Scikit-learn includes a wide range of preprocessing and data transformation tools, such as feature scaling, one-hot encoding, feature extraction, and more, that can be used to prepare and transform the data before training the model.
+- Built-in evaluation metrics: Scikit-learn provides a variety of evaluation metrics, such as accuracy, precision, recall, F1-score, and more, that can be used to evaluate the performance of a model on a given dataset.
+- Scalability: Scikit-learn is designed to be scalable, which means it can handle large datasets and high-dimensional feature spaces. It also provides tools for parallel and distributed computing, which can be used to speed up the training process on large datasets.
+- Ease of use: Scikit-learn is designed to be easy to use, with clear and concise code, a well-documented API, and plenty of examples and tutorials that help users get started quickly.
+- Active development and community: Scikit-learn is actively developed and maintained, with regular updates and bug fixes, and a large and active community of users and developers who contribute to the library and provide support through mailing lists, forums, and other channels.
+
+All these features make scikit-learn a powerful and widely used machine learning library for various types of machine learning tasks.
 
 ```python
 from sklearn.preprocessing import StandardScaler 
@@ -68,7 +115,17 @@ print(confusion_matrix(Y_test, y_predict))
 print(classification_report(Y_test, y_predict))
 ```
 
-TBD
+We can now train and test the model and evaluate how accurate the model is. In reading the following output, you should understand a few definitions:
+
+In machine learning, precision, recall, F1-score, and support are all metrics used to evaluate the performance of a classification model, specifically in regards to binary classification:
+
+- Precision: the proportion of true positive predictions out of all positive predictions made by the model. It is a measure of how many of the positive predictions were actually correct.
+- Recall: the proportion of true positive predictions out of all actual positive observations in the data. It is a measure of how well the model is able to find all the positive observations.
+- F1-score: the harmonic mean of precision and recall. It is a measure of the balance between precision and recall and is generally used when you want to seek a balance between precision and recall.
+- Support: number of observations in each class.
+- 
+These metrics provide an overall view of a model's performance in terms of both correctly identifying positive observations and avoiding false positive predictions.
+
 
 ```bash
 $ python classification.py 
@@ -86,7 +143,8 @@ Number testing examples: 15
 weighted avg       0.94      0.93      0.93        15
 ```
 
-## Classic Machine Learning Wrapup
+
+## Classic Machine Learning Wrap-up
 
 I have already admitted my personal biases in favor of deep learning over simpler machine learning and I proved that by using perhaps only 1% of the functionality of scikit-learn in this chapter.
 

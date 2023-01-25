@@ -1,18 +1,31 @@
 # Reinforcement Learning
 
-Reinforcement Learning (RL) is a broad topic and we will only cover aspects RL that I use myself.
+Reinforcement Learning has been used in various applications such as robotics, game playing, recommendation systems, etc. Reinforcement Learning (RL) is a broad topic and we will only cover aspects RL that I use myself.
 
 {class: information}
 This is a common theme in this book: if I don't love a topic or I don't have much practical experience with it, I generally don't write about it or cover it lightly with references for further study. I used RL a few years ago on a project at Capital One and here I am guiding you on the same learning path that I took prior to working on that project.
 
-If you enjoy the tutorial material in this chapter I recommend that you consider investing the time in the Coursera RL specialization [https://www.coursera.org/learn/fundamentals-of-reinforcement-learning](https://www.coursera.org/learn/fundamentals-of-reinforcement-learning#instructors) taught by Martha and Adam White. There are [50+ RL courses on Coursera](https://www.coursera.org/courses?query=reinforcement%20learning). I took the courses taught by Martha and Adam White before starting my RL project at Capital One.
-
-My favorite RL book is "Reinforcement Learning: An Introduction, second edition" by Richard Sutton and Andrew Barto, that can be read online for free at [http://www.incompleteideas.net/book/the-book-2nd.html](http://www.incompleteideas.net/book/the-book-2nd.html). They origianlly wrote their book examples in Common Lisp but most of the code is available rewritten in Python. The Common Lisp code for the examples is [here](http://www.incompleteideas.net/book/code/code2nd.html). Shangtong Zhang translated the book examples to Python, available [here](https://github.com/ShangtongZhang/reinforcement-learning-an-introduction). Martha and Adam White's Coursera class uses this book as a reference.
-
-
 ## Overview
 
-The core idea of RL is that we train a software agent to interact with and change its environment based on its expectations of the utility of current actions improving metrics for success in the future. There is some tension between writing agents that simply reuse past actions that proved to be useful, rather than aggresively exploring new actions in the environment. There are intersting formalisms for this that we will cover.
+Reinforcement Learning is a type of machine learning that is concerned with decision-making in dynamic, uncertain environments. RL uses the concept of an agent, which interacts with its environment by taking actions and receiving feedback in the form of rewards or penalties. The goal of the agent is to learn a policy, which is a mapping from states of the environment to actions with the goal of maximizing the expected cumulative reward over time.
+
+There are several key components to RL:
+
+- The Environment, which is the system that the agent interacts with.
+- The Agent, which is the decision-maker that chooses actions based on its current state and policy.
+- The State, which is a representation of the current environment, the parameters and trained policy of the agent, and possibly the visible actions of other agents in the environment.
+- The Action, which is a decision taken by the agent.
+- The reward, which is a scalar value that the agent receives as feedback for its actions.
+- 
+Reinforcement learning algorithms can be divided into two main categories: value-based and policy-based. In value-based RL, the agent learns an estimate of the value of different states or state-action pairs, which is then used to determine the optimal policy. In contrast, in policy-based RL, the agent directly learns a policy without estimating the value of states or state-action pairs.
+
+Reinforcement Learning can be implemented using different techniques such as Q-learning, SARSA, DDPG, A2C, PPO, etc. Some of these techniques are model-based, which means that the agent uses a model of the environment to simulate the effects of different actions and plan ahead. Others are model-free, which means that the agent learns directly from the rewards and transitions experienced in the environment.
+
+If you enjoy the tutorial material in this chapter I recommend that you consider investing the time in the Coursera RL specialization [https://www.coursera.org/learn/fundamentals-of-reinforcement-learning](https://www.coursera.org/learn/fundamentals-of-reinforcement-learning#instructors) taught by Martha and Adam White. There are [50+ RL courses on Coursera](https://www.coursera.org/courses?query=reinforcement%20learning). I took the courses taught by Martha and Adam White before starting my RL project at Capital One.
+
+My favorite RL book is "Reinforcement Learning: An Introduction, second edition" by Richard Sutton and Andrew Barto, that can be read online for free at [http://www.incompleteideas.net/book/the-book-2nd.html](http://www.incompleteideas.net/book/the-book-2nd.html). They originally wrote their book examples in Common Lisp but most of the code is available rewritten in Python. The Common Lisp code for the examples is [here](http://www.incompleteideas.net/book/code/code2nd.html). Shangtong Zhang translated the book examples to Python, available [here](https://github.com/ShangtongZhang/reinforcement-learning-an-introduction). Martha and Adam White's Coursera class uses this book as a reference.
+
+The core idea of RL is that we train a software agent to interact with and change its environment based on its expectations of the utility of current actions improving metrics for success in the future. There is some tension between writing agents that simply reuse past actions that proved to be useful, rather than aggressively exploring new actions in the environment. There are interesting formalisms for this that we will cover.
 
 There are two general approaches to providing training environments to Reinforcement Learning trained agents: physically devices in the real world or simulated environments. This is not a book on robotics so we use the second option.
 

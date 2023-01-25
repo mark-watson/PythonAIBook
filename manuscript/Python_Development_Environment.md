@@ -1,11 +1,21 @@
 # Part I - Getting Started
 
-In the next three chapters we setup our Python programming environment, use the scikit-learn library for one classic machine learning example, and experiment with what is often called Good Old Fashioned Symbolic AI (GOFAI).
+In the next three chapters we setup our Python programming environment, use the Scikit-learn library for one classic machine learning example, and experiment with what is often called Good Old Fashioned Symbolic AI (GOFAI).
 
 
 # Python Development Environment
 
 I don't use a single development setup for Python. Here I will describe the tools I use and in what contexts I use them.
+
+When you are setting up a Python development environment there are a few things to consider in order to ensure that your environment is set up correctly and is able to run your code correctly. Here are a few pieces of advice to help you get started (references: [getting started](https://www.python.org/about/gettingstarted/), [testing](https://docs.python.org/3/library/unittest.html), [virtual environments](https://docs.python.org/3/tutorial/venv.html), and [packaging](https://packaging.python.org/en/latest/tutorials/managing-dependencies/)):
+
+- Use a version control system: Use Git or other version control systems to manage your codebase and keep track of changes. This will make it easier to collaborate with other developers and keep your code organized. I will not cover Git here so [read a good tutorial](https://git-scm.com/docs/gittutorial) if you have not used it before.
+- Use a virtual environment: Use a virtual environment to isolate your development environment and dependencies from the rest of your system. This will make it easier to manage your dependencies and avoid conflicts with other software on your system.
+- Use a package manager: Use pip or other package managers to manage your dependencies and install packages. This will make it easier to install and update packages, and will also help to ensure that you have the correct versions of packages installed.
+- Use an Integrated Development Environment (IDE): Use an IDE such as PyCharm, VSCode or any other to write, run and debug your code.
+- Test your code: Be sure to test your code to ensure that it runs correctly and that there are no errors. Use testing frameworks such as unittest, nose or pytest to automate your testing process.
+- Keep your environment up-to-date: Be sure to keep your environment and dependencies up-to-date, to ensure that you are using the latest versions of packages and that your code runs correctly.
+- Document your code: be sure to add comments and documentation to your code, so that other developers (and yourself) can understand what your code is doing and how it works.
 
 When developing using Python, or any other programming language, you will find a lot of advice in books and on the web. While I really enjoy tweaking my development environment to get it "just right," I try to minimize the time I invest in this tuning process. This may also work for you: when you are tired near the end of a workday and you might not be at your best for developing new algorithms or coding then use that time to read about and experiment with your development environment, learn new features of your favorite programming languages, or try a new text editor.
 
@@ -31,7 +41,17 @@ conda install scikit-learn
 
 ### Google Colab
 
-Okay, so Colab is not a package manager but Colab (a cloud version of Jupyter Notebooks that provide free and low cost GPUs) has up to date deep learning libraries and frameworks pre-installed.
+Google Colab, short for Colaboratory, is a free cloud-based platform for data science and machine learning developed by Google. It allows users to write and execute code in a web-based environment, with support for Jupyter notebooks and integration with other Google services such as Google Drive.
+
+Google Colab lets me get set up for working on machine learning and deep learning projects without having to install Python and dependencies on my laptops or servers. It allows me to juggle projects with different requirements while keeping each project separate.
+
+In technical terms, Colab is a Jupyter notebook environment that runs on a virtual machine in the cloud, with access to powerful hardware such as GPUs and TPUs. The virtual machine is pre-configured with popular data science libraries and tools such as TensorFlow, PyTorch, and scikit-learn, making it easy to get started with machine learning and deep learning projects.
+
+Colab also includes features such as code execution, debugging, and version control, as well as the ability to share and collaborate on notebooks with others. Additionally, it allows you to mount your google drive as a storage, which can be useful for large data sets or models.
+
+Users can also access and run their notebook on local runtime, which would allow them to run the code on their local hardware and not in the cloud, this can be useful when working with large datasets.
+
+Overall, Google Colab is a useful tool for data scientists and machine learning engineers, as it provides a convenient and powerful environment for developing and running code, and for collaboration and sharing of results.
 
 Since 2015 most of my work has been centered around deep learning and Google Colab saves me a lot of time and effort.
 

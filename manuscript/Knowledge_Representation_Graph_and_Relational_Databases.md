@@ -1,11 +1,18 @@
 # Getting Setup To Use Graph and Relational Databases
 
-I use several types of datastores in my work but for the purposes of this book generally and for this chapter specifically we can explore interesting ideas and lay a foundation for examples later in this book for using graph and relational databases using just three platforms:
+I use several types of data stores in my work but for the purposes of this book generally and for this chapter specifically we can explore interesting ideas and lay a foundation for examples later in this book for using graph and relational databases using just three platforms:
 
 - [Apache Jena Fuseki](https://jena.apache.org/documentation/fuseki2/) for RDF data storage, [SPARQL queries](https://jena.apache.org/tutorials/sparql.html), and Fuseki's web interface to explore datasets.
 - [Neo4j Community Edition](https://neo4j.com/download-center/#community) for a transactional disk-based graph database, the [Cypher query language](https://neo4j.com/docs/cypher-manual/current/), and the web interface to explore datasets. If you prefer you can alternatively use [Memgraph](https://memgraph.com) that is fairly compatible with Neo4j.
 - [SQLite](https://www.sqlite.org/index.html) for transactional relational data storage and the [SQL query language](https://en.wikipedia.org/wiki/SQL).
 
+In technical terms, knowledge representation using graph and relational databases involves the use of graph structures and relational data models to represent and organize knowledge in a structured, computationally efficient, and easily accessible way.
+
+A graph structure is a collection of nodes (also known as vertices) and edges (also known as arcs) that connect the nodes. Each node and edge in a graph can have properties, such as labels and attributes which provide information about the entities they represent. Graphs can be used to represent knowledge in a variety of ways, such as through semantic networks and using ontologies to define terms, classes, types, etc.
+
+Relational databases, on the other hand, use a tabular data model to represent knowledge. The basic building block of a relational database is the table, which is a collection of rows (also known as tuples) and columns (also known as attributes). Each row represents an instance of an entity, and the columns provide information about the properties of that entity. Relationships between entities can also be represented by foreign keys, which link one table to another.
+
+Combining these two technologies, knowledge can be represented as a graph of interconnected entities, where each entity is stored in a relational database table and connected to other entities through relationships represented by edges in the graph. This allows for efficient querying and manipulation of knowledge, as well as the ability to integrate and reason over large amounts of information.
 
 ## The Apache Jena Fuseki RDF Datastore and SPARQL Query Server
 
