@@ -2,11 +2,11 @@
 
 "Classic" Machine Learning (ML) is a broad field that encompasses a variety of algorithms and techniques for learning from data. These techniques are used to make predictions, classify data, and uncover patterns and insights. Some of the most common types of classic ML algorithms include:
 
-- Linear regression: A method for modeling the relationship between a dependent variable and one or more independent variables by fitting a linear equation to the observed data.
-- Logistic regression: A method for modeling the relationship between a binary dependent variable and one or more independent variables by fitting a logistic function to the observed data.
-- Decision Trees: A method for modeling decision rules based on the values of the input variables, which are organized in a tree-like structure.
-- Random Forest: A method that creates multiple decision trees and averages the results to improve the overall performance of the model
-- K-Nearest Neighbors (K-NN): A method for classifying data by finding the K-nearest examples in the training data and assigning the most similar common class among them.
+- Linear regression: a method for modeling the relationship between a dependent variable and one or more independent variables by fitting a linear equation to the observed data.
+- Logistic regression: a method for modeling the relationship between a binary dependent variable and one or more independent variables by fitting a logistic function to the observed data.
+- Decision Trees: a method for modeling decision rules based on the values of the input variables, which are organized in a tree-like structure.
+- Random Forest: a method that creates multiple decision trees and averages the results to improve the overall performance of the model
+- K-Nearest Neighbors (K-NN): a method for classifying data by finding the K-nearest examples in the training data and assigning the most similar common class among them.
 - Naive Bayes: A method for classifying data based on Bayes' theorem and the assumption of independence between the input variables.
 
 We will be covering a subset of ML, Deep Learning, in later chapters. Deep Learning differs from classic ML in several ways:
@@ -77,15 +77,15 @@ Classification is a type of supervised machine learning problem where the goal i
 
 Scikit-learn (sklearn) is a popular Python library for machine learning that is effective for several reasons (partially derived from the [Skikit-learn documentation](https://scikit-learn.org/0.21/documentation.html)):
 
-- Consistent API: Scikit-learn provides a consistent and intuitive API for a wide range of machine learning models, which makes it easy to switch between different algorithms and experiment with different approaches.
-- Large collection of models: Scikit-learn includes a large collection of models for supervised, unsupervised, and semi-supervised learning (e.g., linear and non-linear models, clustering, and dimensionality reduction).
-- Preprocessing and data transformation: Scikit-learn includes a wide range of preprocessing and data transformation tools, such as feature scaling, one-hot encoding, feature extraction, and more, that can be used to prepare and transform the data before training the model.
-- Built-in evaluation metrics: Scikit-learn provides a variety of evaluation metrics, such as accuracy, precision, recall, F1-score, and more, that can be used to evaluate the performance of a model on a given dataset.
-- Scalability: Scikit-learn is designed to be scalable, which means it can handle large datasets and high-dimensional feature spaces. It also provides tools for parallel and distributed computing, which can be used to speed up the training process on large datasets.
-- Ease of use: Scikit-learn is designed to be easy to use, with clear and concise code, a well-documented API, and plenty of examples and tutorials that help users get started quickly.
-- Active development and community: Scikit-learn is actively developed and maintained, with regular updates and bug fixes, and a large and active community of users and developers who contribute to the library and provide support through mailing lists, forums, and other channels.
+- Scikit-learn provides a consistent and intuitive API for a wide range of machine learning models, which makes it easy to switch between different algorithms and experiment with different approaches.
+- Scikit-learn includes a large collection of models for supervised, unsupervised, and semi-supervised learning (e.g., linear and non-linear models, clustering, and dimensionality reduction).
+- Scikit-learn includes a wide range of preprocessing and data transformation tools, such as feature scaling, one-hot encoding, feature extraction, and more, that can be used to prepare and transform the data before training the model.
+- Scikit-learn provides a variety of evaluation metrics, such as accuracy, precision, recall, F1-score, and more, that can be used to evaluate the performance of a model on a given dataset.
+- Scikit-learn is designed to be scalable, which means it can handle large datasets and high-dimensional feature spaces. It also provides tools for parallel and distributed computing, which can be used to speed up the training process on large datasets.
+- Scikit-learn is designed to be easy to use, with clear and concise code, a well-documented API, and plenty of examples and tutorials that help users get started quickly.
+- Scikit-learn is actively developed and maintained, with regular updates and bug fixes, and a large and active community of users and developers who contribute to the library and provide support through mailing lists, forums, and other channels.
 
-All these features make scikit-learn a powerful and widely used machine learning library for various types of machine learning tasks.
+All these features make Scikit-learn a powerful and widely used machine learning library for various types of machine learning tasks.
 
 ```python
 from sklearn.preprocessing import StandardScaler 
@@ -119,11 +119,11 @@ We can now train and test the model and evaluate how accurate the model is. In r
 
 In machine learning, precision, recall, F1-score, and support are all metrics used to evaluate the performance of a classification model, specifically in regards to binary classification:
 
-- Precision: the proportion of true positive predictions out of all positive predictions made by the model. It is a measure of how many of the positive predictions were actually correct.
+- Precision: the proportion of true positive predictions out of the total of all positive predictions made by the model. It is a measure of how many of the positive predictions were actually correct.
 - Recall: the proportion of true positive predictions out of all actual positive observations in the data. It is a measure of how well the model is able to find all the positive observations.
 - F1-score: the harmonic mean of precision and recall. It is a measure of the balance between precision and recall and is generally used when you want to seek a balance between precision and recall.
 - Support: number of observations in each class.
-- 
+
 These metrics provide an overall view of a model's performance in terms of both correctly identifying positive observations and avoiding false positive predictions.
 
 
@@ -146,5 +146,5 @@ weighted avg       0.94      0.93      0.93        15
 
 ## Classic Machine Learning Wrap-up
 
-I have already admitted my personal biases in favor of deep learning over simpler machine learning and I proved that by using perhaps only 1% of the functionality of scikit-learn in this chapter.
+I have already admitted my personal biases in favor of deep learning over simpler machine learning and I proved that by using perhaps only 1% of the functionality of Scikit-learn in this chapter.
 

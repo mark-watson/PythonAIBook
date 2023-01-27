@@ -3,11 +3,11 @@
 Reinforcement Learning has been used in various applications such as robotics, game playing, recommendation systems, etc. Reinforcement Learning (RL) is a broad topic and we will only cover aspects RL that I use myself.
 
 {class: information}
-This is a common theme in this book: if I don't love a topic or I don't have much practical experience with it, I generally don't write about it or cover it lightly with references for further study. I used RL a few years ago on a project at Capital One and here I am guiding you on the same learning path that I took prior to working on that project.
+This is a common theme in this book: if I don't love a topic or I don't have much practical experience with it, I generally don't write about it or cover it lightly with references for further study. I have limited experience using RL professionally, mostly for a project a few years ago at Capital One and here I am guiding you on the same learning path that I took prior to working on that project.
 
 ## Overview
 
-Reinforcement Learning is a type of machine learning that is concerned with decision-making in dynamic, uncertain environments. RL uses the concept of an agent, which interacts with its environment by taking actions and receiving feedback in the form of rewards or penalties. The goal of the agent is to learn a policy, which is a mapping from states of the environment to actions with the goal of maximizing the expected cumulative reward over time.
+Reinforcement Learning is a type of machine learning that is concerned with decision-making in dynamic, uncertain environments. RL uses the concept of an agent which interacts with its environment by taking actions and receiving feedback in the form of rewards or penalties. The goal of the agent is to learn a policy which is a mapping from states of the environment to actions with the goal of maximizing the expected cumulative reward over time.
 
 There are several key components to RL:
 
@@ -15,9 +15,9 @@ There are several key components to RL:
 - The Agent, which is the decision-maker that chooses actions based on its current state and policy.
 - The State, which is a representation of the current environment, the parameters and trained policy of the agent, and possibly the visible actions of other agents in the environment.
 - The Action, which is a decision taken by the agent.
-- The reward, which is a scalar value that the agent receives as feedback for its actions.
-- 
-Reinforcement learning algorithms can be divided into two main categories: value-based and policy-based. In value-based RL, the agent learns an estimate of the value of different states or state-action pairs, which is then used to determine the optimal policy. In contrast, in policy-based RL, the agent directly learns a policy without estimating the value of states or state-action pairs.
+- The Reward, which is a scalar value that the agent receives as feedback for its actions.
+
+Reinforcement learning algorithms can be divided into two main categories: value-based and policy-based. In value-based RL the agent learns an estimate of the value of different states or state-action pairs, which is then used to determine the optimal policy. In contrast, in policy-based RL, the agent directly learns a policy without estimating the value of states or state-action pairs.
 
 Reinforcement Learning can be implemented using different techniques such as Q-learning, SARSA, DDPG, A2C, PPO, etc. Some of these techniques are model-based, which means that the agent uses a model of the environment to simulate the effects of different actions and plan ahead. Others are model-free, which means that the agent learns directly from the rewards and transitions experienced in the environment.
 
