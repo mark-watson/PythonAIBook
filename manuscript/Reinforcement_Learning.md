@@ -7,17 +7,17 @@ This is a common theme in this book: if I don't love a topic or I don't have muc
 
 ## Overview
 
-Reinforcement Learning is a type of machine learning that is concerned with decision-making in dynamic, uncertain environments. RL uses the concept of an agent which interacts with its environment by taking actions and receiving feedback in the form of rewards or penalties. The goal of the agent is to learn a policy which is a mapping from states of the environment to actions with the goal of maximizing the expected cumulative reward over time.
+Reinforcement Learning is a type of machine learning that is concerned with decision-making in dynamic and uncertain environments. RL uses the concept of an agent which interacts with its environment by taking actions and receiving feedback in the form of rewards or penalties. The goal of the agent is to learn a policy which is a mapping from states of the environment to actions with the goal of maximizing the expected cumulative reward over time.
 
 There are several key components to RL:
 
-- The Environment, which is the system that the agent interacts with.
-- The Agent, which is the decision-maker that chooses actions based on its current state and policy.
-- The State, which is a representation of the current environment, the parameters and trained policy of the agent, and possibly the visible actions of other agents in the environment.
-- The Action, which is a decision taken by the agent.
-- The Reward, which is a scalar value that the agent receives as feedback for its actions.
+- Environment: the system or "world" that the agent interacts with.
+- Agent: the decision-maker that chooses actions based on its current state, the current environment, and its policy.
+- State: a representation of the current environment, the parameters and trained policy of the agent, and possibly the visible actions of other agents in the environment.
+- Action: a decision taken by the agent.
+- Reward: a scalar value that the agent receives as feedback for its actions.
 
-Reinforcement learning algorithms can be divided into two main categories: value-based and policy-based. In value-based RL the agent learns an estimate of the value of different states or state-action pairs, which is then used to determine the optimal policy. In contrast, in policy-based RL, the agent directly learns a policy without estimating the value of states or state-action pairs.
+Reinforcement learning algorithms can be divided into two main categories: value-based and policy-based. In value-based RL the agent learns an estimate of the value of different states or state-action pairs which are then used to determine the optimal policy. In contrast, in policy-based RL the agent directly learns a policy without estimating the value of states or state-action pairs.
 
 Reinforcement Learning can be implemented using different techniques such as Q-learning, SARSA, DDPG, A2C, PPO, etc. Some of these techniques are model-based, which means that the agent uses a model of the environment to simulate the effects of different actions and plan ahead. Others are model-free, which means that the agent learns directly from the rewards and transitions experienced in the environment.
 
@@ -33,3 +33,10 @@ The end goal for modeling a RL problem is calculating a policy that can be used 
 
 ## Available RL Tools
 
+For initial experiments with RL, I would recommend one of:
+
+- The Sutton/Barto RL Book and accompanying Common Lisp or Python examples.
+- Taking the Coursera classes by Martha and Adam White.
+- Using the [OpenAI RL Gymnasium](https://github.com/Farama-Foundation/Gymnasium) 
+
+Here we will briefly look an example using the OpenAI RL Gymnasium and get you set up for your own experiments with it. If you later decide to invest more learning time in RL, then choose either the Sutton/Barto RL Book or the Coursera class.

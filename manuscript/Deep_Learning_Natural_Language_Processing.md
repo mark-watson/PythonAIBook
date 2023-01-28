@@ -71,6 +71,14 @@ Another example of a long term project I had that is now easily solved with the 
 
 I refer you to one of the official OpenAI examples [https://github.com/openai/openai-cookbook/blob/main/examples/Backtranslation_of_SQL_queries.py](https://github.com/openai/openai-cookbook/blob/main/examples/Backtranslation_of_SQL_queries.py). In my Java and Common Lisp NLP query examples, I would test generated SQL queries against a database to ensure they were legal queries, etc. and if you modify OpenAI's example I suggest you do the same.
 
+Here is a sample query and a definition of available database tables:
+
+```python
+nl_query: str = "Return the name of each department that had more than 10 employees in June 2021",
+eval_template: str = "{};\n-- Explanation of the above query in human readable format\n-- {}",
+table_definitions: str = "# Employee(id, name, department_id)\n# Department(id, name, address)\n# Salary_Payments(id, employee_id, amount, date)\n",
+```
+
 Here is the output to OpenAI's example:
 
 ```sql
@@ -84,6 +92,7 @@ GROUP BY department.name
 HAVING COUNT(*) > 10
 ```
 
+I find this to be a great example of creatively using deep learning via pre-trained models. I urge you, dear reader, to take some time to peruse the Hugging Face example Jupyter notebooks to see which might be applicable to your development projects. I have always felt that my work "stood on the shoulders of giants," that is my work builds on that of others. In the new era of deep learning and large language models, where very large teams work on models and technology that individuals can't compete with, being a solo developer or when working for a small company, we need to be flexible and creative in using resources from OpenAI, Hugging Face, Google, Microsoft, Meta, etc.
 
 ## Hugging Face APIs
 
