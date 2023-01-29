@@ -9,5 +9,4 @@ Deep_Learning_The_Basics.md
 Deep_Learning_Natural_Language_Processing.md
 Deep_Learning_Image_Generation.md
 Reinforcement_Learning.md
-Text_Generation.md
 Recommendation_Systems.md

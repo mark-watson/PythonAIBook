@@ -1,3 +1,7 @@
+# Part IV - Overviews of Image Generation, Reinforcement Learning, and Recommendation Systems
+
+This final part of this book consists of overviews of three important topics that I cover briefly, with perhaps more material in the next edition of this book.
+
 # Image Generation (Optional Material)
 
 I have never used deep learning image generation at work but it is fun to experiment with. We will use Brett Kuprel's [Mini-Dalle model](https://github.com/kuprel/min-dalle) that is a reduced size port of DALL·E Mini to PyTorch.

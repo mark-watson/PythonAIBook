@@ -1,4 +1,4 @@
-# Reinforcement Learning
+# Overview of Reinforcement Learning (Optional Material)
 
 Reinforcement Learning has been used in various applications such as robotics, game playing, recommendation systems, etc. Reinforcement Learning (RL) is a broad topic and we will only cover aspects RL that I use myself.
 
@@ -33,10 +33,14 @@ The end goal for modeling a RL problem is calculating a policy that can be used 
 
 ## Available RL Tools
 
-For initial experiments with RL, I would recommend one of:
+For initial experiments with RL, I would recommend taking the same path that I took before using RL at work:
 
-- The Sutton/Barto RL Book and accompanying Common Lisp or Python examples.
+- Using a maintained fork of OpenAI’s Gym library [Gymnasium](https://github.com/Farama-Foundation/Gymnasium).
 - Taking the Coursera classes by Martha and Adam White.
-- Using the [OpenAI RL Gymnasium](https://github.com/Farama-Foundation/Gymnasium) 
+- The Sutton/Barto RL Book and accompanying Common Lisp or Python examples.
 
-Here we will briefly look an example using the OpenAI RL Gymnasium and get you set up for your own experiments with it. If you later decide to invest more learning time in RL, then choose either the Sutton/Barto RL Book or the Coursera class.
+The original OpenAI RL Gym was a good environment for getting started with simple environments and examples but I didn't get very far with self-study. The RL Coursera classes were a great overview of theory and practice, and I then spend as much time as I could spare working through Sutton/Barto before my project started.
+
+## Reinforcement Learning Wrap-up
+
+Dear reader, please pardon the brevity of this overview chapter. I may re-work this chapter with a few examples in the next edition of this book. I tagged this chapter as optional material because I feel that most readers will be better off investing limited learning time in understanding how to use deep learning and pre-trained models.
