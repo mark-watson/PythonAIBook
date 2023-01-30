@@ -12,15 +12,15 @@ Linked Data is a set of best practices for publishing and linking data on the we
 
 Together, the Semantic Web and Linked Data provide a framework for representing and interlinking data on the web in a structured and machine-readable format, allowing for the integration, querying, and reasoning over large amounts of information. This helps to make data on the web more accessible and useful to both humans and machines, enabling more powerful and intelligent applications and services.
 
-As a developer you are likely familiar with the term *data lake* for enterprise-wide relational and other types of databases. Quite simply, graph databases like Fuseki and Neo4J that we previoulsly setup are just another tool to implement *data lakes* but I prefer using the term Knowledge Graph for RDF/RDFS/OWL/SPARQL based datastores because of the ability to infer data that is not explicitly stated as well as providing abstractions for merging different data sources in-place, that is, without the requirement to convert data to other formats or database infrastructure.
+As a developer you are likely familiar with the term *data lake* for enterprise-wide relational and other types of databases. Quite simply, graph databases like Fuseki and Neo4J that we previously setup are just another tool to implement *data lakes* but I prefer using the term Knowledge Graph for RDF/RDFS/OWL/SPARQL based data stores because of the ability to infer data that is not explicitly stated as well as providing abstractions for merging different data sources in-place, that is, without the requirement to convert data to other formats or database infrastructure.
 
 ## Overview and Theory
 
 You will learn how to do the following:
 
 - Understand RDF data formats.
-- - See more use cases for SPARQL queries.
-Use Python scripts to query remote SPARQL endpoints like DBPedia and WikiData as we also did in the last chapter.
+- See more use cases for SPARQL queries.
+- Use Python scripts to query remote SPARQL endpoints like DBPedia and WikiData as we also did in the last chapter.
 - Use the SQLite relational database to cache SPARQL remote queries for both efficiency and for building systems that may have intermittent access to the Internet.
 - Take a quick look at RDF, RDFS, and OWL reasoners.
 
@@ -82,8 +82,10 @@ My preference is to use N-Triple format files as output from programs that I wri
 @prefix kb:  <http://knowledgebooks.com/ontology#>
 
 <http://news.com/201234/> kb:containsCountry "China" .
-The N3 format adds prefixes (abbreviations) to the N-Triple format. In practice it would be better to use the URI http://dbpedia.org/resource/China instead of the literal value “China.”
 ```
+
+The N3 format adds prefixes (abbreviations) to the N-Triple format. In practice it would be better to use the URI http://dbpedia.org/resource/China instead of the literal value “China.”
+
 
 Here we see the use of an abbreviation prefix “kb:” for the namespace for my company KnowledgeBooks.com ontologies. The first term in the RDF statement (the subject) is the URI of a news article. The second term (the predicate) is “containsCountry” in the “kb:” namespace. The last item in the statement (the object) is a string literal “China.” I would describe this RDF statement in English as, “The news article at URI http://news.com/201234 mentions the country China.”
 
@@ -99,16 +101,22 @@ This was a very simple N3 example which we will expand to show additional featur
 <http://news.com/201234/>
   kb:containsCountry
   <http://dbpedia.org/resource/United_States>  .
+```
+
 We can collapse multiple RDF statements that share the same subject and optionally the same predicate:
 
+```sparql
 @prefix kb:  <http://knowledgebooks.com/ontology#> .
 
 <http://news.com/201234/>
   kb:containsCountry
     <http://dbpedia.org/resource/China> ,
     <http://dbpedia.org/resource/United_States>  .
+```
+
 The indentation and placement on separate lines is arbitrary - use whatever style you like that is readable. We can also add in additional predicates that use the same subject (I am going to use string literals here instead of URIs for objects to make the following example more concise but in practice prefer using URIs):
 
+```sparql
 @prefix kb:  <http://knowledgebooks.com/ontology#> .
 
 <http://news.com/201234/>
@@ -136,21 +144,24 @@ I promised you that the data in RDF data stores was easy to extend. As an exampl
 
 Note that I split one RDF statement across three lines (3-5) here to fit page width. The RDF statement on lines 3-5 is legal and will be handled correctly by RDF parsers. Here we just represent the date as a string. We can add a type to the object representing a specific date:
 
+```sparql
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 @prefix kb:  <http://knowledgebooks.com/ontology#> .
  
  <http://news.com/201234/>
    kb:datePublished
    "2008-05-11"^^xsd:date .
+```
+
 Furthermore, if we do not have dates for all news articles, that is often acceptable because when constructing SPARQL queries you can match optional patterns. If for example you are looking up articles on a specific subject then some results may have a publication date attached to the results for that article and some might not. In practice RDF supports types and we would use a date type as seen in the last example, not a string. However, in designing the example programs for this chapter I decided to simplify our representation of URIs and often use string literals as simple Java strings.
 
 ### Extending RDF with RDF Schema
 
 RDF Schema (RDFS) supports the definition of classes and properties based on set inclusion. In RDFS classes and properties are orthogonal. Let’s start with looking at an example using additional namespaces:
 
+```sparql
 @prefix kb:   <http://knowledgebooks.com/ontology#> .
-@prefix rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns\
-#> .
+@prefix rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix dbo:  <http://dbpedia.org/ontology/> .
 
@@ -166,6 +177,8 @@ RDF Schema (RDFS) supports the definition of classes and properties based on set
   rdfs:label "China"@en,
   rdf:type dbo:Place ,
   rdf:type dbo:Country .
+```
+
 Because the Semantic Web is intended to be processed automatically by software systems it is encoded as RDF. There is a problem that must be solved in implementing and using the Semantic Web: everyone who publishes Semantic Web data is free to create their own RDF schemas for storing data. For example, there is usually no single standard RDF schema definition for topics like news stories and stock market data. The SKOS is a namespace containing standard schemas and the most widely used standard is schema.org. Understanding the ways of integrating different data sources using different schemas helps to understand the design decisions behind the Semantic Web applications. In this chapter I often use my own schemas in the knowledgebooks.com namespace for the simple examples you see here. When you build your own production systems part of the work is searching through schema.org and SKOS to use standard name spaces and schemas when possible because this facilitates linking your data to other RDF Data on the web. The use of standard schemas helps when you link internal proprietary Knowledge Graphs used in organization with public open data from sources like WikiData and DBPedia.
 
 Let’s consider an example: suppose that your local Knowledge Graph referred to President Joe Biden in which case we could “mint” our own URI like:
@@ -173,20 +186,23 @@ Let’s consider an example: suppose that your local Knowledge Graph referred to
 1 https://knowledgebooks.com/person#Joe_Biden
 In this case users of the local Knowledge Graph could not take advantage of connected data. For example, the DBPedia and WikiData URIs for How Biden are:
 
-https://dbpedia.org/resource/Joe_Biden
-http://www.wikidata.org/entity/Q6279
+    https://dbpedia.org/resource/Joe_Biden
+    http://www.wikidata.org/entity/Q6279
+
 Both of these URIs can be followed by clicking on the links if you are reading a PDF copy of this book. Please “follow your nose” and see how both of these URIs resolve to human-readable web pages.
 
 After telling you, dear reader, to always try to use public and standard URIs like the above examples for Joe Biden, I will now revert to using simple made-up URIs for the following discussion.
 
 We will start with an example that is an extension of the example in the last section that also uses RDFS. We add a few additional RDF statements:
 
+```sparql
 @prefix kb:  <http://knowledgebooks.com/ontology#> .
 @prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
 
 kb:containsCity rdfs:subPropertyOf kb:containsPlace .
 kb:containsCountry rdfs:subPropertyOf kb:containsPlace .
 kb:containsState rdfs:subPropertyOf kb:containsPlace .
+```
 
 The last three lines declare that:
 
@@ -197,7 +213,9 @@ The last three lines declare that:
 Why is this useful? For at least two reasons:
 
 You can query an RDF data store for all triples that use property containsPlace and also match triples with properties equal to containsCity, containsCountry, or containsState. There may not even be any triples that explicitly use the property containsPlace.
+
 Consider a hypothetical case where you are using two different RDF data stores that use different properties for naming cities: cityName and city. You can define cityName to be a sub-property of city and then write all queries against the single property name city. This removes the necessity to convert data from different sources to use the same Schema. You can also use OWL to state property and class equivalency.
+
 In addition to providing a vocabulary for describing properties and class membership by properties, RDFS is also used for logical inference to infer new triples, combine data from different RDF data sources, and to allow effective querying of RDF data stores. We will see examples of all of these features of RDFS when we later start using the Jena libraries to perform SPARQL queries.
 
 ### The SPARQL Query Language
@@ -320,7 +338,11 @@ SELECT ?subject ?object
 }
 ```
 
-It is important for you to understand what is happening when we apply the last SPARQL query to our sample data. Conceptually, all the triples in the sample data are scanned, keeping the ones where the predicate part of a triple is equal to http://knowledgebooks.com/ontology#containsCountry. In practice RDF data stores supporting SPARQL queries index RDF data so a complete scan of the sample data is not required. This is analogous to relational databases where indices are created to avoid needing to perform complete scans of database tables.
+It is important for you to understand what is happening when we apply the last SPARQL query to our sample data. Conceptually, all the triples in the sample data are scanned, keeping the ones where the predicate part of a triple is equal to
+
+    http://knowledgebooks.com/ontology#containsCountry.
+
+In practice RDF data stores supporting SPARQL queries index RDF data so a complete scan of the sample data is not required. This is analogous to relational databases where indices are created to avoid needing to perform complete scans of database tables.
 
 In practice, when you are exploring a Knowledge Graph like DBPedia or WikiData (that are just very large collections of RDF triples), you might run a query and discover a useful or interesting entity URI in the triple store, then drill down to find out more about the entity. In a later chapter Knowledge Graph Navigator we attempt to automate this exploration process using the DBPedia data as a Knowledge Graph.
 
@@ -340,8 +362,7 @@ We could have filtered on any other predicate, for instance containsPlace. Here 
 
 ```sparql
 PREFIX kb:  <http://knowledgebooks.com/ontology#>
-SELECT ?subject WHERE { ?subject kb:containsState "Maryla\
-nd" . }
+SELECT ?subject WHERE { ?subject kb:containsState "Maryland" . }
 ```
 
 The output is:
@@ -433,9 +454,8 @@ We are finished with our quick tutorial on using the SELECT query form. There ar
 
 - CONSTRUCT – returns a new RDF graph of query results.
 - ASK – returns Boolean true or false indicating if a query matches any triples.
- -DESCRIBE – returns a new RDF graph containing matched resources.
-
-A common SELECT matching pattern that I don’t cover in this chapter is the OPTIONAL statement.
+- DESCRIBE – returns a new RDF graph containing matched resources.
+- OPTIONAL - contains patterns that do not have to match.
 
 ### OWL: The Web Ontology Language
 
@@ -481,13 +501,13 @@ The World Wide Web Consortium has defined three versions of the OWL language tha
 
 ## A Hybrid Deep Learning and RDF/SPARQL Application for Question Answering
 
-We will skip ahead a little and use two deep learning models (spaCy NLP and Transformer) with SPARQL queries to answer naturual language questions. I wrote this example in January 2001 and it generated quite a lot of interest on social media and I later noticed several projects that picked up my basic idea of:
+We will skip ahead a little and use two deep learning models (spaCy NLP and Transformer) with SPARQL queries to answer natural language questions. I wrote this example in January 2001 and it generated quite a lot of interest on social media and I later noticed several projects that picked up my basic idea of:
 
 - Using spaCy to identify proper nouns in text (e.g., human names, locations, corporations, etc.).
 - Use SPARQL queries to collect text describing all identified proper nouns.
 - Use a question answering Transformer model with two inputs: the user's question and the text collected by the SPARQL queries.
 
-**Note:** this example is now somewhat obsolete since GPT-3 and ChatGPT models (that we use later in the book) can answer questions directly. Still, the example we use here is very simple and "hackable" and I hope you enjoy it.
+**Note:** this example is now somewhat obsolete since GPT-3 (that we use later in the book) and ChatGPT models can answer questions directly. Still, the example we use here is very simple and "hackable" and I hope you enjoy it.
 
 You can access this example on Google Colab [Colab DBPedia Sparql Question Answering Demo](https://colab.research.google.com/drive/1FX-0eizj2vayXsqfSB2ONuJYG8BaYpGO?usp=sharing).
 
@@ -507,7 +527,7 @@ TBD
 TBD - describe Jupyter notebook example
 
 
-## Knowledge Graph Creator: Convert Text Files to RDF and to Cypher Input Data for Neo4J and Memgraph
+## Knowledge Graph Creator: Convert Text Files to RDF Data Input Data for Fuseki
 
 
 I published my **kgcreator** command line Python app to PyPy: [https://pypi.org/project/kgcreator/](https://pypi.org/project/kgcreator/). The GitHub repository is [https://github.com/mark-watson/kgcreator](https://github.com/mark-watson/kgcreator).
@@ -679,14 +699,6 @@ $ python opencyc_example_2.py
                  'value': 'http://dbpedia.org/resource/Hillary_Rodham_Clinton'},
  'label': {'type': 'literal', 'value': 'Hillary Clinton', 'xml:lang': 'en'}}
 {'dbpedia_object': {'type': 'literal',
-                    'value': 'هيلاري كلينتون',
-                    'xml:lang': 'ar'},
- 'dbpedia_property': {'type': 'uri',
-                      'value': 'http://www.w3.org/2000/01/rdf-schema#label'},
- 'dbpedia_uri': {'type': 'uri',
-                 'value': 'http://dbpedia.org/resource/Hillary_Rodham_Clinton'},
- 'label': {'type': 'literal', 'value': 'Hillary Clinton', 'xml:lang': 'en'}}
-{'dbpedia_object': {'type': 'literal',
                     'value': 'Hillary Clinton',
                     'xml:lang': 'ca'},
  'dbpedia_property': {'type': 'uri',
@@ -703,8 +715,6 @@ $ python opencyc_example_2.py
                  'value': 'http://dbpedia.org/resource/Hillary_Rodham_Clinton'},
  'label': {'type': 'literal', 'value': 'Hillary Clinton', 'xml:lang': 'en'}}
 ```
-
-The unprintable characters in line 11 are Arabic. Run the example code in a terminal to see these characters.
 
 We can use the SPARQL OPTIONAL operator to match data patterns that may or may not exist. OPTIONAL is a binary operator that combines two graph patterns:
 
@@ -741,13 +751,13 @@ When I need to collect text on an entity I often look for comment data on DBPedi
 
 If we didn't use the OPTIONAL operator then we would not have retrieved data for the first pattern in the WHERE clause.
 
-We now leave our discusion of using the antiquated and no longer updated OpenCyc data and look at Python code in the next section that uses the Wikidata SPARQL server rather than DBPedia.
+We now leave our discussion of using the antiquated and no longer updated OpenCyc data and look at Python code in the next section that uses the Wikidata SPARQL server rather than DBPedia.
 
 ## Examples Using Wikidata Instead of DBPedia 
 
 Wikidata uses abstract URIs instead of human readable URIs that DBPedia uses. Because of Wikidata's abstract URIs I usually use DBPedia when experimenting with new ideas. That said, there is more data in Wikidata. The examples in this section will get you started if you want to experiment with Wikidata.
 
-As with DBPedia, start with Wikidata's publich SPARQL endpoint [https://query.wikidata.org](https://query.wikidata.org). I want to walk you through resolving abstract URIs to something human readable by starting with a SPARQL query:
+As with DBPedia, start with Wikidata's public SPARQL endpoint [https://query.wikidata.org](https://query.wikidata.org). I want to walk you through resolving abstract URIs to something human readable by starting with a SPARQL query:
 
 ![Wikidata public SPARQL endpoint](wikidata1.png)
 
@@ -851,7 +861,7 @@ laboratories
 
 I would like you to have a few takeaways from this material:
 
-- When using public Knowledge Graphs like DBPedia and Wikipedia, you want to start by using the public SPARQL endpoints to explore the data to understand what mnight be useful for your project.
+- When using public Knowledge Graphs like DBPedia and Wikipedia, you want to start by using the public SPARQL endpoints to explore the data to understand what might be useful for your project.
 - Write low-level libraries to make SPARQL queries and filter and transform the JSON query results data to a form that you can easily use.
 - Given a foundation of data access and transformation tools, then write your application.
 
@@ -876,11 +886,11 @@ We will look at a few snippets of the code. Here is a roadmap by source file in 
 - colorize.py colorizes generated SPARQL queries to make them more readable.
 - kgn.py is the main logic for the Knowledge Graph Navigator.
 - kgnutils.py contains a function for resolving text entity names into DBPedia URIs.
-- relationships.py takes a list of N entity URIs and performs an exhaustive search to find relationships between pairs of entities. This code runs O(N^2) so it is best to not input more than 5 or 6 text entitity names.
+- relationships.py takes a list of N entity URIs and performs an exhaustive search to find relationships between pairs of entities. This code runs O(N^2) so it is best to not input more than 5 or 6 text entity names.
 - sparql.py is a collection of reusable SPARQL utilities.
 - textui.py contains helper functions for the text-based user interface.
 
-This is a fairly long example but if you followed the previous Python + SPARQL query examples, then it should be fairly clear how this works. When we identify entities in input text we generate SPARQL queries to match the literal entitity names. If this is possible, then we have the DBPedia URIs for entities in the input text and it is straightforward to get comment text for entities and search for properties (relationships) that link any two entity URIs using a SPARQL matching pattern like:
+This is a fairly long example but if you followed the previous Python + SPARQL query examples, then it should be fairly clear how this works. When we identify entities in input text we generate SPARQL queries to match the literal entity names. If this is possible, then we have the DBPedia URIs for entities in the input text and it is straightforward to get comment text for entities and search for properties (relationships) that link any two entity URIs using a SPARQL matching pattern like:
 
 ```sparql
   <entity_1_URI> ?p <entity_2_URI> .
@@ -915,21 +925,17 @@ def entities_in_text(s):
             ret[etype] = [ename]
     return ret
 
-
 entity_type_to_type_uri = {'PERSON': '<http://dbpedia.org/ontology/Person>',
     'GPE': '<http://dbpedia.org/ontology/Place>', 'ORG':
     '<http://dbpedia.org/ontology/Organisation>'}
 short_comment_to_uri = {}
-
 
 def shorten_comment(comment, uri):
     sc = comment[0:70:None] + '...'
     short_comment_to_uri[sc] = uri
     return sc
 
-
 query = ''
-
 
 def kgn():
     print("Knowledge Graph Navigator (note: only runs in a terminal)")
@@ -972,7 +978,7 @@ def kgn():
                   ' --> ' + relationship[1])
 ```
 
-This command line tool does not run very well in a shell in IDEs like PyCharm to pay attention to the printed prompt in line 44 and run kgn in a terminal window that properly renders unicode characters and colored/styled text.
+This command line tool does not run very well in a shell in IDEs like PyCharm to pay attention to the printed prompt in line 44 and run **kgn** in a terminal window that properly renders unicode characters and colored/styled text.
 
 A listing of kgnutils.py that uses a SPARQL query to resolve entity names to DBPedia URIs:
 

@@ -6,6 +6,8 @@ I use several types of data stores in my work but for the purposes of this book 
 - [Neo4j Community Edition](https://neo4j.com/download-center/#community) for a transactional disk-based graph database, the [Cypher query language](https://neo4j.com/docs/cypher-manual/current/), and the web interface to explore datasets. If you prefer you can alternatively use [Memgraph](https://memgraph.com) that is fairly compatible with Neo4j.
 - [SQLite](https://www.sqlite.org/index.html) for transactional relational data storage and the [SQL query language](https://en.wikipedia.org/wiki/SQL).
 
+We only use Neo4J in this chapter. The next chapter covers RDF and the SPARQL query language in some detail.
+
 In technical terms, knowledge representation using graph and relational databases involves the use of graph structures and relational data models to represent and organize knowledge in a structured, computationally efficient, and easily accessible way.
 
 A graph structure is a collection of nodes (also known as vertices) and edges (also known as arcs) that connect the nodes. Each node and edge in a graph can have properties, such as labels and attributes which provide information about the entities they represent. Graphs can be used to represent knowledge in a variety of ways, such as through semantic networks and using ontologies to define terms, classes, types, etc.
