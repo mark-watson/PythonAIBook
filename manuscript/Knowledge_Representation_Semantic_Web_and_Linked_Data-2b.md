@@ -293,3 +293,46 @@ def entity_results_to_relationship_links(uris):
 ```
 
 A listing of sparql.py that is a utility to query either the DBPedia or Wikidata SPARQL server endpoints:
+
+```python
+import requests
+from .cache import fetch_result_dbpedia, save_query_results_dbpedia
+wikidata_endpoint = 'https://query.wikidata.org/bigdata/namespace/wdq/sparql'
+dbpedia_endpoint = 'https://dbpedia.org/sparql'
+
+
+def do_query_helper(endpoint, query):
+    cached_results = fetch_result_dbpedia(query)
+    if len(cached_results) > 0:
+        print('Using cached query results')
+        return cached_results # eval(cached_results)
+
+    params = {'query': query, 'format': 'json'}
+    response = requests.get(endpoint, params=params)
+    json_data = response.json()
+    vars = json_data['head']['vars']
+    results = json_data['results']
+    if 'bindings' in results:
+        bindings = results['bindings']
+        qr = [[[var, binding[var]['value']] for var in vars] for binding in bindings]
+        save_query_results_dbpedia(query, qr)
+        return qr
+    return []
+
+
+def wikidata_sparql(query):
+    return do_query_helper(wikidata_endpoint, query)
+
+
+def dbpedia_sparql(query):
+    return do_query_helper(dbpedia_endpoint, query)
+```
+
+This example Python code for performing SPARQL queries differs from the previous examples that all used the **SPARQLWrapper** library. Here I used the Python **requests** library.
+
+
+## Wrap Up for Semantic Web, Linked Data and Knowledge Graphs
+
+I hope that you both enjoyed this chapter and that it has some practical use for you either in personal or professional projects. I favored the use of the open source Apache Jena/Fuseki platform. It is not open source but the free to use version of [Ontotext GraphDB](https://www.ontotext.com/products/graphdb/) has interesting graph visualization tools that you might want to experiment with. I also sometime use the commercial products [Franz AllegorGraph](https://allegrograph.com) and [Stardog](https://www.stardog.com/platform).
+
+The Python examples in this chapter are simple examples to get you started. In real projects I build a library of low-level utilities to manipulate the JSON data returned from SPARQL endpoints. As an example, I almost always write filters for removing data that is text but not in English. This filtering is especially important for Wikidata that has most data replicated for most human written languages.
