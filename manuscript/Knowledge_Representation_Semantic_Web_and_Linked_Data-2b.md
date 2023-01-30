@@ -127,3 +127,118 @@ I would like you to have a few takeaways from this material:
 - Given a foundation of data access and transformation tools, then write your application.
 
 In the next section we look at a tool I wrote for exploring Knowledge Graphs.
+
+## Knowledge Graph Navigator: Use English to Explore DBPedia
+
+When I need to use DBPedia data in applications before I start writing any code I explore possibly useful information using:
+
+- [https://dbpedia.org/sparql](https://dbpedia.org/sparql) DBPedia SPARQL endpoint.
+- [https://dbpedia.org/fct/](https://dbpedia.org/fct/) OPEN LINK Software text search and entity search.
+
+The following example is my effort to create a tool that quickly identifies entities like people, places, and organization and the relations between these discovered entities.
+
+
+I published the **kgn** command line Python app to PyPy: [https://pypi.org/project/kgn/](https://pypi.org/project/kgn/). The GitHub repository is [https://github.com/mark-watson/kgn](https://github.com/mark-watson/kgn).
+
+We will look at a few snippets of the code. Here is a roadmap by source file in alphabetical order:
+
+- cache.py caches SPARQL query results in an SQLite database.
+- cli.py is the top level command line tool.
+- colorize.py colorizes generated SPARQL queries to make them more readable.
+- kgn.py is the main logic for the Knowledge Graph Navigator.
+- kgnutils.py contains a function for resolving text entity names into DBPedia URIs.
+- relationships.py takes a list of N entity URIs and performs an exhaustive search to find relationships between pairs of entities. This code runs O(N^2) so it is best to not input more than 5 or 6 text entity names.
+- sparql.py is a collection of reusable SPARQL utilities.
+- textui.py contains helper functions for the text-based user interface.
+
+This is a fairly long example but if you followed the previous Python + SPARQL query examples, then it should be fairly clear how this works. When we identify entities in input text we generate SPARQL queries to match the literal entity names. If this is possible, then we have the DBPedia URIs for entities in the input text and it is straightforward to get comment text for entities and search for properties (relationships) that link any two entity URIs using a SPARQL matching pattern like:
+
+```sparql
+  <entity_1_URI> ?p <entity_2_URI> .
+```
+
+Listing of the main application logic in kgn.py:
+
+```python
+from pprint import pprint
+from .kgnutils import dbpedia_get_entities_by_name
+from .textui import select_entities, get_query
+from .relationships import entity_results_to_relationship_links
+import spacy
+
+try:
+  nlp_model = spacy.load('en_core_web_sm')
+except:
+  print("Loading spaCy model file...")
+  from os import system
+  system("python -m spacy download en_core_web_sm")
+  nlp_model = spacy.load('en_core_web_sm')
+
+
+def entities_in_text(s):
+    " use spaCY to find entity names in text "
+    doc = nlp_model(s)
+    ret = {}
+    for [ename, etype] in [[entity.text, entity.label_] for entity in doc.ents]:
+        if etype in ret:
+            ret[etype] = ret[etype] + [ename]
+        else:
+            ret[etype] = [ename]
+    return ret
+
+entity_type_to_type_uri = {'PERSON': '<http://dbpedia.org/ontology/Person>',
+    'GPE': '<http://dbpedia.org/ontology/Place>', 'ORG':
+    '<http://dbpedia.org/ontology/Organisation>'}
+short_comment_to_uri = {}
+
+def shorten_comment(comment, uri):
+    sc = comment[0:70:None] + '...'
+    short_comment_to_uri[sc] = uri
+    return sc
+
+query = ''
+
+def kgn():
+    print("Knowledge Graph Navigator (note: only runs in a terminal)")
+    while True:
+        query = get_query()
+        if query == 'quit' or query == 'q':
+            break
+        elist = entities_in_text(query)
+        people_found_on_dbpedia = []
+        places_found_on_dbpedia = []
+        organizations_found_on_dbpedia = []
+        global short_comment_to_uri
+        short_comment_to_uri = {}
+        for key in elist:
+            type_uri = entity_type_to_type_uri[key]
+            for name in elist[key]:
+                dbp = dbpedia_get_entities_by_name(name, type_uri)
+                for d in dbp:
+                    short_comment = shorten_comment(d[1][1], d[0][1])
+                    people_found_on_dbpedia.extend([name + ' || ' +
+                        short_comment]) if key == 'PERSON' else None
+                    places_found_on_dbpedia.extend([name + ' || ' +
+                        short_comment]) if key == 'GPE' else None
+                    organizations_found_on_dbpedia.extend([name + ' || ' +
+                        short_comment]) if key == 'ORG' else None
+        user_selected_entities = select_entities(people_found_on_dbpedia,
+            places_found_on_dbpedia, organizations_found_on_dbpedia)
+        uri_list = []
+        for entity in user_selected_entities['entities']:
+            short_comment = entity[4 + entity.index(' || '):None:None]
+            uri_list.extend([short_comment_to_uri[short_comment]])
+        print("\n\nEntity data:")
+        pprint(user_selected_entities)
+        print("\n\n")
+        relation_data = (
+            entity_results_to_relationship_links(uri_list))
+        print('\n\nDiscovered relationship links:\n')
+        for relationship in relation_data:
+            print(relationship[0] + ' --> ' + relationship[2][1] +
+                  ' --> ' + relationship[1])
+```
+
+This command line tool does not run very well in a shell in IDEs like PyCharm to pay attention to the printed prompt in line 44 and run **kgn** in a terminal window that properly renders unicode characters and colored/styled text.
+
+A listing of kgnutils.py that uses a SPARQL query to resolve entity names to DBPedia URIs:
