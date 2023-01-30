@@ -77,3 +77,226 @@ TBD: add code to also generate Neo4J input data
 
 TBD
 
+
+
+
+
+
+
+
+## Old Technology: The OpenCyc Knowledge Base (Optional Material)
+
+You will see something new in this section. After loading the OpenCyc data as RDF into Apache Fuseki and exploring the data we will use the SPARQL SERVICE operator to combine data from our local server with the public DBPedia Knowledge Graph.
+
+The OpenCyc Knowledge Base is no longer supported by the Cyc corporation (they sell commercial versions). I still find this knowledge base useful and here we use a version that has been converted to RDF data.
+
+Adam Sanchez has a [GitHub repository that contains the OpenCyc OWL/RDF files](https://github.com/asanchez75/opencyc). While I try to make this section self-contained and interesting to read through if you want to experiment with the latest OpenCyc 4.0 OWL/RDF dataset then [download this file](https://www.amazon.com/clouddrive/share/urtlDhQbmeMz24TUNED3KiyzrqOlMYZ5gdLpTTSdcFR).
+
+I wrote a blog article in 2014 [Using OpenCyc RDF/OWL data in StarDog 
+](https://mark-watson.blogspot.com/2014/07/using-opencyc-rdfowl-data-in-stardog.html) that showed how to import the OpenCyc OWL/RDF files into the commercial RDF datastore Stardog. Here I do much the same thing using Apache Jena/Fuseki but we will dive in deeper.
+
+If you have downloaded the latest OpenCyc OWL file then it can be loaded by:
+
+```
+./fuseki-server --file /Users/markw/OpenCyc_owl_rdf/opencyc-latest.owl /opencyc
+```
+
+As I did in my blog article, we start by using a SPARQL query that contains "Clinton" as the object in a triple and we get 207 triples from this query:
+
+```sparql
+SELECT ?s ?p ?o WHERE { ?s ?p ?o FILTER(REGEX(?o, "Clinton")) } LIMIT 500
+```
+
+This triple identifies the OpenCyc subject for Hilliary Clinton:
+
+```rdf
+<http://sw.opencyc.org/concept/Mx4rvV7SqpwpEbGdrcN5Y29ycA>
+    <http://sw.cyc.com/CycAnnotations_v1#label>
+    "HillaryClinton"@en .
+```
+
+```sparql
+SELECT ?p ?o
+WHERE {
+  <http://sw.opencyc.org/concept/Mx4rvV7SqpwpEbGdrcN5Y29ycA>
+  ?s ?p
+} LIMIT 500
+```
+
+![SPARQL query results exported as TSV](opencychc.png)
+
+Of particular use is the matched result:
+
+```tsv
+?p	?o
+<http://www.w3.org/2002/07/owl#sameAs>
+  <http://dbpedia.org/resource/Hillary_Rodham_Clinton>
+```
+
+This lets us combine data from OpenCyc with DBPedia (limit to just 2500 results). This is not a good example since we are in no way tying togeter data from OpenCyc to DBPedia (we will combine the results later), rather we are just doing two separate queries. :
+
+```sparql
+SELECT *
+WHERE {
+  <http://sw.opencyc.org/concept/Mx4rvV7SqpwpEbGdrcN5Y29ycA> ?p ?o .
+
+  SERVICE <http://dbpedia.org/sparql?timeout=30000> {
+    <http://dbpedia.org/resource/Hillary_Rodham_Clinton>
+      ?p_dbpedia_1
+      ?o_dbpedia_1 .
+    ?s_dbpedia_2
+      ?p_dbpedia_2
+      <http://dbpedia.org/resource/Hillary_Rodham_Clinton> .
+  }
+} limit 2500
+```
+
+Two results chosen that only used English language (DBPedia has triples containing text in many human languages):
+
+```
+?p	?o	?p_dbpedia_1	?o_dbpedia_1	?s_dbpedia_2	?p_dbpedia_2
+
+<http://www.w3.org/2002/07/owl#sameAs>
+  <http://dbpedia.org/resource/Hillary_Rodham_Clinton>
+  <http://www.w3.org/2000/01/rdf-schema#label>
+  "Hillary Clinton"@en
+  <http://dbpedia.org/resource/American_Academy_of_Arts_and_Sciences_members>
+  <http://dbpedia.org/ontology/wikiPageWikiLink>
+
+<http://www.w3.org/2002/07/owl#sameAs>
+  <http://dbpedia.org/resource/Hillary_Rodham_Clinton>
+  <http://www.w3.org/2000/01/rdf-schema#label>
+  "Hillary Rodham Clinton"@en
+  <http://dbpedia.org/resource/Lincoln_Bedroom_for_contributors_controversy>
+  <http://dbpedia.org/ontology/wikiPageWikiLink>
+```
+
+If we don't link data from two RDF services then we are obviously better off doing two separate queries and combining the results in our application.
+
+Before linking data for OpenCyc and DBPedia, let's look at a Python SPARQL query example:
+
+```python
+## Test client for Apache Jena Fuselki server on localhost
+
+import rdflib
+from SPARQLWrapper import SPARQLWrapper, JSON
+from pprint import pprint
+
+queryString = """
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX dbo: <http://dbpedia.org/ontology/>
+SELECT *
+WHERE {
+    <http://sw.opencyc.org/concept/Mx4rvV7SqpwpEbGdrcN5Y29ycA> 
+      rdfs:label ?label
+      FILTER (lang(?label) = 'en') .
+    <http://sw.opencyc.org/concept/Mx4rvV7SqpwpEbGdrcN5Y29ycA>
+      <http://www.w3.org/2002/07/owl#sameAs> ?dbpedia_uri
+      filter(strstarts(str(?dbpedia_uri), "http://dbpedia.org/resource")) .
+}
+LIMIT 5
+"""
+
+sparql = SPARQLWrapper("http://localhost:3030/opencyc")
+sparql.setQuery(queryString)
+sparql.setReturnFormat(JSON)
+sparql.setMethod('POST')
+ret = sparql.queryAndConvert()
+for r in ret["results"]["bindings"]:
+    pprint(r)
+```
+
+The output is:
+
+```
+$ python opencyc_example_1.py
+{'dbpedia_uri': {'type': 'uri',
+                 'value': 'http://dbpedia.org/resource/Hillary_Rodham_Clinton'},
+ 'label': {'type': 'literal', 'value': 'Hillary Clinton', 'xml:lang': 'en'}}
+```
+
+Let's now link local SPARQL results from OpenCyc with information from DBPedia. We replace the **queryString** variable value in the last code listing with:
+
+```sparql
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX dbo: <http://dbpedia.org/ontology/>
+SELECT *
+WHERE {
+    <http://sw.opencyc.org/concept/Mx4rvV7SqpwpEbGdrcN5Y29ycA>  rdfs:label ?label
+    FILTER (lang(?label) = 'en') .
+    <http://sw.opencyc.org/concept/Mx4rvV7SqpwpEbGdrcN5Y29ycA>
+      <http://www.w3.org/2002/07/owl#sameAs> ?dbpedia_uri
+      filter(strstarts(str(?dbpedia_uri), "http://dbpedia.org/resource")) .
+  SERVICE <http://dbpedia.org/sparql?timeout=30000> {
+      ?dbpedia_uri  ?dbpedia_property ?dbpedia_object  .
+  }
+}
+LIMIT 4
+```
+
+The output is:
+
+```json
+$ python opencyc_example_2.py
+{'dbpedia_object': {'type': 'literal',
+                    'value': 'Hillary Rodham Clinton',
+                    'xml:lang': 'en'},
+ 'dbpedia_property': {'type': 'uri',
+                      'value': 'http://www.w3.org/2000/01/rdf-schema#label'},
+ 'dbpedia_uri': {'type': 'uri',
+                 'value': 'http://dbpedia.org/resource/Hillary_Rodham_Clinton'},
+ 'label': {'type': 'literal', 'value': 'Hillary Clinton', 'xml:lang': 'en'}}
+{'dbpedia_object': {'type': 'literal',
+                    'value': 'Hillary Clinton',
+                    'xml:lang': 'ca'},
+ 'dbpedia_property': {'type': 'uri',
+                      'value': 'http://www.w3.org/2000/01/rdf-schema#label'},
+ 'dbpedia_uri': {'type': 'uri',
+                 'value': 'http://dbpedia.org/resource/Hillary_Rodham_Clinton'},
+ 'label': {'type': 'literal', 'value': 'Hillary Clinton', 'xml:lang': 'en'}}
+{'dbpedia_object': {'type': 'literal',
+                    'value': 'Hillary Clintonová',
+                    'xml:lang': 'cs'},
+ 'dbpedia_property': {'type': 'uri',
+                      'value': 'http://www.w3.org/2000/01/rdf-schema#label'},
+ 'dbpedia_uri': {'type': 'uri',
+                 'value': 'http://dbpedia.org/resource/Hillary_Rodham_Clinton'},
+ 'label': {'type': 'literal', 'value': 'Hillary Clinton', 'xml:lang': 'en'}}
+```
+
+We can use the SPARQL OPTIONAL operator to match data patterns that may or may not exist. OPTIONAL is a binary operator that combines two graph patterns:
+
+```sparql
+SELECT *
+WHERE {
+    <http://sw.opencyc.org/concept/Mx4rvV7SqpwpEbGdrcN5Y29ycA>  rdfs:label ?label
+    FILTER (lang(?label) = 'en') .
+    <http://sw.opencyc.org/concept/Mx4rvV7SqpwpEbGdrcN5Y29ycA>
+      <http://www.w3.org/2002/07/owl#sameAs> ?dbpedia_uri
+      filter(strstarts(str(?dbpedia_uri), "http://dbpedia.org/resource")) .
+  SERVICE <http://dbpedia.org/sparql?timeout=15000> {
+    ?dbpedia_uri  rdfs:label ?dbpedia_label
+      FILTER (lang(?dbpedia_label) = 'en') .
+    OPTIONAL {
+       ?dbpedia_uri  rdfs:comment ?dbpedia_comment
+       FILTER (lang(?dbpedia_comment) = 'en')
+    } .
+  }
+}
+```
+
+When I need to collect text on an entity I often look for comment data on DBPedia. In this case, there were no English language comments so no comment results are in the returned JSON:
+
+```JSON
+ $ python opencyc_example_3.py 
+{'dbpedia_label': {'type': 'literal',
+                   'value': 'Hillary Rodham Clinton',
+                   'xml:lang': 'en'},
+ 'dbpedia_uri': {'type': 'uri',
+                 'value': 'http://dbpedia.org/resource/Hillary_Rodham_Clinton'},
+ 'label': {'type': 'literal', 'value': 'Hillary Clinton', 'xml:lang': 'en'}}```
+```
+
+If we didn't use the OPTIONAL operator then we would not have retrieved data for the first pattern in the WHERE clause.
+
+We now leave our discussion of using the antiquated and no longer updated OpenCyc data and look at Python code in the next section that uses the Wikidata SPARQL server rather than DBPedia.
