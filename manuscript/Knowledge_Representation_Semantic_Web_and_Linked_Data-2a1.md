@@ -73,7 +73,6 @@ TBD - describe Jupyter notebook example
 
 I published my **kgcreator** command line Python app to PyPy: [https://pypi.org/project/kgcreator/](https://pypi.org/project/kgcreator/). The GitHub repository is [https://github.com/mark-watson/kgcreator](https://github.com/mark-watson/kgcreator).
 
-TBD: add code to also generate Neo4J input data
 
 TBD
 
@@ -120,7 +119,7 @@ WHERE {
 
 Of particular use is the matched result:
 
-```tsv
+```
 ?p	?o
 <http://www.w3.org/2002/07/owl#sameAs>
   <http://dbpedia.org/resource/Hillary_Rodham_Clinton>
@@ -229,7 +228,7 @@ LIMIT 4
 
 The output is:
 
-```json
+```
 $ python opencyc_example_2.py
 {'dbpedia_object': {'type': 'literal',
                     'value': 'Hillary Rodham Clinton',
