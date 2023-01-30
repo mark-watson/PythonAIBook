@@ -80,3 +80,62 @@ for r in ret["results"]["bindings"]:
     pprint(r)
 ```
 
+
+The output is:
+
+```
+$ python opencyc_example_1.py
+{'dbpedia_uri': {'type': 'uri',
+                 'value': 'http://dbpedia.org/resource/Hillary_Rodham_Clinton'},
+ 'label': {'type': 'literal', 'value': 'Hillary Clinton', 'xml:lang': 'en'}}
+```
+
+Let's now link local SPARQL results from OpenCyc with information from DBPedia. We replace the **queryString** variable value in the last code listing with:
+
+```sparql
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX dbo: <http://dbpedia.org/ontology/>
+SELECT *
+WHERE {
+    <http://sw.opencyc.org/concept/Mx4rvV7SqpwpEbGdrcN5Y29ycA>  rdfs:label ?label
+    FILTER (lang(?label) = 'en') .
+    <http://sw.opencyc.org/concept/Mx4rvV7SqpwpEbGdrcN5Y29ycA>
+      <http://www.w3.org/2002/07/owl#sameAs> ?dbpedia_uri
+      filter(strstarts(str(?dbpedia_uri), "http://dbpedia.org/resource")) .
+  SERVICE <http://dbpedia.org/sparql?timeout=30000> {
+      ?dbpedia_uri  ?dbpedia_property ?dbpedia_object  .
+  }
+}
+LIMIT 4
+```
+
+The output is:
+
+```
+$ python opencyc_example_2.py
+{'dbpedia_object': {'type': 'literal',
+                    'value': 'Hillary Rodham Clinton',
+                    'xml:lang': 'en'},
+ 'dbpedia_property': {'type': 'uri',
+                      'value': 'http://www.w3.org/2000/01/rdf-schema#label'},
+ 'dbpedia_uri': {'type': 'uri',
+                 'value': 'http://dbpedia.org/resource/Hillary_Rodham_Clinton'},
+ 'label': {'type': 'literal', 'value': 'Hillary Clinton', 'xml:lang': 'en'}}
+{'dbpedia_object': {'type': 'literal',
+                    'value': 'Hillary Clinton',
+                    'xml:lang': 'ca'},
+ 'dbpedia_property': {'type': 'uri',
+                      'value': 'http://www.w3.org/2000/01/rdf-schema#label'},
+ 'dbpedia_uri': {'type': 'uri',
+                 'value': 'http://dbpedia.org/resource/Hillary_Rodham_Clinton'},
+ 'label': {'type': 'literal', 'value': 'Hillary Clinton', 'xml:lang': 'en'}}
+{'dbpedia_object': {'type': 'literal',
+                    'value': 'Hillary Clintonová',
+                    'xml:lang': 'cs'},
+ 'dbpedia_property': {'type': 'uri',
+                      'value': 'http://www.w3.org/2000/01/rdf-schema#label'},
+ 'dbpedia_uri': {'type': 'uri',
+                 'value': 'http://dbpedia.org/resource/Hillary_Rodham_Clinton'},
+ 'label': {'type': 'literal', 'value': 'Hillary Clinton', 'xml:lang': 'en'}}
+```
+
