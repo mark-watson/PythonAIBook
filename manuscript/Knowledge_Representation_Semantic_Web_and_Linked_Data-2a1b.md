@@ -111,7 +111,7 @@ LIMIT 4
 
 The output is:
 
-```
+```text
 $ python opencyc_example_2.py
 {'dbpedia_object': {'type': 'literal',
                     'value': 'Hillary Rodham Clinton',
@@ -121,21 +121,7 @@ $ python opencyc_example_2.py
  'dbpedia_uri': {'type': 'uri',
                  'value': 'http://dbpedia.org/resource/Hillary_Rodham_Clinton'},
  'label': {'type': 'literal', 'value': 'Hillary Clinton', 'xml:lang': 'en'}}
-{'dbpedia_object': {'type': 'literal',
-                    'value': 'Hillary Clinton',
-                    'xml:lang': 'ca'},
- 'dbpedia_property': {'type': 'uri',
-                      'value': 'http://www.w3.org/2000/01/rdf-schema#label'},
- 'dbpedia_uri': {'type': 'uri',
-                 'value': 'http://dbpedia.org/resource/Hillary_Rodham_Clinton'},
- 'label': {'type': 'literal', 'value': 'Hillary Clinton', 'xml:lang': 'en'}}
-{'dbpedia_object': {'type': 'literal',
-                    'value': 'Hillary Clintonová',
-                    'xml:lang': 'cs'},
- 'dbpedia_property': {'type': 'uri',
-                      'value': 'http://www.w3.org/2000/01/rdf-schema#label'},
- 'dbpedia_uri': {'type': 'uri',
-                 'value': 'http://dbpedia.org/resource/Hillary_Rodham_Clinton'},
- 'label': {'type': 'literal', 'value': 'Hillary Clinton', 'xml:lang': 'en'}}
 ```
+
+
 
