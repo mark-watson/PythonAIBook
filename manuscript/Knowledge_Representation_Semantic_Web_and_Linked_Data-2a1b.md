@@ -7,7 +7,7 @@ Of particular use is the matched result:
   <http://dbpedia.org/resource/Hillary_Rodham_Clinton>
 ```
 
-This lets us combine data from OpenCyc with DBPedia (limit to just 2500 results). This is not a good example since we are in no way tying togeter data from OpenCyc to DBPedia (we will combine the results later), rather we are just doing two separate queries. :
+This lets us combine data from OpenCyc with DBPedia (limit to just 2500 results). This is not a good example since we are in no way tying togeter data from OpenCyc to DBPedia (we will combine the results later), rather we are just doing two separate queries:
 
 ```sparql
 SELECT *
@@ -50,8 +50,6 @@ If we don't link data from two RDF services then we are obviously better off doi
 Before linking data for OpenCyc and DBPedia, let's look at a Python SPARQL query example:
 
 ```python
-## Test client for Apache Jena Fuselki server on localhost
-
 import rdflib
 from SPARQLWrapper import SPARQLWrapper, JSON
 from pprint import pprint
