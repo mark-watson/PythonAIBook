@@ -1,4 +1,4 @@
-# Overview of Reinforcement Learning (Optional Material)
+# Overview of Reinforcement Learning
 
 Reinforcement Learning has been used in various applications such as robotics, game playing, recommendation systems, etc. Reinforcement Learning (RL) is a broad topic and we will only cover aspects RL that I use myself.
 

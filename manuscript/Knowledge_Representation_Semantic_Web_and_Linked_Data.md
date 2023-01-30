@@ -435,7 +435,7 @@ We are finished with our quick tutorial on using the SELECT query form. There ar
 - ASK – returns Boolean true or false indicating if a query matches any triples.
  -DESCRIBE – returns a new RDF graph containing matched resources.
 
-A common SELECT matching pattern that I don’t cover in this chapter is OPTIONAL.
+A common SELECT matching pattern that I don’t cover in this chapter is the OPTIONAL statement.
 
 ### OWL: The Web Ontology Language
 

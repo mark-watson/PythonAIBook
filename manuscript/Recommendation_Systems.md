@@ -1,4 +1,4 @@
-# Recommendation Systems
+# Overview of Recommendation Systems
 
 Recommendation systems are a type of information filtering system that utilize historical data, such as past user behavior or interactions, to predict the likelihood of a user's interest in certain items or products. As an example application: if a product web site has 100K products that is too many for customers to browse through. Based on a customers past purchases, finding customers with similar purchases, etc. it is possible to filter the products shown to a customer.
 
@@ -18,11 +18,12 @@ There are several types of data that could be used for recommending movies:
 - User data. User data is not used in this example, but for a product recommendation system I have created embeddings of all available data features associated with users.
 - Movie data based on text embedding of movie titles. Note: for product recommendation systems you might still use text embedding of product descriptions, but you would also likely create embeddings based on product features.
 
-We will use the [TensorFlow Recommenders using rich features example](https://www.tensorflow.org/recommenders/examples/deep_recommenders). For the following overview discussion, you may want to either open this link to read this example or open the alternative [Google Colab example link](https://colab.research.google.com/github/tensorflow/recommenders/blob/main/docs/examples/deep_recommenders.ipynb) to run the example on Colab. For our discussion, I will use screenshots of the example in Colab so you can just follow along without opening either link for now.
+We will use the [TensorFlow Recommenders using rich features example](https://www.tensorflow.org/recommenders/examples/deep_recommenders). For the following overview discussion, you may want to either open this link to read this example or open the alternative [Google Colab example link](https://colab.research.google.com/github/tensorflow/recommenders/blob/main/docs/examples/deep_recommenders.ipynb) to run the example on Colab. For our discussion, I will use short code snippets and use one screenshot of the example in Colab so you can optionally just follow along without opening either link for now.
 
-The TF recommenders example starts with reading the [Movie Lens] dataset:
+The TF recommenders example starts with reading the [Movie Lens](https://grouplens.org/datasets/movielens/) dataset using the TensorFlow Data libray:
 
 ```python
+import tensorflow_datasets as tfds
 ratings = tfds.load("movielens/100k-ratings", split="train")
 movies = tfds.load("movielens/100k-movies", split="train")
 
@@ -34,7 +35,7 @@ ratings = ratings.map(lambda x: {
 movies = movies.map(lambda x: x["movie_title"])
 ```
 
-We need to generate embedding layers for both unique movie and also user IDs:
+We need to later generate embedding layers for both unique movie  titles and also unique user IDs. We start with getting sequences for unique movie and user IDs:
 
 ```python
 unique_movie_titles = np.unique(np.concatenate(list(movies.batch(1000))))
@@ -42,7 +43,7 @@ unique_user_ids = np.unique(np.concatenate(list(ratings.batch(1_000).map(
     lambda x: x["user_id"]))))
 ```
     
-There are several recommenders examples in the Keras documentation and a few write the example code in "pure Keras" which is interesting to see a lower level implementation but this example derived user and movie models derived from the Python class **tf.keras.Model** that makes the implementation much shorter. Let's look at the implementation of these two models:
+There are several recommenders examples in the Keras documentation and a few implement the example code in "pure Keras" which is interesting to see a lower level implementation. However, in this example Python user and movie models are derived from the Python class **tf.keras.Model** that makes the implementation much shorter. Let's look at the implementation of these two models:
 
 ```python
 class UserModel(tf.keras.Model):
@@ -75,7 +76,9 @@ class UserModel(tf.keras.Model):
     ], axis=1)
 ```
 
-TBD: discuss last listing
+The function **tf.keras.layers.StringLookup** is used to create an embedding layer from a sequence of unique string IDs. Timestamps for user selection events are fairly continuous so we use **tf.keras.layers.Discretization** to collapse a wide range of timestamp values into discrete bins.
+
+Classed derived from class **tf.keras.Model** are expected to implement a **call** method that is passed a inputs and returns a single Tensor of concatenated inputs and timestamp embeddings.
 
 We build a similar model for movies:
 
@@ -111,9 +114,9 @@ class MovieModel(tf.keras.Model):
     ], axis=1)
 ```
 
-TBD: discuss last listing
+The class ** MovieModel** is different than the class **UserModel** since we create embeddings for movie titles instead of IDs.
 
-We also wrap the user model in a separate query model:
+We also wrap the user model in a separate query model that combines a user model with dense fully connected layers:
 
 ```python
 class QueryModel(tf.keras.Model):
@@ -148,7 +151,7 @@ class QueryModel(tf.keras.Model):
     return self.dense_layers(feature_embedding)
 ```
 
-TBD: discuss last listing
+The **call** method returns the values calculated from feeding the input layer into the dense fully connected layers that have a *relu* non-linear activation function.
 
 We also wrap the movie model in a candidate recommendation model:
 
@@ -184,9 +187,9 @@ class CandidateModel(tf.keras.Model):
     return self.dense_layers(feature_embedding)
 ```
 
-TBD: discuss last listing
+The **call** method returns the values calculated from feeding the input layer for a movie model into the dense fully connected layers that have a *relu* non-linear activation function.
 
-We finally train a deep learning model:
+We finally train a deep learning model by creating an instance of class **MovielensModel** and calling its inherited **fit** method:
 
 ```python
 model = MovielensModel([64, 32])
@@ -215,7 +218,7 @@ We can plot the training accuracy vs. training epoch for both one and two layers
 
 ![](tfr.png)
 
-The example Google Colab project has an additional training run that gets better accuracy by stacking many hidden layers.
+The example Google Colab project has an additional training run that gets better accuracy by stacking many additional hidden layers in the user and movie wrapper Python classes.
 
 
 ## Recommendation Systems Wrap-up

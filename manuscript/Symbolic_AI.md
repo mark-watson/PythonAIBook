@@ -1,4 +1,4 @@
-# Symbolic AI (Optional Material)
+# Symbolic AI
 
 When I started my paid career as an AI practitioner in 1982 my company bought me a Xerox 1108 Lisp Machine and I spent every spare moment I had working through two books by Patrick Winston that I had purchased a few years earlier: "Lisp" and "Artificial Intelligence." This material was mostly what is now called symbolic AI or good old fashioned AI (GOFAI). The material in this chapter is optional for modern AI developers but I recently wrote the Python examples listed below when I was thinking of how different knowledge representation is today compared to 40 years ago. Except for the material using Python + Swi-Prolog, and Python + the MiniZinc constraint satisfaction system there is nothing in this chapter that I would consider using today for work but you might enjoy the examples anyway. After this chapter we will bear down on deep learning, information organization using RDF and property graph data stores.
 
@@ -10,19 +10,20 @@ I do not implement three examples in this chapter in "pure Python," rather, I us
 
 The material in this chapter is optional for the modern AI practitioner but I hope you find it interesting.
 
-We will start with one "pure Python" example in the next section.
 
 ## Comparison of Symbolic AI and Deep Learning
 
 Symbolic AI, also known as "good old-fashioned AI" (GOFAI), is a form of artificial intelligence that uses symbolic representations and logical reasoning to solve problems. It is based on the idea that a computer can be programmed to manipulate symbols in the same way that humans manipulate symbols in their minds: an example of this is the process of logical reasoning.
 
-Symbolic AI systems can consist of sets of rules, facts, and procedures that are used to represent knowledge, and a reasoning engine that uses these symbolic representations to make inferences and decisions. Some examples of symbolic AI systems include expert systems, other types of rule-based systems, and decision trees. These systems are typically based on a set of predefined rules, and the performance of the system is based on the knowledge manually encoded (or it can be learned) in these rules. Symbolic AI is largely non-numerical.
+Symbolic AI systems can consist of sets of rules, facts, and procedures that are used to represent knowledge and a reasoning engine that uses these symbolic representations to make inferences and decisions. Some examples of symbolic AI systems include expert systems, other types of rule-based systems, and decision trees. These systems are typically based on a set of predefined rules and the performance of the system is based on the knowledge manually encoded (or it can be learned) in these rules. Symbolic AI is largely non-numerical.
 
 In comparison deep learning, which uses numerical representations (high dimensional matrices, or tensors, containing floating point data), is a subset of machine learning that uses neural networks with many multiple layers (the term "deep" comes from the idea of having dozens or even hundreds of layers, which differs from early neural network models comprised of just a few layers) to learn from data and make predictions or decisions. The basic building blocks of both simple neural models and deep learning models are artificial neurona, which are a simple mathematical function that receives input, applies a transformation, and produces an output. Neural networks can learn to perform a wide variety of tasks, such as image recognition, natural language processing, and game playing, by adjusting the weights of the neurons.
 
 The key difference is that, while Symbolic AI relies on hand-coded rules and logical reasoning, deep learning relies on learning from data. Symbolic AI systems typically have a high level of interpretability and transparency, as the rules and knowledge are explicitly encoded and can be inspected by humans, while deep learning models are often considered "black boxes" due to their complexity and the difficulty of understanding how they arrived at a decision.
 
-So, Symbolic AI uses symbolic representations and logical reasoning, while deep learning uses neural networks to learn from data. The first one is more interpretable but less flexible, while the second one is more flexible, much more powerful for most applications, but is less interpretable.
+So, Symbolic AI uses symbolic representations and logical reasoning while deep learning uses neural networks to learn from data. The first one is more interpretable but less flexible, while the second one is more flexible, much more powerful for most applications, but is less interpretable.
+
+We will start with one "pure Python" example in the next section.
 
 ## Implementing Frame Data Structures in Python
 
@@ -102,6 +103,10 @@ for rs in search_results:
     print(rs)
 ```
 
+The implementation of the class **Frame** is straightforward. The init method **__init__** defines a list of contained objects (or frames), sets the default frame nesting depth to zero, and assigns a readable name. There are three separate methods to add subframes, numbers, and strings.
+
+The method **__str__** ensures that when we print a frame that the output is human readable and visualizes frame nesting.
+
 Here is some output:
 
 ```python
@@ -129,13 +134,13 @@ $ python
   <Number 3.14>
 ```
 
-I would start with implementing a simple frame library and extend it for the two types of applications that I worked on: Natural Language Processing (NLP) and planning systems.
+I my early AI experiments in the 1980s I would start with implementing a simple frame library and extend it for the two types of applications that I worked on: Natural Language Processing (NLP) and planning systems.
 
-I no longer use frames preferring the use off the shelf graph databases that we will cover in a later chapter. Graphs can represent a wider range of data representations because frames represent tree structured data and graphs are more general purpose than trees.
+I no longer use frames, preferring the use of off the shelf graph databases that we will cover in a later chapter. Graphs can represent a wider range of data representations because frames represent tree structured data and graphs are more general purpose than trees.
 
 ## Use Predicate Logic by Calling Swi-Prolog
 
-Please skip this section if you either don't know how to program in Prolog or if you have no interest in learning Prolog. I have a writing project for a book titled Prolog for AI applications that is a work in progress. When that book is released I will add a link here. Before my Python book is released Sheila McIlraith has a [Swi-Prolog tutorial](https://www.cs.toronto.edu/~sheila/324/f05/tuts/swi.pdf) written for her students that is a good starting point and you can use the official [Swi-Prolog manual](https://www.swi-prolog.org/pldoc/doc_for?object=manual) for specific information. I will make this section self-contained if you just want to read the material without writing any Python + Prolog applications.
+Please skip this section if you either don't know how to program in Prolog or if you have no interest in learning Prolog. I have a writing project for a book titled Prolog for AI applications that is a work in progress. When that book is released I will add a link here. Before my Prolog book is released, please use Sheila McIlraith's [Swi-Prolog tutorial](https://www.cs.toronto.edu/~sheila/324/f05/tuts/swi.pdf). It was written for her students and is a good starting point. You can also use the official [Swi-Prolog manual](https://www.swi-prolog.org/pldoc/doc_for?object=manual) for specific information. I will make this section self-contained if you just want to read the material without writing your own Python + Prolog applications.
 
 You can start by reading the documentation for [setting up Swi-Prolog so it can be called from Python](https://www.swi-prolog.org/pldoc/man?section=mqi-python-installation). 
 
@@ -153,7 +158,7 @@ I own many books on Prolog but my favorite that I recommend is ["The Art Of Prol
 
 ### Using Swi-Prolog for the Semantic Web, Fetching Web Pages, and Handling JSON
 
-In several ways reading the historic Scientific American Article from 2001 [The Semantic Web - A new form of Web content that is meaningful to computers will unleash a revolution of new possibilities](https://www-sop.inria.fr/acacia/cours/essi2006/Scientific%20American_%20Feature%20Article_%20The%20Semantic%20Web_%20May%202001.pdf) by Tim Berners-Lee, James Hendler, and Ora Lassila changed my life. I spent a lot of time experimenting with the Swi-Prolog **semweb** library that I found to be the easiest way to experiment with RDF. We will cover the open source Apache Jena/Fuseki RDF data store and query engine in a later chapter. The Common Lisp and Semantic Web tools company [Franz Inc.](https://franz.com)very kindly subsidized my work writing two Semantic Web books that cover Common Lisp, Java, Clojure, and Scala (available as downloadable PDFs on my [web site](https://markwatson.com)). Writing these books lead directly to being invited to work at Google as a consultant using their Knowledge Graph.
+In several ways, reading the historic Scientific American Article from 2001 [The Semantic Web - A new form of Web content that is meaningful to computers will unleash a revolution of new possibilities](https://www-sop.inria.fr/acacia/cours/essi2006/Scientific%20American_%20Feature%20Article_%20The%20Semantic%20Web_%20May%202001.pdf) by Tim Berners-Lee, James Hendler, and Ora Lassila changed my life. I spent a lot of time experimenting with the Swi-Prolog **semweb** library that I found to be the easiest way to experiment with RDF. We will cover the open source Apache Jena/Fuseki RDF data store and query engine in a later chapter. The Common Lisp and Semantic Web tools company [Franz Inc.](https://franz.com) very kindly subsidized my work writing two Semantic Web books that cover Common Lisp, Java, Clojure, and Scala (available as downloadable PDFs on my [web site](https://markwatson.com)). Writing these books lead directly to being invited to work at Google for a project using their Knowledge Graph.
 
 Here I mention how to load the **semweb** library and refer you to the [library documentation](https://www.swi-prolog.org/pldoc/doc_for?object=section(%27packages/semweb.html%27)):
 
@@ -198,7 +203,7 @@ You need to install the Python bridge library that is supported by the Swi-Prolo
 
      pip install swiplserver
 
-I copied a Prolog program from the [Swi-Prolog documentation](https://www.swi-prolog.org/pldoc/man?section=clpfd-n-queens) to calculate how to eight queens on a chess board in such a way that no queen can capture another queen. Here I get three reults by entering the semicolon key to get another answer or the period key to stop:
+I copied a Prolog program from the [Swi-Prolog documentation](https://www.swi-prolog.org/pldoc/man?section=clpfd-n-queens) to calculate how to eight queens on a chess board in such a way that no queen can capture another queen. Here I get three results by entering the semicolon key to get another answer or the period key to stop:
 
 ```prolog
 $ swipl
@@ -256,7 +261,7 @@ grandparent(X, Z) :-
   parent(Y, Z).
 ```
 
-Before using a Python script, let's run an example in the Swi-Prolog REPL:
+Before using a Python script, let's run an example in the Swi-Prolog REPL (in line 2, running **[family].** loads the Prolog source file **family.pl**):
 
 ```bash
 $ swipl
@@ -274,6 +279,8 @@ A = irene,
 B = ron ;
 false.
 ```
+
+When running Prolog queries you may get zero, one, or many results. The results print one at a time. Typing the semicolon character after a result is printed requests that the next result be printed. Typing a period after a result is printed lets the Prolog system know that you don't want to see any more of the available results. When I entered a semicolon character in line 13 after the first result is printed, the Prolog system prints *false* because no further results are available.
 
 Now we can write a Python script **family.py** that loads the Prolog rules file **family.pl**, asserts facts, run Prolog queries, and get the results back to the Python script:
 
@@ -426,10 +433,10 @@ for id in ids:
 
 Here is some example output:
 
-```json
- {'Organization': 'bath_and_beyond_inc',
+```text
+{'Organization': 'bath_and_beyond_inc',
   'URI': 'https://bedbathandbeyond.gcs-web.com/news-releases/news-release-details/bed-bath-beyond-inc-provides-business-update'},
- {'Person': 'ryan_holiday',
+{'Person': 'ryan_holiday',
   'URI': 'https://www.parttimetech.io/p/what-do-you-really-want'},
 {'Organization': 'nasa_satellite',
  {'Organization': 'nih',
@@ -480,7 +487,7 @@ As we have disused, there are two main types of memory of the Soar architecture:
 
 Both Soar working memory and production memory are symbolic data. As a contrast, data in deep learning is numeric, mostly tensors. This symbolic data comprises goals (G), problem spaces (PS), states (S) and operators (O).
 
-Soar Operator transitioning from one state to another (from the Soar Tutorial):
+Soar Operator transitioning from one state to another (figure is from the Soar Tutorial):
 ![](Soararchitecture-transitions.png)
 
 ### Setup Python and Soar Development Environment
@@ -608,24 +615,21 @@ System halted.
 Interrupt received.This Agent halted.
 ```
 
-TBD
-
+I consider Soar to be of historic interest and is an important example of a large multiple-decade research project in building large scale reasoning systems.
 
 ## Constraint Programming with MiniZinc and Python
 
-As with Soar, our excursion into constraint programming will be brief, hopefully enough to introduce you to a new style of programming though a few examples.
+As with Soar, our excursion into constraint programming will be brief, hopefully enough to introduce you to a new style of programming though a few examples. I still use constraint programming and hope you might find the material in this section useful.
 
-You may want to use the [MiniZinc Python](https://minizinc-python.readthedocs.io/en/latest/getting_started.html) documentation as a reference for the Python interface and [The MiniZink Handbook](https://www.minizinc.org/doc-2.6.4/en/index.html) as a reference to the MiniZinc language and its use.
+While I attempt to make this material self-contained reading, you may want to use the [MiniZinc Python](https://minizinc-python.readthedocs.io/en/latest/getting_started.html) documentation as a reference for the Python interface and [The MiniZink Handbook](https://www.minizinc.org/doc-2.6.4/en/index.html) as a reference to the MiniZinc language and its use for your own projects.
 
 Constraint Programming (CP) is a paradigm of problem-solving that involves specifying the constraints of a problem, and then searching for solutions that satisfy those constraints. MiniZinc is a high-level modeling language for constraint programming that allows users to specify constraints and objectives in a compact and expressive way.
 
 In MiniZinc a model is defined by a set of variables and a set of constraints that restrict the possible values of those variables. The variables can be of different types, such as integers, booleans, and sets, and the constraints can be specified using a variety of built-in predicates and operators. The model can also include an objective function that the solver tries to optimize.
 
-Once a model is defined in MiniZinc, it can be solved using a constraint solver, which is a software program that takes the model as input and returns solutions that satisfy the constraints. MiniZinc supports several constraint solvers, including Gecode, Chuffed, and OR-Tools, each of which has its own strengths and weaknesses.
+Once a model is defined in MiniZinc, it can be solved using a constraint solver which is a software program that takes the model as input and returns solutions that satisfy the constraints. MiniZinc supports several constraint solvers, including Gecode, Chuffed, and OR-Tools, each of which has its own strengths and weaknesses.
 
 MiniZinc provides a feature called "Annotations", which allows the user to specify additional information to the solver, as the way to search for solutions, or setting the maximum time for the solver to run.
-
-So, MiniZinc is a high-level constraint programming language that allows users to express complex constraints and objectives in a concise and expressive way. It can be used with a variety of constraint solvers to find solutions that satisfy the constraints of a problem, and it provides several built-in constructs and annotations to make it easier to model and solve constraint problems.
 
 ### Installation and Setup for MiniZinc and Python
 
@@ -635,7 +639,7 @@ The following figure shows the MiniZincIDE with simple constraint satisfaction p
 
 ![MiniZincIDE with simple constraint satisfaction problem](MiniZincIDE.png)
 
-When I installed **minizinc** on macOS with **brew**, the solver **coinbc** was installed automatically so that is what we use here. Here is the MiniZinc source file **test1.mzn**:
+When I installed **minizinc** on macOS with **brew**, the solver **coinbc** was installed automatically so that is what we use here. Here is the MiniZinc source file **test1.mzn** that you also see in the last figure:
 
 ```python
 int: n;
@@ -648,7 +652,7 @@ constraint x*y = m;
 
 There are several possible solvers to use with MiniZinc. When I install on macOS using *brew* the solver "coinbc" is available. When I install **sudo apt install minizinc** on Ubuntu Linux, the solver "gecode" is available.
 
-Notice that we don't set values for the constants **n** and **m** as we did when using MiniZincIDE. We instead set them in Python code before calling the solver:
+Notice that we don't set values for the constants **n** and **m** as we did when using MiniZincIDE. We instead set them in Python code before calling the solver in lines 7 and 8:
 
 ```python
 from minizinc import Instance, Model, Solver
@@ -675,7 +679,7 @@ Solution(x=20, y=10, _checker='')
 10
 ```
 
-Let's look at a more complex example: on the map of the USA, the states neighboring each other are colored differently than their adjoining states. We use integers to represent colors and the mapping of numbers to colors is unimportant. Here is a partial listing of us_states.mzn:
+Let's look at a more complex example: on the map of the USA, the states neighboring each other are colored differently than their adjoining states in such a way that no states with touching edges are the same color. We use integers to represent colors and the mapping of numbers to colors is unimportant. Here is a partial listing of us_states.mzn:
 
 ```python
 int: nc = 3; %% needs to be 4 to solve this problem
@@ -698,6 +702,8 @@ constraint arizona != utah;
  ...
 solve satisfy;
 ```
+
+In line 9, as an example, the statement **constraint alabama != florida;** means that since Alabama and Florida share a border, they must have different color indices. Initially we set the number of allowed color to 3 on line 1 and with just three colors allowed this problem is unsolvable.
 
 The output is:
 
@@ -755,6 +761,6 @@ Solution(alabama=2, alaska=1, arizona=3, arkansas=4, california=4, colorado=4, c
  wyoming 	: 	3
 ```
 
-## Good Old Fashioned Symbolic AI Wrapup
+## Good Old Fashioned Symbolic AI Wrap-up
 
-As a practical matter almost all of my work in the last ten years used either deep learning or was comprised of semantic web and linked data projects. While the material in this chapter is optional for the modern AI practitioner, I still find using MiniZinc for constraint programming and Prolog to be useful. I included the material for the Soar cognitive architecture because I both find it interesting and I believe the any future development of "real AI" (or AGI) will involve hybrid approaches and there are many good ideas in the Soar implementation.
+As a practical matter almost all of my work in the last ten years used either deep learning or was comprised of a combination of semantic web and linked data with deep learning projects. While the material in this chapter is optional for the modern AI practitioner, I still find using MiniZinc for constraint programming and Prolog to be useful. I included the material for the Soar cognitive architecture because I both find it interesting and I believe the any future development of "real AI" (or AGI) will involve hybrid approaches and there are many good ideas in the Soar implementation.

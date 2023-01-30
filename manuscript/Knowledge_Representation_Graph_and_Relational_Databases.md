@@ -77,9 +77,9 @@ $ python test_fuseki_client.py
 
 ```
 
-When I use RDF data from public SPARQL endpoints like DBPedia or Wikidata in applications I start by using the web based SPARQL clients for theese services,find useful entities, manually look to see what properties (or predicates) and defined for these entities, and then write custom SPARQL queries to fetch the data I need for any specific application. In a later chapter we will build a Python comand line tool to partially automate this process.
+When I use RDF data from public SPARQL endpoints like DBPedia or Wikidata in applications I start by using the web based SPARQL clients for these services, find useful entities, manually look to see what properties (or predicates) and defined for these entities, and then write custom SPARQL queries to fetch the data I need for any specific application. In a later chapter we will build a Python command line tool to partially automate this process.
 
-The following example **fuseki_cities_and_coldest_temperatures.py** find all DBPedia URIs of the type "city" (the tiny part of DBPedia that we have loaded in our local Fuseki instance the only city is home town of Sedona Arizona) and collects data for a few properties for each city URI. Later we will make the same query against the DBPedia public SPARQL endpoint.
+The following example **fuseki_cities_and_coldest_temperatures.py** finds 20 DBPedia URIs of the type "city" (the tiny part of DBPedia that we have loaded in our local Fuseki instance the only city is home town of Sedona Arizona) and collects data for a few properties for each city URI. Later we will make the same query against the DBPedia public SPARQL endpoint.
 
 ```python
 import rdflib
@@ -213,7 +213,7 @@ Of particular use and interest is the ability to also define properties for link
 - Write Python utilities for searching, modifying, and removing data.
 - Write your Python application.
 
-Let's continue with the Cypher tutorial material by adding data constraints:
+Let's continue with the Cypher tutorial material by adding data constraints to ensure that all movie and actor node names are unique:
 
 ```
 CREATE CONSTRAINT FOR (n:Movie) REQUIRE (n.title) IS UNIQUE
@@ -326,21 +326,10 @@ This ends our brief tour of property graphs. In my own work I use semantic web R
 
 I wanted to introduce you to property graphs because I know developers who have an easier time using property graphs. I believe that it is worth your time, dear reader, to experiment a bit with both approaches and then choose a favorite
 
-## Graph Algorithms in Pure Python
-
-TBD
-
-we will use the pure Pythin NetworkX library. The first thing we want to try is detecting what is called subgraph isomorphism, that is, is one small graph contained in a larger graph using the [documentatiin](https://networkx.org/documentation/stable/reference/algorithms/isomorphism.vf2.html#subgraph-isomorphism).
-
-TBD
-
-Another common problem is finding a short path betweentwo nodes in a graph using the [documentation](https://networkx.org/documentation/stable/reference/algorithms/shortest_paths.html).
-
-TBD
 
 ## The SQLite Relational Database
 
-The SQLite database is now included in the standard Python distribution so SQLite my default persistent datastore. I tend to use RDF and SPARQL (or occasionally Neo4J) specifically when a graph database fits the requirements an application. The example code for this section can be found in the directory **/misc/datastores** that also includes examples for Postgres that I don't cover in the book text. We will also use SQLite in a later chapter in the Knowedge Graph Navigator example to cache SPARQL queries to DBPedia.
+The SQLite database is now included in the standard Python distribution so SQLite is my default persistent datastore. I tend to use RDF and SPARQL (or occasionally Neo4J) specifically when a graph database fits the requirements an application. The example code for this section can be found in the directory **/misc/datastores** that also includes examples for Postgres that I don't cover in the book text. We will also use SQLite in a later chapter in the Knowedge Graph Navigator example to cache SPARQL queries to DBPedia.
 
 We start with writing a simple reusable library for SQLite using the standard library **sqlite3** that is defined in the file **sqlite_lib.py**:
 
