@@ -86,3 +86,44 @@ for uri in uris:
 ```
 
 The output is:
+
+
+```
+$ python wikidata1.py
+{'subject': {'type': 'uri', 'value': 'http://www.wikidata.org/entity/Q37156'}}
+http://www.wikidata.org/entity/Q37156
+{'subject': {'type': 'uri', 'value': 'http://www.wikidata.org/entity/Q5968787'}}
+http://www.wikidata.org/entity/Q5968787
+{'subject': {'type': 'uri',
+             'value': 'http://www.wikidata.org/entity/Q19874511'}}
+http://www.wikidata.org/entity/Q19874511
+
+ *** http://www.wikidata.org/entity/Q37156 ***
+
+device
+hw
+hardware
+computer component
+computer accessory
+
+ *** http://www.wikidata.org/entity/Q5968787 ***
+
+edifice
+buildings
+
+ *** http://www.wikidata.org/entity/Q19874511 ***
+
+lab
+research laboratory
+research facility
+research lab
+laboratories
+```
+
+I would like you to have a few takeaways from this material:
+
+- When using public Knowledge Graphs like DBPedia and Wikipedia, you want to start by using the public SPARQL endpoints to explore the data to understand what might be useful for your project.
+- Write low-level libraries to make SPARQL queries and filter and transform the JSON query results data to a form that you can easily use.
+- Given a foundation of data access and transformation tools, then write your application.
+
+In the next section we look at a tool I wrote for exploring Knowledge Graphs.
