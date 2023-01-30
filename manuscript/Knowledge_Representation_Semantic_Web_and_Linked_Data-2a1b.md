@@ -121,7 +121,46 @@ $ python opencyc_example_2.py
  'dbpedia_uri': {'type': 'uri',
                  'value': 'http://dbpedia.org/resource/Hillary_Rodham_Clinton'},
  'label': {'type': 'literal', 'value': 'Hillary Clinton', 'xml:lang': 'en'}}
+ 
+{'dbpedia_object': {'type': 'literal',
+                    'value': 'Hillary Clinton',
+                    'xml:lang': 'ca'},
+ 'dbpedia_property': {'type': 'uri',
+                      'value': 'http://www.w3.org/2000/01/rdf-schema#label'},
+ 'dbpedia_uri': {'type': 'uri',
+                 'value': 'http://dbpedia.org/resource/Hillary_Rodham_Clinton'},
+ 'label': {'type': 'literal', 'value': 'Hillary Clinton', 'xml:lang': 'en'}}
+{'dbpedia_object': {'type': 'literal',
+                    'value': 'Hillary Clintonova',
+                    'xml:lang': 'cs'},
+ 'dbpedia_property': {'type': 'uri',
+                      'value': 'http://www.w3.org/2000/01/rdf-schema#label'},
+ 'dbpedia_uri': {'type': 'uri',
+                 'value': 'http://dbpedia.org/resource/Hillary_Rodham_Clinton'},
+ 'label': {'type': 'literal', 'value': 'Hillary Clinton', 'xml:lang': 'en'}}
 ```
 
+
+
+We can use the SPARQL OPTIONAL operator to match data patterns that may or may not exist. OPTIONAL is a binary operator that combines two graph patterns:
+
+```sparql
+SELECT *
+WHERE {
+    <http://sw.opencyc.org/concept/Mx4rvV7SqpwpEbGdrcN5Y29ycA>  rdfs:label ?label
+    FILTER (lang(?label) = 'en') .
+    <http://sw.opencyc.org/concept/Mx4rvV7SqpwpEbGdrcN5Y29ycA>
+      <http://www.w3.org/2002/07/owl#sameAs> ?dbpedia_uri
+      filter(strstarts(str(?dbpedia_uri), "http://dbpedia.org/resource")) .
+  SERVICE <http://dbpedia.org/sparql?timeout=15000> {
+    ?dbpedia_uri  rdfs:label ?dbpedia_label
+      FILTER (lang(?dbpedia_label) = 'en') .
+    OPTIONAL {
+       ?dbpedia_uri  rdfs:comment ?dbpedia_comment
+       FILTER (lang(?dbpedia_comment) = 'en')
+    } .
+  }
+}
+```
 
 
