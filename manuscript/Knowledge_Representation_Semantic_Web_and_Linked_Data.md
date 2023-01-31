@@ -2,7 +2,7 @@
 
 Knowledge representation using the Semantic Web and Linked Data involves the use of web standards and technologies to represent and interlink data on the internet in a structured, machine-readable format.
 
-We will start with a tutorial on Semantic Web data standards like RDF, RDFS, and OWL. As we saw in the setup examples in the last chapter we build Python clients using two approaches: using the Python libraries **SPARQLWrapper** and **rdflib**, and also by using general purpose Python libraries **requests** and **json**. We take a deeper dive into an example application Knowledge Graph Navigator.
+We will start with a tutorial on Semantic Web data standards like RDF, RDFS, and OWL. As we saw in the setup examples in the last chapter we build Python clients using two approaches: using the Python libraries **SPARQLWrapper** and **rdflib**, and also by using general purpose Python libraries **requests** and **json**. We take a deeper dive into an example applications Knowledge Graph Creator and Knowledge Graph Navigator.
 
 The scope of the Semantic Web is comprised of all public data sources on the Internet that follow specific standards like RDF. Knowledge Graphs may be large scale, as the graphs that drive Google’s and Facebook’s businesses, or they can be specific to an organization. Knowledge Graphs may be in customer-facing applications or part of internal engineering infrastructure.
 
@@ -34,7 +34,7 @@ I cover the Semantic Web in this book because I believe that Semantic Web techno
 
 ### RDF: The Universal Data Format
 
-The Resource Description Framework (RDF) is used to encode information and the RDF Schema (RDFS) facilitates using data with different RDF encodings without the need to convert one set of schemas to another. Later, using OWL, we can simply declare that one predicate is the same as another; that is, one predicate is a sub-predicate of another (e.g., a property containsCity can be declared to be a sub-property of containsPlace so if something contains a city then it also contains a place), etc. The predicate part of an RDF statement often refers to a property.
+The Resource Description Framework (RDF) is used to encode information and the RDF Schema (RDFS) facilitates using data with different RDF encodings without the need to convert one set of schemas to another. Later, using OWL, we can simply declare that one predicate (or property) is the same as another; that is, one predicate is a sub-predicate of another (e.g., a property containsCity can be declared to be a sub-property of containsPlace so if something contains a city then it also contains a place), etc. The predicate part of an RDF statement often refers to a property.
 
 RDF data was originally encoded as XML and intended for automated processing. In this chapter we will use two simple to read formats called “N-Triples” and “N3.” Apache Jena can be used to convert between all RDF formats so we might as well use formats that are easier to read and understand. RDF data consists of a set of triple values:
 
@@ -42,17 +42,17 @@ RDF data was originally encoded as XML and intended for automated processing. In
 - predicate
 - object
 
-Some of my work with Semantic Web technologies deals with processing news stories, extracting semantic information from the text, and storing it in RDF. I will use this application domain for the examples in this chapter and the next chapter when we implement code to automatically generate RDF for Knowledge Graphs. I deal with triples like:
+Some of my work with Semantic Web technologies deals with processing news stories, extracting semantic information from the text, and storing it in RDF. I will use this application domain for the examples in this chapter when we implement code to automatically generate RDF for Knowledge Graphs. I deal with triples like:
 
 - Subject: a URL (or URI) of a news article.
 - Predicate (or property): a relation like “containsPerson”.
 - Object: a literal value like “Bill Clinton” or a URI representing Bill Clinton.
 
-In the next chapter we will use the entity recognition library we developed in an earlier chapter to create RDF from text input.
+In general subjects refer to entities. In the next chapter we will use the entity recognition library we developed in an earlier chapter to create RDF from text input.
 
 We will use either URIs or string literals as values for objects. We will always use URIs for representing subjects and predicates. In any case URIs are usually preferred to string literals. We will see an example of this preferred use but first we need to learn the N-Triple and N3 RDF formats.
 
-I proposed the idea that RDF was more flexible than Object Modeling in programming languages, relational databases, and XML with schemas. If we can tag new attributes on the fly to existing data, how do we prevent what I might call “data chaos” as we modify existing data sources? It turns out that the solution to this problem is also the solution for encoding real semantics (or meaning) with data: we usually use unique URIs for RDF subjects, predicates, and objects, and usually with a preference for not using string literals. The definitions of predicates are tied to a namespace and later with OWL we will state the equivalence of predicates in different namespaces with the same semantic meaning. I will try to make this idea more clear with some examples and Wikipedia has a good writeup on RDF.
+I propose that the idea that RDF is more flexible than Object Modeling in programming languages, relational databases, and XML with schemas. If we can tag new attributes on the fly to existing data, how do we prevent what I might call “data chaos” as we modify existing data sources? It turns out that the solution to this problem is also the solution for encoding real semantics (or meaning) with data: we usually use unique URIs for RDF subjects, predicates, and objects, and usually with a preference for not using string literals. The definitions of predicates are tied to a namespace and later with OWL we will state the equivalence of predicates in different namespaces with the same semantic meaning. I will try to make this idea more clear with some examples and for further reference [Wikipedia has a good writeup on RDF](https://en.wikipedia.org/wiki/Resource_Description_Framework).
 
 Any part of a triple (subject, predicate, or object) is either a URI or a string literal. URIs encode namespaces. For example, the containsPerson predicate in the last example could be written as:
 
@@ -142,7 +142,7 @@ I promised you that the data in RDF data stores was easy to extend. As an exampl
   "2008-05-11" .
 ```
 
-Note that I split one RDF statement across three lines (3-5) here to fit page width. The RDF statement on lines 3-5 is legal and will be handled correctly by RDF parsers. Here we just represent the date as a string. We can add a type to the object representing a specific date:
+Note that I split one RDF statement across three lines (3-5) but this could have been on one line. The RDF statement on lines 3-5 is legal and will be handled correctly by RDF parsers. Here we just represent the date as a string. We can add a type to the object representing a specific date:
 
 ```sparql
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
@@ -154,6 +154,7 @@ Note that I split one RDF statement across three lines (3-5) here to fit page wi
 ```
 
 Furthermore, if we do not have dates for all news articles, that is often acceptable because when constructing SPARQL queries you can match optional patterns. If for example you are looking up articles on a specific subject then some results may have a publication date attached to the results for that article and some might not. In practice RDF supports types and we would use a date type as seen in the last example, not a string. However, in designing the example programs for this chapter I decided to simplify our representation of URIs and often use string literals as simple Java strings.
+
 ### Extending RDF with RDF Schema
 
 RDF Schema (RDFS) supports the definition of classes and properties based on set inclusion. In RDFS classes and properties are orthogonal. Let’s start with looking at an example using additional namespaces:
@@ -178,12 +179,13 @@ RDF Schema (RDFS) supports the definition of classes and properties based on set
   rdf:type dbo:Country .
 ```
 
-Because the Semantic Web is intended to be processed automatically by software systems it is encoded as RDF. There is a problem that must be solved in implementing and using the Semantic Web: everyone who publishes Semantic Web data is free to create their own RDF schemas for storing data. For example, there is usually no single standard RDF schema definition for topics like news stories and stock market data. The SKOS is a namespace containing standard schemas and the most widely used standard is schema.org. Understanding the ways of integrating different data sources using different schemas helps to understand the design decisions behind the Semantic Web applications. In this chapter I often use my own schemas in the knowledgebooks.com namespace for the simple examples you see here. When you build your own production systems part of the work is searching through schema.org and SKOS to use standard name spaces and schemas when possible because this facilitates linking your data to other RDF Data on the web. The use of standard schemas helps when you link internal proprietary Knowledge Graphs used in organization with public open data from sources like WikiData and DBPedia.
+Because the Semantic Web is intended to be processed automatically by software systems it is encoded as RDF. There is a problem that must be solved in implementing and using the Semantic Web: everyone who publishes Semantic Web data is free to create their own RDF schemas for storing data. For example, there is usually no single standard RDF schema definition for topics like news stories and stock market data. The SKOS is a namespace containing standard schemas and the most widely used standard is schema.org. Understanding the ways of integrating different data sources using different schemas helps to understand the design decisions behind the Semantic Web applications. In this chapter I often use my own schemas in the knowledgebooks.com namespace for the simple examples you see here. When you build your own production systems part of the work is searching through schema.org and SKOS to use standard name spaces and schemas when possible because this facilitates linking your data to other RDF Data on the web. The use of standard schemas helps when you link internal proprietary Knowledge Graphs used inside your organization with public open data from sources like WikiData and DBPedia.
 
 Let’s consider an example: suppose that your local Knowledge Graph referred to President Joe Biden in which case we could “mint” our own URI like:
 
-1 https://knowledgebooks.com/person#Joe_Biden
-In this case users of the local Knowledge Graph could not take advantage of connected data. For example, the DBPedia and WikiData URIs for How Biden are:
+    https://knowledgebooks.com/person#Joe_Biden
+
+In this case users of the local Knowledge Graph could not take advantage of connected data. For example, the DBPedia and WikiData URIs for Joe Biden are:
 
     https://dbpedia.org/resource/Joe_Biden
     http://www.wikidata.org/entity/Q6279
@@ -215,13 +217,13 @@ You can query an RDF data store for all triples that use property containsPlace 
 
 Consider a hypothetical case where you are using two different RDF data stores that use different properties for naming cities: cityName and city. You can define cityName to be a sub-property of city and then write all queries against the single property name city. This removes the necessity to convert data from different sources to use the same Schema. You can also use OWL to state property and class equivalency.
 
-In addition to providing a vocabulary for describing properties and class membership by properties, RDFS is also used for logical inference to infer new triples, combine data from different RDF data sources, and to allow effective querying of RDF data stores. We will see examples of all of these features of RDFS when we later start using the Jena libraries to perform SPARQL queries.
+In addition to providing a vocabulary for describing properties and class membership by properties, RDFS is also used for logical inference to infer new triples, combine data from different RDF data sources, and to allow effective querying of RDF data stores. We will see examples of all of these features of RDFS when we later when using libraries to perform SPARQL queries.
 
 ### The SPARQL Query Language
 
-SPARQL is a query language used to query RDF data stores. While SPARQL may initially look like SQL, we will see that there are some important differences like support for RDFS and OWL inferencing and graph-based instead of relational matching operations. We will cover the basics of SPARQL in this section and then see more examples later when we learn how to embed Jena in Java applications, and see more examples in the last chapter Knowledge Graph Navigator.
+We briefly covered the use of SPARQL in the last chapter. SPARQL is a query language used to query RDF data stores. While SPARQL may initially look like SQL, we will see that there are some important differences like support for RDFS and OWL inferencing and graph-based instead of relational matching operations. We will cover the basics of SPARQL in this section and then see more examples later when we learn how to embed SPARQL queries in Python applications.
 
-We will use the N3 format RDF file test_data/news.n3 for the examples. I created this file automatically by spidering Reuters news stories on the news.yahoo.com web site and automatically extracting named entities from the text of the articles. We saw techniques for extracting named entities from text in earlier chapters. In this chapter we use these sample RDF files.
+We will use the N3 format RDF file test_data/news.n3 for the examples. I created this file automatically by spidering Reuters news stories on the news.yahoo.com web site and automatically extracting named entities from the text of the articles. In this chapter we use these sample RDF files.
 
 You have already seen snippets of this file and I list the entire file here for reference, edited to fit line width: you may find the file news.n3 easier to read if you are at your computer and open the file in a text editor so you will not be limited to what fits on a book page:
 
@@ -323,8 +325,6 @@ kb:containsState rdfs:subPropertyOf kb:containsPlace .
 ```
 Please note that in the above RDF listing I took advantage of the free form syntax of N3 and Turtle RDF formats to reformat the data to fit page width.
 
-In the following examples, I used the library developed in the next chapter that allows us to load multiple RDF input files and then to use SPARQL queries.
-
 We will start with a simple SPARQL query for subjects (news article URLs) and objects (matching countries) with the value for the predicate equal to containsCountry. Variables in queries start with a question mark character and can have any names:
 
 ```sparql
@@ -342,7 +342,7 @@ It is important for you to understand what is happening when we apply the last S
 
 In practice RDF data stores supporting SPARQL queries index RDF data so a complete scan of the sample data is not required. This is analogous to relational databases where indices are created to avoid needing to perform complete scans of database tables.
 
-In practice, when you are exploring a Knowledge Graph like DBPedia or WikiData (that are just very large collections of RDF triples), you might run a query and discover a useful or interesting entity URI in the triple store, then drill down to find out more about the entity. In a later chapter Knowledge Graph Navigator we attempt to automate this exploration process using the DBPedia data as a Knowledge Graph.
+In practice, when you are exploring a Knowledge Graph like DBPedia or WikiData (that are just very large collections of RDF triples), you might run a query and discover a useful or interesting entity URI in the triple store, then drill down to find out more about the entity. In a later example in this chapter (Knowledge Graph Navigator) we attempt to automate this exploration process using the DBPedia data as a Knowledge Graph.
 
 We will be using the same code to access the small example of RDF statements in our sample data as we will for accessing DBPedia or WikiData.
 
@@ -453,7 +453,9 @@ We are finished with our quick tutorial on using the SELECT query form. There ar
 - CONSTRUCT – returns a new RDF graph of query results.
 - ASK – returns Boolean true or false indicating if a query matches any triples.
 - DESCRIBE – returns a new RDF graph containing matched resources.
-- OPTIONAL - contains patterns that do not have to match.
+
+We will later use the OPTIONAL query form that allows complex queries to contain patterns that do not have to match.
+
 ### OWL: The Web Ontology Language
 
 We have already seen a few examples of using RDFS to define sub-properties in this chapter. The Web Ontology Language (OWL) extends the expressive power of RDFS. We now look at a few OWL examples and then look at parts of the Java unit test showing three SPARQL queries that use OWL reasoning. The following RDF data stores support at least some level of OWL reasoning:
@@ -461,12 +463,12 @@ We have already seen a few examples of using RDFS to define sub-properties in th
 - ProtegeOwlApis - compatible with the Protege Ontology editor.
 - Pellet - DL reasoner.
 - Owlim - OWL DL reasoner compatible with some versions of Sesame.
-- Jena - General purpose library (we use Apache Jena Fuseki in this book).
+- Jena - General purpose library that is used in Apache Jena Fuseki.
 - OWLAPI - a simpler API using many other libraries.
 - Stardog - a commercial OWL and RDF reasoning system and datastore.
 - Allegrograph - a commercial RDF+ and RDF reasoning system and datastore.
 
-OWL is more expressive than RDFS in that it supports cardinality, richer class relationships, and Descriptive Logic (DL) reasoning. OWL treats the idea of classes very differently than object oriented programming languages like Java and Smalltalk, but similar to the way PowerLoom (see chapter on Reasoning) uses concepts (PowerLoom’s rough equivalent to a class). In OWL, instances of a class are referred to as individuals and class membership is determined by a set of properties that allow a DL reasoner to infer class membership of an individual (this is called entailment.)
+OWL is more expressive than RDFS in that it supports cardinality, richer class relationships, and Descriptive Logic (DL) reasoning. OWL treats the idea of classes very differently than object oriented programming languages like Java and Smalltalk. In OWL, instances of a class are referred to as individuals and class membership is determined by a set of properties that allow a DL reasoner to infer class membership of an individual (this is called entailment.)
 
 We have been using the RDF file news.n3 in previous examples and we will layer new examples by adding new triples that represent RDF, RDFS, and OWL. We saw in news.n3 the definition of three triples using rdfs:subPropertyOf properties to create a more general kb:containsPlace property:
 
@@ -483,15 +485,19 @@ kbplace:Illinois kb:containsCity kbplace:Chicago .
 
 We can also infer that:
 
-    kbplace:UnitedStates kb:containsPlace kbplace:Chicago .
+```sparql
+kbplace:UnitedStates kb:containsPlace kbplace:Chicago .
+```
 
 We can also model inverse properties in OWL. For example, here we add an inverse property kb:containedIn, adding it to the example in the last listing:
 
-    kb:containedIn owl:inverseOf kb:containsPlace .
+```sparql
+kb:containedIn owl:inverseOf kb:containsPlace .
+```
 
-Given an RDF container that supported extended OWL DL SPARQL queries, we can now execute SPARQL queries matching the property kb:containedIn and “match” triples in the RDF triple store that have never been asserted but are inferred by the OWL reasoner.
+Given an RDF container that supported OWL, we can now execute SPARQL queries matching the property kb:containedIn and “match” triples in the RDF triple store that have never been asserted but are inferred by the OWL reasoner.
 
-OWL DL is a very large subset of full OWL. From reading the chapter on Reasoning and the very light coverage of OWL in this section, you should understand the concept of class membership not by explicitly stating that an object (or individual) is a member of a class, but rather because an individual has properties that can be used to infer class membership.
+You should understand the concept of class membership not by explicitly stating that an object (or individual) is a member of a class, but rather because an individual has properties that can be used to infer class membership.
 
 The World Wide Web Consortium has defined three versions of the OWL language that are in increasing order of complexity: OWL Lite, OWL DL, and OWL Full. OWL DL (supports Description Logic) is the most widely used (and recommended) version of OWL. OWL Full is not computationally decidable since it supports full logic, multiple class inheritance, and other things that probably make it computationally intractable for all but smaller problems.
 
@@ -510,18 +516,17 @@ You can access this example on Google Colab [Colab DBPedia Sparql Question Answe
 
 ![](DQA1.png)
 
-TBD
+Here we install a pre-trained deep learning model that can answer questions, given text that contains the answers to the questions. We then import the spaCy NLP library. Finally, I defined a simple utility function for making SPARQL queries.
 
 
 ![](DQA2.png)
 
-
-TBD
+There are two functions defined here. **entities_in_text** uses spaCy to find entities in text and return both the entities and the entity types. The top level function **QA** takes a question as an input, finds the entities, collects text from DBPedia about those entities, and then uses the pre-trained question answering deep learning model to answer the input question.
 
 
 ![](DQA3.png)
 
-TBD - describe Jupyter notebook example
+Here we used the top level function **QA** with a few sample questions.
 
 
 ## Knowledge Graph Creator: Convert Text Files to RDF Data Input Data for Fuseki
@@ -529,19 +534,128 @@ TBD - describe Jupyter notebook example
 
 I published my **kgcreator** command line Python app to PyPy: [https://pypi.org/project/kgcreator/](https://pypi.org/project/kgcreator/). The GitHub repository is [https://github.com/mark-watson/kgcreator](https://github.com/mark-watson/kgcreator).
 
+You can install my **kgcreator** library with:
 
-TBD
+```bash
+pip install kgcreator
+pip install spacy
+python -m spacy download en_core_web_sm
+```
+
+If you clone the repository for **kgcreator** then you can use the test input files in the directory **test_data** to run the program, first to see the programs command line options and then to run it on the test input files:
+
+```bash
+kgcreator --help
+kgcreator --inputdir=test_data --outputfile=out.rdf  --outputfileneo4j=out.cypher
+```
+
+Both RDF data and Cypher data for Neo4J are written to local output files. The main library file **kgcreator.py** is short enough to list and discuss:
+
+```python
+from os import scandir
+from os.path import splitext, exists
+from pprint import pprint
+import spacy
+
+try:
+  nlp_model = spacy.load('en_core_web_sm')
+except:
+  print("Loading spaCy model file...")
+  from os import system
+  system("python -m spacy download en_core_web_sm")
+  nlp_model = spacy.load('en_core_web_sm')
+
+def find_entities_in_text(some_text):
+
+    def clean(s):
+        return s.replace('\n', ' ').strip()
+    doc = nlp_model(some_text)
+    return map(list, [[clean(entity.text), entity.label_] for entity in doc.ents])
+
+def data2Rdf(meta_data, entities, fout):
+    for [value, abbreviation] in entities:
+        a_literal = '"' + value + '"'
+        if value in v2umap:
+            a_literal = v2umap[value]
+        fout.write('<' + meta_data + '>\t' + e2umap[abbreviation] + '\t' +
+            a_literal + ' .\n') if abbreviation in e2umap else None
+
+def data2Cypher(meta_data, entities, fout):
+    SUMMARY = "To Be Done"
+    for [name, atype] in entities:
+        if atype in e2umap:
+            fout.write('CREATE (' + name.replace(" ", '_') + ':CategoryType {name:' + e2umap[atype] + '})\n')
+    # start by creating a node for source URI:
+    meta_print_name = meta_data[meta_data.index('//') + 2:]
+    fout.write('CREATE (' + meta_print_name + ':News {name:"' + meta_print_name + '", uri: "' +
+               meta_data + '", summary: "' + SUMMARY + '"})\n')
+
+    for [name, atype] in entities:
+        fout.write('CREATE (' + name.replace(" ", '_') + ')-[:Category]->(' + e2umap[atype] + '))\n')
+        fout.write('CREATE (' + meta_print_name + ')-[:' + e2umap[atype] + ')->(' + name.replace(" ", '_') + ')\n')
+
+e2umap = {'ORG': '<https://schema.org/Organization>',
+          'LOC': '<https://schema.org/location>',
+          'GPE': '<https://schema.org/location>',
+          'NORP': '<https://schema.org/nationality>',
+          'PRODUCT': '<https://schema.org/Product>',
+          'PERSON': '<https://schema.org/Person>'}
+v2umap = {'IBM': '<http://dbpedia.org/page/IBM>',
+          'The Wall Street Journal': '<http://dbpedia.org/page/The_Wall_Street_Journal>',
+          'Banco Espirito': '<http://dbpedia.org/page/Banco_Esp%C3%ADrito_Santo>',
+          'Australian Broadcasting Corporation': '<http://dbpedia.org/page/Australian_Broadcasting_Corporation>',
+          'Australian Writers Guild': '<http://dbpedia.org/page/Australian_Broadcasting_Corporation>',
+          'Microsoft': '<http://dbpedia.org/page/Microsoft>'}
+
+def process_directory(directory_name, output_rdf, output_neo4j):
+    with open(output_rdf, 'w') as frdf:
+        with open(output_neo4j, 'w') as fneo4j:
+            with scandir(directory_name) as entries:
+                for entry in entries:
+                    [_, file_extension] = splitext(entry.name)
+                    if file_extension == '.txt':
+                        check_file_name = entry.path[0:-4:None] + '.meta'
+                        if exists(check_file_name):
+                            process_file(entry.path, check_file_name, frdf, fneo4j)
+                        else:
+                            print('Warning: no .meta file for', entry.path, 'in directory', directory_name)
+
+def process_file(txt_path, meta_path, frdf, fneo4j):
+
+    print(f"** process_file txt_path={txt_path} meta_path={meta_path}")
+    def read_data(text_path, meta_path):
+        with open(text_path) as f:
+            t1 = f.read()
+        with open(meta_path) as f:
+            t2 = f.read()
+        return [t1, t2]
+
+    def modify_entity_names(ename):
+        return ename.replace('the ', '')
+
+    [txt, meta] = read_data(txt_path, meta_path)
+    entities = find_entities_in_text(txt)
+    entities = [[modify_entity_names(e), t] for [e, t] in entities if t in
+        ['NORP', 'ORG', 'PRODUCT', 'GPE', 'PERSON', 'LOC']]
+    data2Rdf(meta, entities, frdf)
+    data2Cypher(meta, entities, fneo4j)
+
+# process_directory('../test_data', 'out.rdf', 'out.cypher')
+```
+
+TBD: discuss code
+
 
 ## Old Technology: The OpenCyc Knowledge Base (Optional Material)
 
-You will see something new in this section. After loading the OpenCyc data as RDF into Apache Fuseki and exploring the data we will use the SPARQL SERVICE operator to combine data from our local server with the public DBPedia Knowledge Graph.
+Here we use the free version of the OpenCyc Knowledge Base. OpenCyc is no longer supported by the Cyc corporation (they still sell commercial versions). I still find this knowledge base useful and here we use a version that has been converted to RDF data.
 
-The OpenCyc Knowledge Base is no longer supported by the Cyc corporation (they sell commercial versions). I still find this knowledge base useful and here we use a version that has been converted to RDF data.
+After loading the OpenCyc data as RDF into Apache Fuseki and exploring the data we will use the SPARQL SERVICE operator to combine data from our local server with the public DBPedia Knowledge Graph.
 
-Adam Sanchez has a [GitHub repository that contains the OpenCyc OWL/RDF files](https://github.com/asanchez75/opencyc). While I try to make this section self-contained and interesting to read through if you want to experiment with the latest OpenCyc 4.0 OWL/RDF dataset then [download this file](https://www.amazon.com/clouddrive/share/urtlDhQbmeMz24TUNED3KiyzrqOlMYZ5gdLpTTSdcFR).
+Adam Sanchez has a [GitHub repository that contains the OpenCyc OWL/RDF files](https://github.com/asanchez75/opencyc). While I tried to make this section self-contained and interesting to just read, if you want to experiment with the latest OpenCyc 4.0 OWL/RDF dataset then [download this file](https://www.amazon.com/clouddrive/share/urtlDhQbmeMz24TUNED3KiyzrqOlMYZ5gdLpTTSdcFR) and follow along on your laptop.
 
-I wrote a blog article in 2014 [Using OpenCyc RDF/OWL data in StarDog 
-](https://mark-watson.blogspot.com/2014/07/using-opencyc-rdfowl-data-in-stardog.html) that showed how to import the OpenCyc OWL/RDF files into the commercial RDF datastore Stardog. Here I do much the same thing using Apache Jena/Fuseki but we will dive in deeper.
+I base the material in this section on an old blog article I wrote in 2014 [Using OpenCyc RDF/OWL data in StarDog 
+](https://mark-watson.blogspot.com/2014/07/using-opencyc-rdfowl-data-in-stardog.html) that showed how to import the OpenCyc OWL/RDF files into the commercial RDF datastore Stardog. Here I do much the same thing using Apache Jena/Fuseki but we will dive in deeper than the original article.
 
 If you have downloaded the latest OpenCyc OWL file then it can be loaded by:
 
@@ -580,7 +694,7 @@ Of particular use is the matched result:
   <http://dbpedia.org/resource/Hillary_Rodham_Clinton>
 ```
 
-This lets us combine data from OpenCyc with DBPedia (limit to just 2500 results). This is not a good example since we are in no way tying together data from OpenCyc to DBPedia (we will combine the results later), rather we are just doing two separate queries:
+This lets us combine data from OpenCyc with DBPedia (limit to just 2500 results). This is not a particularly good example since we are in no way tying together data from OpenCyc to DBPedia (we will combine the results later), rather we are just doing two separate queries:
 
 ```sparql
 SELECT *
@@ -599,7 +713,6 @@ WHERE {
 ```
 
 Two results chosen that only used English language (DBPedia has triples containing text in many human languages):
-
 
 
 ```
@@ -622,7 +735,7 @@ Two results chosen that only used English language (DBPedia has triples containi
 
 If we don't link data from two RDF services then we are obviously better off doing two separate queries and combining the results in our application.
 
-Before linking data for OpenCyc and DBPedia, let's look at a Python SPARQL query example:
+Before linking data for OpenCyc and DBPedia, let's look at a Python SPARQL query example that just access OpenCyc RDF data on a local Fuseki server:
 
 ```python
 import rdflib
@@ -737,7 +850,7 @@ WHERE {
 ```
 
 
-When I need to collect text on an entity I often look for comment data on DBPedia. In this case, there were no English language comments so no comment results are in the returned JSON:
+When I need to collect text on an entity I often look for comment data on DBPedia (as we did in the previous **kgcreator** example). In this case, there were no English language comments so no comment results are in the returned JSON:
 
 ```JSON
  $ python opencyc_example_3.py 
@@ -751,7 +864,7 @@ When I need to collect text on an entity I often look for comment data on DBPedi
 
 If we didn't use the OPTIONAL operator then we would not have retrieved data for the first pattern in the WHERE clause.
 
-We now leave our discussion of using the antiquated and no longer updated OpenCyc data and look at Python code in the next section that uses the Wikidata SPARQL server rather than DBPedia.
+We now leave our discussion of using the no longer updated OpenCyc data and look at Python code in the next section that uses the Wikidata SPARQL server rather than DBPedia.
 
 ## Examples Using Wikidata Instead of DBPedia 
 
@@ -767,7 +880,7 @@ In the SPARQL results there are three matching subjects:
 - [wd:Q5968787](https://www.wikidata.org/wiki/Q5968787)
 - [wd:Q19874511](https://www.wikidata.org/wiki/Q19874511)
 
-Here is a simple Python program that uses Wikidata:
+Here is a simple Python program that uses Wikidata. In this example we make multiple SPARQL queries: first to find WikiData URIs for IBM, and then to find all **label** property values for each of these URIs:
 
 ```python
 ## Test client for Wikidata SPARQL endpoint
@@ -869,7 +982,7 @@ In the next section we look at a tool I wrote for exploring Knowledge Graphs.
 
 ## Knowledge Graph Navigator: Use English to Explore DBPedia
 
-When I need to use DBPedia data in applications before I start writing any code I explore possibly useful information using:
+When I need to use DBPedia data in applications, before I start writing any code I explore possibly useful information using:
 
 - [https://dbpedia.org/sparql](https://dbpedia.org/sparql) DBPedia SPARQL endpoint.
 - [https://dbpedia.org/fct/](https://dbpedia.org/fct/) OPEN LINK Software text search and entity search.
@@ -896,7 +1009,7 @@ This is a fairly long example but if you followed the previous Python + SPARQL q
   <entity_1_URI> ?p <entity_2_URI> .
 ```
 
-Listing of the main application logic in kgn.py:
+Listing of the main application logic in **kgn.py**:
 
 ```python
 from pprint import pprint
@@ -978,9 +1091,9 @@ def kgn():
                   ' --> ' + relationship[1])
 ```
 
-This command line tool does not run very well in a shell in IDEs like PyCharm to pay attention to the printed prompt in line 44 and run **kgn** in a terminal window that properly renders unicode characters and colored/styled text.
+This command line tool does not run very well in a shell in IDEs like PyCharm so pay attention to the printed prompt in line 40 and run **kgn** in a terminal window that properly renders unicode characters and colored/styled text.
 
-A listing of kgnutils.py that uses a SPARQL query to resolve entity names to DBPedia URIs:
+A listing of **kgnutils.py** that uses a SPARQL query to resolve entity names to DBPedia URIs:
 
 ```python
 from .sparql import dbpedia_sparql
@@ -995,7 +1108,7 @@ def dbpedia_get_entities_by_name(name, dbpedia_type):
     return dbpedia_sparql(sparql)
 ```
 
-The listing of relationships.py that finds RDF properties that link any two entity URIs:
+The listing of **relationships.py** that finds RDF properties that link any two entity URIs:
 
 ```python
 from .sparql import dbpedia_sparql
@@ -1031,7 +1144,7 @@ def entity_results_to_relationship_links(uris):
     return relationship_statements
 ```
 
-A listing of sparql.py that is a utility to query either the DBPedia or Wikidata SPARQL server endpoints:
+A listing of **sparql.py** that is a utility to query either the DBPedia or Wikidata SPARQL server endpoints:
 
 ```python
 import requests
@@ -1069,6 +1182,7 @@ def dbpedia_sparql(query):
 
 This example Python code for performing SPARQL queries differs from the previous examples that all used the **SPARQLWrapper** library. Here I used the Python **requests** library.
 
+This program produces a lot of printed output so I refer you to the GitHub repository for my command line tool **kgn** [https://github.com/mark-watson/kgn](https://github.com/mark-watson/kgn) for example usage in the top level README file.
 
 ## Wrap Up for Semantic Web, Linked Data and Knowledge Graphs
 
