@@ -549,7 +549,9 @@ kgcreator --help
 kgcreator --inputdir=test_data --outputfile=out.rdf  --outputfileneo4j=out.cypher
 ```
 
-Both RDF data and Cypher data for Neo4J are written to local output files. The main library file **kgcreator.py** is short enough to list and discuss:
+Both RDF data and Cypher data for Neo4J are written to local output files. The main library file **kgcreator.py** is short enough to list and discuss. In lines 6-12 we are loading a spaCy English language model. If the models not been downloaded it the load operation throws an exception and we download the model.
+
+The function **find_entities_in_text** (lines 14-19) uses the spaCy library to find entities like people, organizations, etc. The function **data2Rdf** (lines 21-27) requires three arguments: meta data for the file path, a list of value/abbreviation sublists, and an output file stream to write RDF data to. The function **data2Cypher** (lines 29-45) takes the same arguments but instead writes the data in Cypher format for Neo4J:
 
 ```python
 from os import scandir
@@ -643,7 +645,9 @@ def process_file(txt_path, meta_path, frdf, fneo4j):
 # process_directory('../test_data', 'out.rdf', 'out.cypher')
 ```
 
-TBD: discuss code
+The dictionary object **e2umap** defined in lines 47-TBD maps a spaCy entity type name to a URI, for example **'PERSON': '<https://schema.org/Person>'**. The dictionary object **v2umap** defined in lines TBD-TBD maps names to common organizations to URIs. Note that this map can be extended for additional entity names. If **v2umap** does not contain an organization name then the organization will be output as a string literal and not a URI.
+
+The top-level function **process_directory** (lines TBD-TBD) reads all text files in an input directory and calls the helper functions we have already discussed to create output RDF and Cypher files using the helper function **process_file**.
 
 
 ## Old Technology: The OpenCyc Knowledge Base (Optional Material)

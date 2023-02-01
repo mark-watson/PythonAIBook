@@ -82,7 +82,8 @@ print("* y_predict (should be close to [[0], [1]]):", y_predict)
  [0.9584093 ]]
 ```
 
-TBD
+You can compare this example using TensorFlow and Keras to our similar classification example using the same data where we used  the **Scikit-learn** library.
+
 
 ### PyTorch and JAX
 
@@ -90,19 +91,3 @@ In addition to TensorFlow/Keras, the two other most popular frameworks for deep 
 
 All three frameworks are popular and well supported. I started studying deep learning at the same time that TensorFlow was initially released and I use TensorFlow (usually with the easier to use Keras APIs) for at least 90% of my professional deep learning work. Because of my own history I am showing you TensorFlow/Keras examples but if PyTorch or JAX appeal more to you then by all means use the framework that fits your requirements.
 
-
-## Recommendation Systems
-
-Writing recommendation systems is a common requirment for almost all businesses that sell products to customers. Before we get started we need to define a few terms that you may not be familiar with:
-
-- Movie Lens dataset: TBD
-- Collaborative filtering: TBD
-- TBD
-
-There are at least three good approaches to take:
-
-- Use a turnkey recommendation system like [Amazon Personalize](https://aws.amazon.com/personalize/) that is a turn-key service on AWS. You can evaluate Amazon Personalize for your company's use by spending about one hour working through the [getting started tutorial](https://github.com/aws-samples/amazon-personalize-samples).
-- Use one of the standard libraries or TensorFlow implementations for the classic approach using [Matrix Factorization](https://en.wikipedia.org/wiki/Matrix_factorization_(recommender_systems) for collaborative filtering. Examples are Eric Lundquist's Python library [rankfm](https://github.com/etlundquist/rankfm) and the first example for the [TensorFlow Recommenders library](https://www.tensorflow.org/recommenders/examples/quickstart). Google has a [good Matrix Factorization tutorial](https://developers.google.com/machine-learning/recommendation/collaborative/matrix). While I prefer using the much more complicated TensorFlow Recommenders library, using matrix factorization is probably a good way to start and I recommend taking an hour to work through [this Google Colab tutorial](https://colab.research.google.com/github/google/eng-edu/blob/main/ml/recommendation-systems/recommendation-systems.ipynb)
-- Use the [TensorFlow Recommenders](https://www.tensorflow.org/recommenders) library that supports multi-tower deep learning models that use data for user interactions, user detail data, and product detail data.
-
-TBD
