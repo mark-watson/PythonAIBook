@@ -524,9 +524,9 @@ sp {hello-world
 }
 ```
 
-The token **sp** on line 1 stands for Soar Production. Rules are enclosed in **{** and **}**. The name of this rule is the symbol **hello-world**. In the tutorial you will usually see rule names partitioned using the characters **\*** and **-**. Rules have a "left side" and a "right side", separated by **-->**. If all of the left side patterns match working memory elments then the right-hand side actions are executed.
+The token **sp** on line 1 stands for Soar Production. Rules are enclosed in **{** and **}**. The name of this rule is the symbol **hello-world**. In the tutorial you will usually see rule names partitioned using the characters **\*** and **-**. Rules have a "left side" and a "right side", separated by **-->**. If all of the left side patterns match working memory elements then the right-hand side actions are executed.
 
-The following figure is from the Soar tutoral and shows two blocks stacked on top of each other. The bottom block rests on a table:
+The following figure is from the Soar tutorial and shows two blocks stacked on top of each other. The bottom block rests on a table:
 
 ![From the Soar Tutorial: two stacked blocks sitting on a table](Soarblocks.png)
 
@@ -621,7 +621,7 @@ I consider Soar to be of historic interest and is an important example of a larg
 
 As with Soar, our excursion into constraint programming will be brief, hopefully enough to introduce you to a new style of programming though a few examples. I still use constraint programming and hope you might find the material in this section useful.
 
-While I attempt to make this material self-contained reading, you may want to use the [MiniZinc Python](https://minizinc-python.readthedocs.io/en/latest/getting_started.html) documentation as a reference for the Python interface and [The MiniZink Handbook](https://www.minizinc.org/doc-2.6.4/en/index.html) as a reference to the MiniZinc language and its use for your own projects.
+While I attempt to make this material self-contained reading, you may want to use the [MiniZinc Python](https://minizinc-python.readthedocs.io/en/latest/getting_started.html) documentation as a reference for the Python interface and [The MiniZinc Handbook](https://www.minizinc.org/doc-2.6.4/en/index.html) as a reference to the MiniZinc language and its use for your own projects.
 
 Constraint Programming (CP) is a paradigm of problem-solving that involves specifying the constraints of a problem, and then searching for solutions that satisfy those constraints. MiniZinc is a high-level modeling language for constraint programming that allows users to specify constraints and objectives in a compact and expressive way.
 
@@ -679,7 +679,7 @@ Solution(x=20, y=10, _checker='')
 10
 ```
 
-Let's look at a more complex example: on the map of the USA, the states neighboring each other are colored differently than their adjoining states in such a way that no states with touching edges are the same color. We use integers to represent colors and the mapping of numbers to colors is unimportant. Here is a partial listing of us_states.mzn:
+Let's look at a more complex example: on the map of the USA, the states neighboring each other are colored differently than their adjoining states in such a way that no states with touching edges are the same color. We use integers to represent colors and the mapping of numbers to colors is unimportant. Here is a partial listing of **us_states.mzn**:
 
 ```python
 int: nc = 3; %% needs to be 4 to solve this problem

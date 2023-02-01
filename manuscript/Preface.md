@@ -43,7 +43,7 @@ I have not written original example code for all of the material in this book. I
 
 I live in Sedona Arizona. I have been fortunate to have visited close to one hundred ancient Native American Indian sites in the Verde Valley. I took the cover picture at one of these sites.
 
-This picture shows me and my wife Carol who helps me with book production"
+This picture shows me and my wife Carol who helps me with book production.
 
 {width: "30%"}
 ![Mark and Carol Watson](MarkandCarol.jpeg)

@@ -28,7 +28,7 @@ There are several types of data that could be used for recommending movies:
 - User data. User data is not used in this example, but for a product recommendation system I have created embeddings of all available data features associated with users.
 - Movie data based on text embedding of movie titles. Note: for product recommendation systems you might still use text embedding of product descriptions, but you would also likely create embeddings based on product features.
 
-We will use the [TensorFlow Recommenders using rich features example](https://www.tensorflow.org/recommenders/examples/deep_recommenders). For the following overview discussion, you may want to either open this link to read this example or open the alternative [Google Colab example link](https://colab.research.google.com/github/tensorflow/recommenders/blob/main/docs/examples/deep_recommenders.ipynb) to run the example on Colab. For our discussion, I will use short code snippets and use one screenshot of the example in Colab so you can optionally just follow along without opening either link for now.
+We will use the [TensorFlow Recommenders using rich features example](https://www.tensorflow.org/recommenders/examples/deep_recommenders). For the following overview discussion, you may want to either open this link to read this example or open the alternative [Google Colab example link](https://colab.research.google.com/github/tensorflow/recommenders/blob/main/docs/examples/deep_recommenders.ipynb) to run the example on Colab. Please note that this example takes about ten minutes to run on Colab.  For our discussion, I will use short code snippets and use one screenshot of the example in Colab so you can optionally just follow along without opening either link for now.
 
 The TF recommenders example starts with reading the [Movie Lens](https://grouplens.org/datasets/movielens/) dataset using the TensorFlow Data library:
 
@@ -240,3 +240,14 @@ If you need to write a recommendation system for your work then I hope this shor
 - Eric Lundquist has written a Python library [rankfm](https://github.com/etlundquist/rankfm) for factorization machines for recommendation and ranking problems.
 - If product data includes pictures then consider using this [Keras example](https://keras.io/examples/nlp/nl_image_search/) as a guide for creating embeddings for images and implementing image search.
 - A research idea: [a Keras example](https://keras.io/examples/structured_data/movielens_recommendations_transformers/) that was written by Khalid Salama that transforms input training data to a textual representation for input to a Transformer model. This example is based on the paper [Behavior Sequence Transformer for E-commerce Recommendation in Alibaba](https://arxiv.org/abs/1905.06874) by Qiwei Chen, Huan Zhao, Wei Li, Pipei Huang, and Wenwu Ou.
+
+
+# Book Wrap-up
+
+Thank you, dear reader, for spending the time for taking an adventure with me: exploring AI programming ideas using Python. Because some of the material will be dated quickly, I was motivated to write this book and release it quickly. Indeed, I wrote this book in just a two and a half month period.
+
+My first ten books were published as conventional print books by McGraw-Hill, Springer-Verlag, John Riley, and other publishers. I then published several books with free licenses that can be downloaded from [https://markwatson.com](https://markwatson.com). My seven eBooks subsequently [published on Leanpub](https://leanpub.com/u/markwatson) have cumulatively been updated many times to new editions. I would like to that the Leanpub platform for simplifying the process of writing and frequently updating eBooks.
+
+I tend to remove some material in new eBook editions that might be outdated, and add new chapters on different topics. Because of this, when you get new editions of my books (free on Leanpub), consider also keeping the old editions.
+
+I live in Sedona Arizona. If you are every passing through Sedona, contact me (see [https://markwatson.com](https://markwatson.com)) if you would like to have coffee and talk about Python and AI.

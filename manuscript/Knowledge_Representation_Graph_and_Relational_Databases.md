@@ -6,7 +6,7 @@ I use several types of data stores in my work but for the purposes of this book 
 - [Neo4j Community Edition](https://neo4j.com/download-center/#community) for a transactional disk-based graph database, the [Cypher query language](https://neo4j.com/docs/cypher-manual/current/), and the web interface to explore datasets. If you prefer you can alternatively use [Memgraph](https://memgraph.com) that is fairly compatible with Neo4j.
 - [SQLite](https://www.sqlite.org/index.html) for transactional relational data storage and the [SQL query language](https://en.wikipedia.org/wiki/SQL).
 
-We only use Neo4J in this chapter. The next chapter covers RDF and the SPARQL query language in some detail.
+The next chapter covers RDF and the SPARQL query language in some detail.
 
 In technical terms, knowledge representation using graph and relational databases involves the use of graph structures and relational data models to represent and organize knowledge in a structured, computationally efficient, and easily accessible way.
 
@@ -20,11 +20,13 @@ Combining these two technologies, knowledge can be represented as a graph of int
 
 I use several RDF datastores in my work (Franz AllegroGraph, Stardog, GraphDB, and Blazegraph) but I particularly like Apache Jena Fuseki (that I will often just call Fuseki) because it is open source, it follows new technology like RDF* and SPARQL*, and has a simple and easy to use web interface). Most of our experiments will use Python SPARQL client libraries but you will also be spending quality time using the web interface to run SPARQL queries.
 
-RDF data is in the form of triples: subject, property (or predicate), and object. There are several serialization formats for RDF includinfg XML, Turtle, N1, etc. I refer you to the chapter [Background Material for the Semantic Web and Knowledge Graphs in my book Practical Artificial Intelligence Programming in Clojure](https://markwatson.com/books/clojureai-site/#semantic-web) for more details (link for online reading). Here we use client libraries and web services that can return RDF data as JSON.
+RDF data is in the form of triples: subject, property (or predicate), and object. There are several serialization formats for RDF including XML, Turtle, N1, etc. I refer you to the chapter [Background Material for the Semantic Web and Knowledge Graphs in my book Practical Artificial Intelligence Programming in Clojure](https://markwatson.com/books/clojureai-site/#semantic-web) for more details (link for online reading). Here we use client libraries and web services that can return RDF data as JSON.
 
 This chapter is about getting tools ready to use. In the next chapter we will get more into RDF and SPARQL.
 
 I have a GitHub repository containing Fuseki, sample data, and directions for getting setup and running in a minute or two: [https://github.com/mark-watson/fuseki-semantic-web-dev-setup](https://github.com/mark-watson/fuseki-semantic-web-dev-setup). You can clone this repository and follow along on your laptop or just read the following text if you are not yet convinced that you will want to use semantic web technologies in your own projects.
+
+We will be using the SPARQL query language here for a few examples and then jump more deeply into the use of SPARQL and other semantic web technologies in the next chapter.
 
 Listing of **test_fuseki_client.py** (in the directory **semantic-web**):
 
@@ -178,7 +180,7 @@ We will use more SPARQL queries in the next chapter.
 
 The examples here use Neo4j. You can either [install Neo4J using these instructions](https://neo4j.com/docs/operations-manual/current/installation/) and follow along or just read the sample code and the sample output if you are not sure will be using property graph databases in your applications.
 
-Note: although I don't provide sample output here, you can alternatively use the [Memgraph Graph Database](https://memgraph.com) that is largely compatible with Neo4j.
+Note: You can alternatively use the [Memgraph Graph Database](https://memgraph.com) that is largely compatible with Neo4j. However, we are using a sample graph database that is included with free community edition of Neo4J so you will need to do extra work following this material using Memgraph.
 
 We will use a Python client to access the Neo4J sample Movie Data graph database.
 
@@ -272,7 +274,7 @@ Here is the shortest path:
 
 ### Python client code for the Neo4J Movie graph database example
 
-The following listing shows an example from the Neo4J documention that I modified:
+The following listing shows an example from the Neo4J documentation that I modified:
 
 ```python
 import logging, sys, os
@@ -322,7 +324,7 @@ if __name__ == "__main__":
     MovieDbExample.close()
 ```
 
-For practical applications, you will write many helper functions for executing required Cypher queries. Before you write one line of Python code I suggest that you always experiment in the Neo4J web app with test graph database data and interactively write the Cypher queries you need. Once you have working queries then write the Python client code based on both the sumple example we just looked at and the Neo4J Python documentation.
+For practical applications, you will write many helper functions for executing required Cypher queries. Before you write one line of Python code I suggest that you always experiment in the Neo4J web app with test graph database data and interactively write the Cypher queries you need. Once you have working queries then write the Python client code based on both the example we just looked at and the Neo4J Python documentation.
 
 This ends our brief tour of property graphs. In my own work I use semantic web RDF graph databases for most of my work so we will later take a much deeper dive into RDF and the SPARQL query language, but not further use property graphs in this book except for support both RDF and Cypher data generation in a later example Knowledge Graph Creator. I personally use RDF for about 90% of my work with graph data and property graphs like Neo4J about 10% of the time.
 
@@ -331,7 +333,7 @@ I wanted to introduce you to property graphs because I know developers who have 
 
 ## The SQLite Relational Database
 
-The SQLite database is now included in the standard Python distribution so SQLite is my default persistent datastore. I tend to use RDF and SPARQL (or occasionally Neo4J) specifically when a graph database fits the requirements an application. The example code for this section can be found in the directory **/misc/datastores** that also includes examples for Postgres that I don't cover in the book text. We will also use SQLite in a later chapter in the Knowedge Graph Navigator example to cache SPARQL queries to DBPedia.
+The SQLite database is now included in the standard Python distribution so SQLite is my default persistent datastore. I tend to use RDF and SPARQL (or occasionally Neo4J) specifically when a graph database fits the requirements an application. The example code for this section can be found in the directory **/misc/datastores** that also includes examples for Postgres that I don't cover in the book text. We will also use SQLite in a later chapter in the Knowledge Graph Navigator example to cache SPARQL queries to DBPedia.
 
 We start with writing a simple reusable library for SQLite using the standard library **sqlite3** that is defined in the file **sqlite_lib.py**:
 

@@ -1,4 +1,4 @@
-# Natural Language Processing
+# Natural Language Processing Using Deep Learning
 
 I spent several years in the 1980s using symbolic AI approaches to Natural Language Processing (NLP) like augmented transition networks and conceptual dependency theory with mixed results. For small vocabularies and small domains of discourse these techniques yielded modestly successful results. I now only use Deep Learning approaches to NLP in my work.
 
@@ -209,6 +209,8 @@ The President sent a request for changing the debt ceiling to Congress. The Cong
 
 ### Zero Shot Classification Using Hugging Face APIs
 
+Zero shot classification models work by specifying which classification labels you want to assign to input texts. In this example we ask the model to classify text into one of: **'refund', 'faq', 'legal'**. Usually for text classification applications we need to pre-train a model using examples of text in different categories we are interested in. This extra work is not required using the Meta/Facebook pre-trained zero shot model **bart-large-mnli**:
+
 {caption: "Hugging Model for Zero Shot Classification"}
 {format: python}
 ![](hf-zero_shot_classification.py)
@@ -225,7 +227,7 @@ $ python hf-zero_shot_classification.py
 
 ## Comparing Sentences for Similarity Using Transformer Models
 
-Although I usually use OpenAI and HuggingFace for most of the pre-trained NLP models I use, I recently used a sentence similarity Transformer model from the [Ubiquitous Knowledge Processing Lab](https://www.informatik.tu-darmstadt.de/ukp/ukp_home/index.en.jsp) for a quick work project and their library support for finding similar sentences is simple to use written with PyTorch. Here is one of their examples, slightly modified for this book:
+Although I usually use OpenAI and HuggingFace for most of the pre-trained NLP models I use, I recently used a sentence similarity Transformer model from the [Ubiquitous Knowledge Processing Lab](https://www.informatik.tu-darmstadt.de/ukp/ukp_home/index.en.jsp) for a quick work project and their library support for finding similar sentences is simple to use. This model was written using PyTorch. Here is one of their examples, slightly modified for this book:
 
 ```python
 # pip install sentence_transformers
@@ -258,7 +260,8 @@ for i in range(len(cos_sim)-1):
         all_sentence_combinations.append([cos_sim[i][j], i, j])
 
 #Sort list by the highest cosine similarity score
-all_sentence_combinations = sorted(all_sentence_combinations, key=lambda x: x[0], reverse=True)
+all_sentence_combinations =
+  sorted(all_sentence_combinations, key=lambda x: x[0], reverse=True)
 
 print("Top-8 most similar pairs:")
 for score, i, j in all_sentence_combinations[0:8]:

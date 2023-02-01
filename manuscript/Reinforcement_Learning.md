@@ -1,4 +1,4 @@
-# Overview of Reinforcement Learning
+# Overview of Reinforcement Learning (Optional Material)
 
 Reinforcement Learning has been used in various applications such as robotics, game playing, recommendation systems, etc. Reinforcement Learning (RL) is a broad topic and we will only cover aspects RL that I use myself.
 
@@ -21,7 +21,7 @@ Reinforcement learning algorithms can be divided into two main categories: value
 
 Reinforcement Learning can be implemented using different techniques such as Q-learning, SARSA, DDPG, A2C, PPO, etc. Some of these techniques are model-based, which means that the agent uses a model of the environment to simulate the effects of different actions and plan ahead. Others are model-free, which means that the agent learns directly from the rewards and transitions experienced in the environment.
 
-If you enjoy the tutorial material in this chapter I recommend that you consider investing the time in the Coursera RL specialization [https://www.coursera.org/learn/fundamentals-of-reinforcement-learning](https://www.coursera.org/learn/fundamentals-of-reinforcement-learning#instructors) taught by Martha and Adam White. There are [50+ RL courses on Coursera](https://www.coursera.org/courses?query=reinforcement%20learning). I took the courses taught by Martha and Adam White before starting my RL project at Capital One.
+If you enjoy the overview material in this chapter I recommend that you consider investing the time in the Coursera RL specialization [https://www.coursera.org/learn/fundamentals-of-reinforcement-learning](https://www.coursera.org/learn/fundamentals-of-reinforcement-learning#instructors) taught by Martha and Adam White. There are [50+ RL courses on Coursera](https://www.coursera.org/courses?query=reinforcement%20learning). I took the courses taught by Martha and Adam White before starting my RL project at Capital One.
 
 My favorite RL book is "Reinforcement Learning: An Introduction, second edition" by Richard Sutton and Andrew Barto, that can be read online for free at [http://www.incompleteideas.net/book/the-book-2nd.html](http://www.incompleteideas.net/book/the-book-2nd.html). They originally wrote their book examples in Common Lisp but most of the code is available rewritten in Python. The Common Lisp code for the examples is [here](http://www.incompleteideas.net/book/code/code2nd.html). Shangtong Zhang translated the book examples to Python, available [here](https://github.com/ShangtongZhang/reinforcement-learning-an-introduction). Martha and Adam White's Coursera class uses this book as a reference.
 

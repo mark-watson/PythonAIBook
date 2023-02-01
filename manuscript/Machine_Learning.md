@@ -7,7 +7,7 @@
 - Decision Trees: a method for modeling decision rules based on the values of the input variables, which are organized in a tree-like structure.
 - Random Forest: a method that creates multiple decision trees and averages the results to improve the overall performance of the model
 - K-Nearest Neighbors (K-NN): a method for classifying data by finding the K-nearest examples in the training data and assigning the most similar common class among them.
-- Naive Bayes: A method for classifying data based on Bayes' theorem and the assumption of independence between the input variables.
+- Naive Bayes: a method for classifying data based on Bayes' theorem and the assumption of independence between the input variables.
 
 We will be covering a very small subset of "classic" ML, and then dive deeper into Deep Learning in later chapters. Deep Learning differs from classic ML in several ways:
 
@@ -30,7 +30,7 @@ We will use the same Wisconsin cancer dataset for both the following classificat
 
 ![](wisconsindata-1.png)
 
-The last column **class* indicates the class of the sample, 0 for non-malignant and 1 for malignant. The scikit-learn library has high level and simple to use utilities for reading CSV (spreadsheet) data and for preparing the data for training and testing. I don't use these utilities here because I am reusing the data loading code from the later deep learning example.
+The last column **class** indicates the class of the sample, 0 for non-malignant and 1 for malignant. The scikit-learn library has high level and simple to use utilities for reading CSV (spreadsheet) data and for preparing the data for training and testing. I don't use these utilities here because I am reusing the data loading code from the later deep learning example.
 
 We will use the Pandas library and if you have not used Pandas before you might want to reference the [Pandas documentation](https://pandas.pydata.org/docs/). Here is a summary of why Pandas is generally useful: it is a popular Python library for data manipulation and analysis that provides data structures and data analysis tools for working with structured data (often spreadsheet data). One of the key data structures in Pandas is the DataFrame, which is a two-dimensional table of data with rows and columns.
 
@@ -43,7 +43,7 @@ Pandas DataFrames provide a lot of functionalities to handle and process data. T
 - Grouping: data can be grouped by any column.
 - Merging and joining: data can be joined or merged with other data.
 - Data type conversion: data can be converted to any data type.
-- Handling missing data: data can be filled or dropped based on any condition.
+- Handling missing data: data can be filled in or removed based on any condition.
 
 DataFrames are widely used in data science and machine learning projects for loading, cleaning, processing, and analyzing data. They are also used for data visualization, data preprocessing, and feature engineering tasks.
 
@@ -69,7 +69,7 @@ def load_data():
     return (X_train, Y_train, X_test, Y_test)
 ```
 
-In line 8 we fetch the values array from the dataframe and in line 9 we copy all rows of data, skipping the last column (target classification we want to be able to predict) and converting all data to floating point numbers. In line 14 we copy just the last column of the training data array for use as the target classification.
+In line 8 we fetch the values array from the data frame and in line 9 we copy all rows of data, skipping the last column (target classification we want to be able to predict) and converting all data to floating point numbers. In line 14 we copy just the last column of the training data array for use as the target classification.
 
 ## Classification Models using Scikit-learn
 

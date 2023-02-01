@@ -34,7 +34,7 @@ I cover the Semantic Web in this book because I believe that Semantic Web techno
 
 ### RDF: The Universal Data Format
 
-The Resource Description Framework (RDF) is used to encode information and the RDF Schema (RDFS) facilitates using data with different RDF encodings without the need to convert one set of schemas to another. Later, using OWL, we can simply declare that one predicate (or property) is the same as another; that is, one predicate is a sub-predicate of another (e.g., a property containsCity can be declared to be a sub-property of containsPlace so if something contains a city then it also contains a place), etc. The predicate part of an RDF statement often refers to a property.
+The Resource Description Framework (RDF) is used to encode information and the RDF Schema (RDFS) facilitates using data with different RDF encodings without the need to convert one set of schemas to another. Later, using OWL, we can simply declare that one predicate (or property) is the same as another; that is, one predicate is a sub-predicate of another (e.g., a property **containsCity** can be declared to be a sub-property of **containsPlace** so if something contains a city then it also contains a place), etc. The predicate part of an RDF statement often refers to a property.
 
 RDF data was originally encoded as XML and intended for automated processing. In this chapter we will use two simple to read formats called “N-Triples” and “N3.” Apache Jena can be used to convert between all RDF formats so we might as well use formats that are easier to read and understand. RDF data consists of a set of triple values:
 
@@ -207,15 +207,15 @@ kb:containsState rdfs:subPropertyOf kb:containsPlace .
 
 The last three lines declare that:
 
-- The property containsCity is a sub-property of containsPlace.
-- The property containsCountry is a sub-property of containsPlace.
-- The property containsState is a sub-property of containsPlace.
+- The property **containsCity** is a sub-property of **containsPlace**.
+- The property **containsCountry** is a sub-property of **containsPlace**.
+- The property **containsState** is a sub-property of **containsPlace**.
 
 Why is this useful? For at least two reasons:
 
-You can query an RDF data store for all triples that use property containsPlace and also match triples with properties equal to containsCity, containsCountry, or containsState. There may not even be any triples that explicitly use the property containsPlace.
+You can query an RDF data store for all triples that use property **containsPlace** and also match triples with properties equal to **containsCity**, **containsCountry**, or **containsState**. There may not even be any triples that explicitly use the property **containsPlace**.
 
-Consider a hypothetical case where you are using two different RDF data stores that use different properties for naming cities: cityName and city. You can define cityName to be a sub-property of city and then write all queries against the single property name city. This removes the necessity to convert data from different sources to use the same Schema. You can also use OWL to state property and class equivalency.
+Consider a hypothetical case where you are using two different RDF data stores that use different properties for naming cities: **cityName** and **city**. You can define **cityName** to be a sub-property of **city** and then write all queries against the single property name **city**. This removes the necessity to convert data from different sources to use the same Schema. You can also use OWL to state property and class equivalency.
 
 In addition to providing a vocabulary for describing properties and class membership by properties, RDFS is also used for logical inference to infer new triples, combine data from different RDF data sources, and to allow effective querying of RDF data stores. We will see examples of all of these features of RDFS when we later when using libraries to perform SPARQL queries.
 
@@ -356,7 +356,7 @@ SELECT ?subject ?object
   }
 ```
 
-We could have filtered on any other predicate, for instance containsPlace. Here is another example using a match against a string literal to find all articles exactly matching the text “Maryland.”
+We could have filtered on any other predicate, for instance **containsPlace**. Here is another example using a match against a string literal to find all articles exactly matching the text “Maryland.”
 
 ```sparql
 PREFIX kb:  <http://knowledgebooks.com/ontology#>
@@ -470,7 +470,7 @@ We have already seen a few examples of using RDFS to define sub-properties in th
 
 OWL is more expressive than RDFS in that it supports cardinality, richer class relationships, and Descriptive Logic (DL) reasoning. OWL treats the idea of classes very differently than object oriented programming languages like Java and Smalltalk. In OWL, instances of a class are referred to as individuals and class membership is determined by a set of properties that allow a DL reasoner to infer class membership of an individual (this is called entailment.)
 
-We have been using the RDF file news.n3 in previous examples and we will layer new examples by adding new triples that represent RDF, RDFS, and OWL. We saw in news.n3 the definition of three triples using rdfs:subPropertyOf properties to create a more general kb:containsPlace property:
+We have been using the RDF file news.n3 in previous examples and we will layer new examples by adding new triples that represent RDF, RDFS, and OWL. We saw in news.n3 the definition of three triples using **rdfs:subPropertyOf** properties to create a more general **kb:containsPlace** property:
 
 ```sparql
 kb:containsCity rdfs:subPropertyOf kb:containsPlace .
