@@ -586,11 +586,12 @@ def data2Cypher(meta_data, entities, fout):
     SUMMARY = "To Be Done"
     for [name, atype] in entities:
         if atype in e2umap:
-            fout.write('CREATE (' + name.replace(" ", '_') + ':CategoryType {name:' + e2umap[atype] + '})\n')
+            fout.write('CREATE (' + name.replace(" ", '_') +
+                       ':CategoryType {name:' + e2umap[atype] + '})\n')
     # start by creating a node for source URI:
     meta_print_name = meta_data[meta_data.index('//') + 2:]
-    fout.write('CREATE (' + meta_print_name + ':News {name:"' + meta_print_name + '", uri: "' +
-               meta_data + '", summary: "' + SUMMARY + '"})\n')
+    fout.write('CREATE (' + meta_print_name + ':News {name:"' + meta_print_name + 
+               '", uri: "' + meta_data + '", summary: "' + SUMMARY + '"})\n')
 
     for [name, atype] in entities:
         fout.write('CREATE (' + name.replace(" ", '_') + ')-[:Category]->(' + e2umap[atype] + '))\n')
@@ -645,9 +646,9 @@ def process_file(txt_path, meta_path, frdf, fneo4j):
 # process_directory('../test_data', 'out.rdf', 'out.cypher')
 ```
 
-The dictionary object **e2umap** defined in lines 47-TBD maps a spaCy entity type name to a URI, for example **'PERSON': '<https://schema.org/Person>'**. The dictionary object **v2umap** defined in lines TBD-TBD maps names to common organizations to URIs. Note that this map can be extended for additional entity names. If **v2umap** does not contain an organization name then the organization will be output as a string literal and not a URI.
+The dictionary object **e2umap** defined in lines 47-52 maps a spaCy entity type name to a URI, for example **'PERSON': '<https://schema.org/Person>'**. The dictionary object **v2umap** defined in lines 53-61 maps names to common organizations to URIs. Note that this map can be extended for additional entity names. If **v2umap** does not contain an organization name then the organization will be output as a string literal and not a URI.
 
-The top-level function **process_directory** (lines TBD-TBD) reads all text files in an input directory and calls the helper functions we have already discussed to create output RDF and Cypher files using the helper function **process_file**.
+The top-level function **process_directory** (lines 63-75) reads all text files in an input directory and calls the helper functions we have already discussed to create output RDF and Cypher files using the helper function **process_file**.
 
 
 ## Old Technology: The OpenCyc Knowledge Base (Optional Material)

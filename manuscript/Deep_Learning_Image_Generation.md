@@ -4,7 +4,7 @@ This final part of this book consists of overviews of three important topics tha
 
 # Overview of Image Generation
 
-I have never used deep learning image generation at work but I have fun experimenting with both code and model examples, as well as turen-key web apps like DALL·E. We will use Brett Kuprel's [Mini-Dalle model](https://github.com/kuprel/min-dalle) GitHub repository that is a reduced size port of DALL·E Mini to PyTorch.
+I have never used deep learning image generation at work but I have fun experimenting with both code and model examples, as well as turn-key web apps like DALL·E. We will use Brett Kuprel's [Mini-Dalle model](https://github.com/kuprel/min-dalle) GitHub repository that is a reduced size port of DALL·E Mini to PyTorch.
 
 You can run this example directly on [Google Colab](https://colab.research.google.com/drive/1FxTaCCVtLWUfvHKvcgnwAerJtq5a6KSX?usp=sharing). Here is a listing of the example code in this notebook:
 

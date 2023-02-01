@@ -36,7 +36,7 @@ We will only use the GPT-3 APIs here. The following examples are derived from th
 {format: python}
 ![](openai-example.py)
 
-Everytime you run this example you get different output. Here is one example run:
+Every time you run this example you get different output. Here is one example run:
 
 ```
 $ python openai-example.py
@@ -115,45 +115,38 @@ Since my personal interests are mostly in Natural Language Processing (NLP) as u
 
 ![](hfnlp.png)
 
-### Conversation Agent
 
-The fist example using the Hugging Face conversation model. The example is in the file **deep-learning/huggingface_apis/hf-conversation.py**:
+### Coreference: Resolve Pronouns to Proper Nouns in Text Using Hugging Face APIs
 
-{caption: "Hugging Face Conversation Example"}
-{format: python}
-![](hf-conversation.py)
+You can find this example script in **PythonPracticalAIBookCode/deep-learning/huggingface_apis/hf-coreference.py**:
 
-You will get different results everytime you run this script. Here is one example:
+```python
+import json
+import requests
+import os
+from pprint import pprint
 
-```json
-$ python hf-conversation.py 
-{'conversation': {'generated_responses': ["It's Die Hard for sure.",
-                                          "It's the best movie ever."],
-                  'past_user_inputs': ['Which movie is the best ?',
-                                       'Can you explain why ?']},
- 'generated_text': "It's the best movie ever."
-}
+# NOTE: Hugging Face does not have a direct anaphora resolution model, so this
+#       example is faking it using masking with a BERT model.
+
+HF_API_TOKEN = os.environ.get('HF_API_TOKEN')
+headers = {"Authorization": f"Bearer {HF_API_TOKEN}"}
+API_URL = "https://api-inference.huggingface.co/models/bert-base-uncased"
+
+def query(payload):
+    data = json.dumps(payload)
+    response = requests.request("POST", API_URL, headers=headers, data=data)
+    return json.loads(response.content.decode("utf-8"))
+
+data = query("John Smith bought a car. [MASK] drives it fast.")
+
+pprint(data)
 ```
-
-
-### Coreference: Resolve Pronouns to Proper Nouns in Text
-
-{caption: "Hugging Face Conversation Example"}
-{format: python}
-![](hf-coreference.py)
 
 Here is example output (I am only showing the highest scored results for each query):
 
 ```
 $ python hf-coreference.py 
-[{'score': 0.16963981091976166,
-  'sequence': 'the answer to the universe is no.',
-  'token': 2053,
-  'token_str': 'no'},
- {'score': 0.07344783842563629,
-  'sequence': 'the answer to the universe is nothing.',
-  'token': 2498,
-  'token_str': 'nothing'}]
 [{'score': 0.9037206768989563,
   'sequence': 'john smith bought a car. he drives it fast.',
   'token': 2002,
@@ -164,39 +157,15 @@ $ python hf-coreference.py
   'token_str': 'john'}]
 ```
 
-### GPT-2 Example
+### GPT-2 Hugging Face Documentation
 
-{caption: "Using GPT-2 Hosted as a Hugging Face API"}
-{format: python}
-![](hf-gpt2_test.py)
-
-Here is example output:
-
-```
-$ python hf-gpt2_test.py 
-[{'generated_text': 'Can you please let us know more details about your '
-                    'iphone?\n'
-                    '\n'
-                    'If you purchased an iPhone to get around Wi-Fi, such as '
-                    "using your iPhone's Wi-Fi or Bluetooth 3.1 to get around "
-                    'Wi-Fi, the'}]
-```
+The [documentation page for Hugging Face GPT2 models](https://huggingface.co/docs/transformers/model_doc/gpt2) has many examples for using their GPT2 model for tokenization and other NLP tasks.
 
 ### Answer Questions From Text
 
-{caption: "Read Text and Answer Questions"}
-{format: python}
-![](hf-qa.py)
+We already saw an example Jupyter Notebook in the chapter *Semantic Web, Linked Data and Knowledge Graphs* in the section *A Hybrid Deep Learning and RDF/SPARQL Application for Question Answering* that used the the Hugging Face **NeuML/bert-small-cord19-squad2** model to use a large context text sample to answer questions.
 
-Example output:
-
-```
-$ python hf-qa.py
-{'error': 'overloaded'}
-
-```
-
-### Calculate Semantic Similarity of Sentences
+### Calculate Semantic Similarity of Sentences Using Hugging Face APIs
 
 Given a list of sentences we can calculate sentence embeddings for each sentence. Any new sentence and be matched by calculating its embedding and finding the closest cosine similarity match. Contents of file **hf-sentence_similarities.py**:
 
@@ -214,26 +183,31 @@ $ python hf-sentence_similarities.py
 
 Here we are using the one of the free Hugging Face APIs. At the end of this chapter we will use an alternative sentence embedding model that you can easily run on your laptop.
 
-### Summarizing Text.  NOT USE?
+### Summarizing Text Using a Pre-trained Hugging Face Model on Your Laptiop
 
-{caption: "Hugging Model for Summazing Text"}
-{format: python}
-![](hf-summarization.py)
+For most Hugging Face pre-trained models you can either use them running on Hugging Face servers via an API call or use the **transformers** library to download and run the model on your laptop. The downloaded model and associated files are a little less than two gigabytes of data. Once a model is downloaded to **~/.cache/huggingface** on your local filesystem you can use the model again without re-downloading it.
+
+```python
+from transformers import pipeline
+from pprint import pprint
+
+summarizer = pipeline("summarization", model="facebook/bart-large-cnn")
+  
+text = "The President sent a request for changing the debt ceiling to Congress. The president might call a press conference. The Congress was not oblivious of what the Supreme Court's majority had ruled on budget matters. Even four Justices had found nothing to criticize in the President's requirement that the Federal Government's four-year spending plan. It is unclear whether or not the President and Congress can come to an agreement before Congress recesses for a holiday. There is major dissagrement between the Democratic and Republican parties on spending."
+
+results = summarizer(text, max_length=60)[0]
+print("".join(results['summary_text']))
+```
 
 Here is some sample output:
 
 ```
- $ python hf-summarization.py 
-[{'summary_text': 'The President went to Congress. The Congress was not '
-                  "oblivious of what the Supreme Court's majority had ruled. "
-                  'Even four Justices had found nothing to criticize in the '
-                  "President's requirement that the Federal Government's "
-                  'four-year term be extended. The President went back to '
-                  'Congress, and the Congress agreed.'}]
+$ python hf-summarization.py 
+The President sent a request for changing the debt ceiling to Congress. The Congress was not oblivious of what the Supreme Court's majority had ruled on budget matters. Even four Justices had found nothing to criticize in the President's requirement that the Federal Government's four-year spending plan be changed
 ```
 
 
-### Zero Shot Classification. NOT USE?
+### Zero Shot Classification Using Hugging Face APIs
 
 {caption: "Hugging Model for Zero Shot Classification"}
 {format: python}
@@ -318,3 +292,7 @@ In this example we used the [Sentence Transformer utility library util.py](https
 tensor([[0.1793]])
 >>> 
 ```
+
+## Deep Learning Natural Language Processing Wrap-up
+
+In this example and earlier chapters we have seen examples of how effective deep learning is for NLP. I worked on other methods of NLP over a 25 year period and I ask you, dear reader, to take my word on this: deep learning has revolutionized NLP and for almost all practical NLP applications deep learning libraries and models from organizations like Hugging Face and OpenAI should be the first thing that you consider using.

@@ -2,10 +2,9 @@
 
 Recommendation systems are a type of information filtering system that utilize historical data, such as past user behavior or interactions, to predict the likelihood of a user's interest in certain items or products. As an example application: if a product web site has 100K products that is too many for customers to browse through. Based on a customers past purchases, finding customers with similar purchases, etc. it is possible to filter the products shown to a customer.
 
-Writing recommendation systems is a common requirement for almost all businesses that sell products to customers. Before we get started we need to define a few terms that you may not be familiar with:
+Writing recommendation systems is a common requirement for almost all businesses that sell products to customers. Before we get started we need to define two terms that you may not be familiar with: [Collaborative filtering](https://en.wikipedia.org/wiki/Collaborative_filtering): uses both similarities between users and items to calculate recommendations. This linked Wikipedia article also discusses content-based filtering which uses user and item features.
 
-- [Movie Lens dataset](https://grouplens.org/datasets/movielens/): the GroupLens Research organization has packaged the user movie preference [https://movielens.org](https://movielens.org) dataset. This dataset is a standard for developing and evaluating recommendation system algorithms and models.
-- [Collaborative filtering](https://en.wikipedia.org/wiki/Collaborative_filtering): uses both similarities between users and items to calculate recommendations. This Wikipedia article also discusses content-based filtering which uses user and item features.
+The [Movie Lens dataset](https://grouplens.org/datasets/movielens/) created by the GroupLens Research organization uses the user movie preference [https://movielens.org](https://movielens.org) dataset. This dataset is a standard for developing and evaluating recommendation system algorithms and models.
 
 There are at least three good approaches to take:
 
@@ -13,7 +12,7 @@ There are at least three good approaches to take:
 - Use one of the standard libraries or TensorFlow implementations for the classic approach using [Matrix Factorization](https://en.wikipedia.org/wiki/Matrix_factorization_(recommender_systems) for collaborative filtering. Examples are Eric Lundquist's Python library [rankfm](https://github.com/etlundquist/rankfm) and the first example for the [TensorFlow Recommenders library](https://www.tensorflow.org/recommenders/examples/quickstart). Google has a [good Matrix Factorization tutorial](https://developers.google.com/machine-learning/recommendation/collaborative/matrix). While I prefer using the much more complicated TensorFlow Recommenders library, using matrix factorization is probably a good way to start and I recommend taking an hour to work through [this Google Colab tutorial](https://colab.research.google.com/github/google/eng-edu/blob/main/ml/recommendation-systems/recommendation-systems.ipynb)
 - Use the [TensorFlow Recommenders](https://www.tensorflow.org/recommenders) library that supports multi-tower deep learning models that use data for user interactions, user detail data, and product detail data.
 
-We will not write any recommendation systems from scratch in this chapter. We will review one open source recommendation system that I have used at work that is based on TensorFlow.
+We will not write any recommendation systems from scratch in this chapter. We will review one open source recommendation system that I have used at work, the TensorFlow Recommenders library.
 
 Recommendation systems can use a wide variety of techniques, such as collaborative filtering, content-based filtering, and hybrid methods combining filtering algorithms, Matrix Factorization, or Deep Learning technologies, etc. to generate personalized recommendations for users. Collaborative filtering algorithms make recommendations based on the actions of similar users, while content-based filtering algorithms base recommendations on the attributes of items that a user has previously shown interest in. Hybrid methods may be further enhanced by incorporating additional data sources, such as demographic information, or by utilizing more advanced machine learning techniques, such as deep learning or reinforcement learning.
 
@@ -31,7 +30,7 @@ There are several types of data that could be used for recommending movies:
 
 We will use the [TensorFlow Recommenders using rich features example](https://www.tensorflow.org/recommenders/examples/deep_recommenders). For the following overview discussion, you may want to either open this link to read this example or open the alternative [Google Colab example link](https://colab.research.google.com/github/tensorflow/recommenders/blob/main/docs/examples/deep_recommenders.ipynb) to run the example on Colab. For our discussion, I will use short code snippets and use one screenshot of the example in Colab so you can optionally just follow along without opening either link for now.
 
-The TF recommenders example starts with reading the [Movie Lens](https://grouplens.org/datasets/movielens/) dataset using the TensorFlow Data libray:
+The TF recommenders example starts with reading the [Movie Lens](https://grouplens.org/datasets/movielens/) dataset using the TensorFlow Data library:
 
 ```python
 import tensorflow_datasets as tfds
@@ -46,7 +45,7 @@ ratings = ratings.map(lambda x: {
 movies = movies.map(lambda x: x["movie_title"])
 ```
 
-We need to later generate embedding layers for both unique movie  titles and also unique user IDs. We start with getting sequences for unique movie and user IDs:
+We need to later generate embedding layers for both unique movie  titles and also unique user IDs. We start with getting sequences for unique movie titles and user IDs:
 
 ```python
 unique_movie_titles = np.unique(np.concatenate(list(movies.batch(1000))))
@@ -54,7 +53,7 @@ unique_user_ids = np.unique(np.concatenate(list(ratings.batch(1_000).map(
     lambda x: x["user_id"]))))
 ```
     
-There are several recommenders examples in the Keras documentation and a few implement the example code in "pure Keras" which is interesting to see a lower level implementation. However, in this example Python user and movie models are derived from the Python class **tf.keras.Model** that makes the implementation much shorter. Let's look at the implementation of these two models:
+In this example Python user and movie models are derived from the Python class **tf.keras.Model**. Let's look at the implementation of these two models:
 
 ```python
 class UserModel(tf.keras.Model):
@@ -125,7 +124,7 @@ class MovieModel(tf.keras.Model):
     ], axis=1)
 ```
 
-The class ** MovieModel** is different than the class **UserModel** since we create embeddings for movie titles instead of IDs.
+The class **MovieModel** is different than the class **UserModel** since we create embeddings for movie titles instead of IDs.
 
 We also wrap the user model in a separate query model that combines a user model with dense fully connected layers:
 
