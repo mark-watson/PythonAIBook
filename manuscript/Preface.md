@@ -52,4 +52,4 @@ This picture shows me and my wife Carol who helps me with book production.
 
 I would like to thank my wife Carol Watson who edits all of my books.
 
-I would like to thank the following readers who reported errors or typos in this book: **none so far!**
+I would like to thank the following readers who reported errors or typos in this book: Ryan O'Connor (typo).

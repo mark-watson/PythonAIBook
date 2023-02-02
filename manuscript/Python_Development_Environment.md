@@ -58,7 +58,7 @@ Since 2015 most of my work has been centered around deep learning and Google Col
 
 **venv** creates a subdirectory for a project's installed Python executable files and libraries. You can name this subdirectory whatever you like (I like the name "venv"):
 
-I sometimes use [venv](https://docs.python.org/3/library/venv.html) for my Python related work that is not machine learning or deep learning. **venv** is used to create isolated virutal Python development environments for each project, for example:
+I sometimes use [venv](https://docs.python.org/3/library/venv.html) for my Python related work that is not machine learning or deep learning. **venv** is used to create isolated virtual Python development environments for each project, for example:
 
 ```bash
 $ python3 -m venv venv
