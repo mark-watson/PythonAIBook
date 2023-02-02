@@ -10,7 +10,7 @@ The use of pre-trained models, such as BERT and GPT-3, has also become popular i
 
 Deep learning in NLP has been applied in various industries such as chatbots, automated customer service, and language translation services. It has also been used in research areas such as natural language understanding, question answering, and text summarization.
 
-So, Deep Learning in NLP has greatly improved the performance of various NLP tasks by utilizing deep neural networks to understand and interpret human language. The use of pre-trained models has also made it easier to fine-tune models for specific tasks, which has led to a wide range of applications in industry and research.
+As a result, Deep Learning in NLP has greatly improved the performance of various NLP tasks by utilizing deep neural networks to understand and interpret human language. The use of pre-trained models has also made it easier to fine-tune models for specific tasks, which has led to a wide range of applications in industry and research.
 
 In the last decade deep learning techniques have solved most NLP problems, at least in a "good enough" engineering sense. As I write this the ChatGPT model has scored 80% accuracy on the verbal SAT college admissions test. In this chapter we will experiment with a few useful public models that can be used as paid for API calls or in many cases you can run the models yourself.
 
@@ -69,7 +69,7 @@ Cluster 3 Theme:  All of the reviews are about food or drink products.
 
 Another example of a long term project I had that is now easily solved with the OpenAI GPT-3 models is translating natural language queries to SQL queries. I had an example I wrote for the first two editions of my [Java AI book](https://leanpub.com/javaai) (I later removed this example because the code was difficult to follow). I later reworked this example in Common Lisp and used both versions in several consulting projects in the late 1990s and early 2000s.
 
-I refer you to one of the official OpenAI examples [https://github.com/openai/openai-cookbook/blob/main/examples/Backtranslation_of_SQL_queries.py](https://github.com/openai/openai-cookbook/blob/main/examples/Backtranslation_of_SQL_queries.py). In my Java and Common Lisp NLP query examples, I would test generated SQL queries against a database to ensure they were legal queries, etc. and if you modify OpenAI's example I suggest you do the same.
+I refer you to one of the official OpenAI examples [https://github.com/openai/openai-cookbook/blob/main/examples/Backtranslation_of_SQL_queries.py](https://github.com/openai/openai-cookbook/blob/main/examples/Backtranslation_of_SQL_queries.py). In my Java and Common Lisp NLP query examples, I would test generated SQL queries against a database to ensure they were legal queries, etc., and if you modify OpenAI's example I suggest you do the same.
 
 Here is a sample query and a definition of available database tables:
 
@@ -105,7 +105,7 @@ Hugging Face provides an extensive library of pre-trained models and a set of ea
 - Multimodal
 - Reinforcement Learning
 
-As a open source and open model company, Hugging Face is a provider of NLP technology, with a focus on developing and providing state-of-the-art pre-trained models and tools for NLP tasks. They have developed a library of pre-trained models, including models based on transformer architectures such as BERT, GPT-2, and GPT-3, which can be fine-tuned for various tasks such as language understanding, language translation, and text generation.
+As an open source and open model company, Hugging Face is a provider of NLP technology, with a focus on developing and providing state-of-the-art pre-trained models and tools for NLP tasks. They have developed a library of pre-trained models, including models based on transformer architectures such as BERT, GPT-2, and GPT-3, which can be fine-tuned for various tasks such as language understanding, language translation, and text generation.
 
 Hugging Face also provides a set of APIs, which allows developers to easily access the functionality of these pre-trained models. The APIs provide a simple and flexible interface for developers to access the functionality of these models, such as text completion, language translation, and text generation. This allows developers to quickly and easily integrate NLP capabilities into their applications, without the need for extensive knowledge of NLP or deep learning.
 
@@ -167,7 +167,7 @@ We already saw an example Jupyter Notebook in the chapter *Semantic Web, Linked 
 
 ### Calculate Semantic Similarity of Sentences Using Hugging Face APIs
 
-Given a list of sentences we can calculate sentence embeddings for each sentence. Any new sentence and be matched by calculating its embedding and finding the closest cosine similarity match. Contents of file **hf-sentence_similarities.py**:
+Given a list of sentences we, can calculate sentence embeddings for each one. Any new sentence can be matched by calculating its embedding and finding the closest cosine similarity match. Contents of file **hf-sentence_similarities.py**:
 
 
 {caption: "Sentence Similarity"}
@@ -181,7 +181,7 @@ $ python hf-sentence_similarities.py
 [0.6945773363113403, 0.9429150819778442, 0.2568760812282562]
 ```
 
-Here we are using the one of the free Hugging Face APIs. At the end of this chapter we will use an alternative sentence embedding model that you can easily run on your laptop.
+Here we are using one of the free Hugging Face APIs. At the end of this chapter we will use an alternative sentence embedding model that you can easily run on your laptop.
 
 ### Summarizing Text Using a Pre-trained Hugging Face Model on Your Laptiop
 
@@ -227,7 +227,7 @@ $ python hf-zero_shot_classification.py
 
 ## Comparing Sentences for Similarity Using Transformer Models
 
-Although I usually use OpenAI and HuggingFace for most of the pre-trained NLP models I use, I recently used a sentence similarity Transformer model from the [Ubiquitous Knowledge Processing Lab](https://www.informatik.tu-darmstadt.de/ukp/ukp_home/index.en.jsp) for a quick work project and their library support for finding similar sentences is simple to use. This model was written using PyTorch. Here is one of their examples, slightly modified for this book:
+Although I use OpenAI and HuggingFace for most of the pre-trained NLP models I use, I recently used a sentence similarity Transformer model from the [Ubiquitous Knowledge Processing Lab](https://www.informatik.tu-darmstadt.de/ukp/ukp_home/index.en.jsp) for a quick work project and their library support for finding similar sentences is simple to use. This model was written using PyTorch. Here is one of their examples, slightly modified for this book:
 
 ```python
 # pip install sentence_transformers
@@ -298,4 +298,4 @@ tensor([[0.1793]])
 
 ## Deep Learning Natural Language Processing Wrap-up
 
-In this example and earlier chapters we have seen examples of how effective deep learning is for NLP. I worked on other methods of NLP over a 25 year period and I ask you, dear reader, to take my word on this: deep learning has revolutionized NLP and for almost all practical NLP applications deep learning libraries and models from organizations like Hugging Face and OpenAI should be the first thing that you consider using.
+In this example and earlier chapters we have seen examples of how effective deep learning is for NLP. I worked on other methods of NLP over a 25-year period and I ask you, dear reader, to take my word on this: deep learning has revolutionized NLP and for almost all practical NLP applications deep learning libraries and models from organizations like Hugging Face and OpenAI should be the first thing that you consider using.
