@@ -40,7 +40,7 @@ skim(train_df)
 
 The following figure shows the Skimpy library tool for creating summary statistics:
 
-{width: "80%"}
+{width: "94%"}
 ![](skimpy.png)
 
 We need to prepare the training and test data:

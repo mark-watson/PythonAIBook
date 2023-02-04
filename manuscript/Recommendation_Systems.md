@@ -226,6 +226,7 @@ This top-100 accuracy means that if you make a movie recommendation, it has a 29
  
 We can plot the training accuracy vs. training epoch for both one and two layers:
 
+{width: "90%"}
 ![](tfr.png)
 
 The example Google Colab project has an additional training run that gets better accuracy by stacking many additional hidden layers in the user and movie wrapper Python classes.

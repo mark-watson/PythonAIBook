@@ -239,12 +239,12 @@ RETURN tom,tomHanksMovies
 
 The following figure shows a display of movies staring Tom Hanks:
 
-{width: "50%"}
+{width: "75%"}
 ![](neo4l01.png)
 
 By default, not all links are shown. If we double click on the node "Cast Away" in the upper left corner then all links from that node are shown in the display graph:
 
-{width: "50%"}
+{width: "60%"}
 ![](neo4j02.png)
 
 We can query for movies created during a specific time period:
@@ -274,7 +274,7 @@ RETURN p
 
 Here is the shortest path between Actor nodes "Kevin Bacon" and "Meg Ryan":
 
-{width: "50%"}
+{width: "70%"}
 ![](neo4j03.png)
 
 ### Python client code for the Neo4J Movie graph database example

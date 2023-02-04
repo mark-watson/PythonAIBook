@@ -28,7 +28,7 @@ Please note that the content in this book is heavily influenced by what I use in
 
 We will use the same Wisconsin cancer dataset for both the following classification example and a deep learning classification example in a later chapter. Here are the first few rows of the file **labeled_cancer_data.csv**:
 
-{width: "85%"}
+{width: "94%"}
 ![](wisconsindata-1.png)
 
 The last column **class** indicates the class of the sample, 0 for non-malignant and 1 for malignant. The scikit-learn library has high level and simple to use utilities for reading CSV (spreadsheet) data and for preparing the data for training and testing. I don't use these utilities here because I am reusing the data loading code from the later deep learning example.
