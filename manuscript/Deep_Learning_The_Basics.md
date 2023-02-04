@@ -38,7 +38,10 @@ train_df = pandas.read_csv(train_uri, header=None)
 skim(train_df)
 ```
 
-![Skimpy librarytool for creating summary statistics](skimpy.png)
+The following figure shows the Skimpy library tool for creating summary statistics:
+
+{width: "80%"}
+![](skimpy.png)
 
 We need to prepare the training and test data:
 

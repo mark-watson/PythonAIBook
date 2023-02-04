@@ -11,9 +11,9 @@ Please visit [my website](http://markwatson.com) and follow me on social media.
 This book is intended, dear reader, to show you a wide variety of practical AI techniques and examples, and to be a jumping off point when you discover things that interest you or may be useful in your work. A common theme here is covering AI programming tasks that used to be difficult or impossible but are now much simpler using deep learning, of at least possible. I also cover a wide variety on non-deep learning material including a chapter on Symbolic AI that has historic interest and some current practical value.
 
 {class: tip}
-I try to update my books at least once a year so when purchasing on Leanpub please indicatate that you want to be notified when new editions are available. Updates to new editions are free for my Leanpub books.
+I try to update my books at least once a year so when purchasing on Leanpub please indicate that you want to be notified when new editions are available. Updates to new editions are free for my Leanpub books.
 
-My career developing AI applications and tools began in 1982. Until the advent of breakthroughs in deep learning around 2010 most of my development work was in Common Lisp, Java, and C++. My language preference changed when I started spending most of my time creating deep learning models. Python has the most tooling, libraires, and frameworks for deep learning so as a practical matter I have adopted Python as a primary programming language. That said I still also heavily use Common Lisp, Haskell, Swift, and Scheme. I recommend not having an "always use one programming language" mindset.
+My career developing AI applications and tools began in 1982. Until the advent of breakthroughs in deep learning around 2010 most of my development work was in Common Lisp, Java, and C++. My language preference changed when I started spending most of my time creating deep learning models. Python has the most tooling, libraries, and frameworks for deep learning so as a practical matter I have adopted Python as a primary programming language. That said I still also heavily use Common Lisp, Haskell, Swift, and Scheme. I recommend not having an "always use one programming language" mindset.
 
 Why this book? Some of what I cover here has already been covered in the Common Lisp, Java, Clojure and Haskell artificial intelligence books I have previously written. My goal here is to prioritize more material on deep learning while still lightly covering classical machine learning, knowledge representation, information gathering, and semantic web/linked data theory and applications. We also cover knowledge representation, including: classic systems like Soar and Prolog, constraint programming, and the practical use of relational and graph data stores. Much of my work involves natural language processing (NLP) and associated techniques for processed unstructured data and we will cover this material in some depth.
 
@@ -45,7 +45,7 @@ I live in Sedona Arizona. I have been fortunate to have visited close to one hun
 
 This picture shows me and my wife Carol who helps me with book production.
 
-{width: "30%"}
+{width: "50%"}
 ![Mark and Carol Watson](MarkandCarol.jpeg)
 
 ## Acknowledgements

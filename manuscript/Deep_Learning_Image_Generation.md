@@ -60,12 +60,14 @@ The example prompt text "parrot sitting on old man's shoulder" set in line 27 ca
 
 You can try changing the temperature (increase for more randomness and differences from training examples), random seed, and text prompt. This is a generated image containing four images (because we set the output image grid size to 2):
 
+{width: "50%"}
 ![](omparrot.png)
 
 I reduced the above image size by a factor of four in order to keep the size of this eBook fairly small. When you run this example you will get higher resolution images.
 
 You will get different results even without changing the random seed or parameters. Here is sample output from the second time I ran this example on Google Colab:
 
+{width: "50%"}
 ![](omparrot-2.png)
 
 I also reduced the last image size by a factor of four for inclusion in this chapter.

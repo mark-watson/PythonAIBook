@@ -237,11 +237,15 @@ MATCH (tom:Person {name: "Tom Hanks"})-[:ACTED_IN]->(tomHanksMovies)
 RETURN tom,tomHanksMovies
 ```
 
-![Display of movies staring Tom Hanks](neo4l01.png)
+The following figure shows a display of movies staring Tom Hanks:
+
+{width: "50%"}
+![](neo4l01.png)
 
 By default, not all links are shown. If we double click on the node "Cast Away" in the upper left corner then all links from that node are shown in the display graph:
 
-![Display all links from the node "Cast Away"](neo4j02.png)
+{width: "50%"}
+![](neo4j02.png)
 
 We can query for movies created during a specific time period:
 
@@ -268,9 +272,10 @@ MATCH p=shortestPath(
 RETURN p
 ```
 
-Here is the shortest path:
+Here is the shortest path between Actor nodes "Kevin Bacon" and "Meg Ryan":
 
-![Display the shortest path between Actor nodes "Kevin Bacon" and "Meg Ryan"](neo4j03.png)
+{width: "50%"}
+![](neo4j03.png)
 
 ### Python client code for the Neo4J Movie graph database example
 

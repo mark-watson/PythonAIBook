@@ -514,16 +514,17 @@ We will skip ahead a little and use two deep learning models (spaCy NLP and Tran
 
 You can access this example on Google Colab [Colab DBPedia Sparql Question Answering Demo](https://colab.research.google.com/drive/1FX-0eizj2vayXsqfSB2ONuJYG8BaYpGO?usp=sharing).
 
+{width: "80%"}
 ![](DQA1.png)
 
 Here we install a pre-trained deep learning model that can answer questions, given text that contains the answers to the questions. We then import the spaCy NLP library. Finally, I defined a simple utility function for making SPARQL queries.
 
-
+{width: "80%"}
 ![](DQA2.png)
 
 There are two functions defined here. **entities_in_text** uses spaCy to find entities in text and return both the entities and the entity types. The top level function **QA** takes a question as an input, finds the entities, collects text from DBPedia about those entities, and then uses the pre-trained question answering deep learning model to answer the input question.
 
-
+{width: "80%"}
 ![](DQA3.png)
 
 Here we used the top level function **QA** with a few sample questions.
@@ -875,9 +876,10 @@ We now leave our discussion of using the no longer updated OpenCyc data and look
 
 Wikidata uses abstract URIs instead of human readable URIs that DBPedia uses. Because of Wikidata's abstract URIs I usually use DBPedia when experimenting with new ideas. That said, there is more data in Wikidata. The examples in this section will get you started if you want to experiment with Wikidata.
 
-As with DBPedia, start with Wikidata's public SPARQL endpoint [https://query.wikidata.org](https://query.wikidata.org). I want to walk you through resolving abstract URIs to something human readable by starting with a SPARQL query:
+As with DBPedia, start with Wikidata's public SPARQL endpoint [https://query.wikidata.org](https://query.wikidata.org). I want to walk you through resolving abstract URIs to something human readable by starting with a SPARQL query using the Wikidata public SPARQL endpoint:
 
-![Wikidata public SPARQL endpoint](wikidata1.png)
+{width: "70%"}
+![](wikidata1.png)
 
 In the SPARQL results there are three matching subjects:
 

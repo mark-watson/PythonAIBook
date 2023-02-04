@@ -113,6 +113,7 @@ The Hugging Face APIs are available via a simple API call and are accessible via
 
 Since my personal interests are mostly in Natural Language Processing (NLP) as used for processing text data, automatic extraction of structured data from text, and question answering systems, I will just list their NLP task types:
 
+{width: "75%"}
 ![](hfnlp.png)
 
 

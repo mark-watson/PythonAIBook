@@ -528,7 +528,7 @@ The token **sp** on line 1 stands for Soar Production. Rules are enclosed in **{
 
 The following figure is from the Soar tutorial and shows two blocks stacked on top of each other. The bottom block rests on a table:
 
-![From the Soar Tutorial: two stacked blocks sitting on a table](Soarblocks.png)
+![](Soarblocks.png)
 
 This figure represents state **s1** that is a root of the graph also containing blocks named **b1** and **b2** as well as the table named **t1**. The blocks and table all have attributes **^color**, **^name**, and **^type**. The blocks also have the optional attribute **^ontop**.
 
@@ -637,7 +637,7 @@ You need to first install the MiniZinc system. For macOS this can be done with *
 
 The following figure shows the MiniZincIDE with simple constraint satisfaction problem:
 
-![MiniZincIDE with simple constraint satisfaction problem](MiniZincIDE.png)
+![](MiniZincIDE.png)
 
 When I installed **minizinc** on macOS with **brew**, the solver **coinbc** was installed automatically so that is what we use here. Here is the MiniZinc source file **test1.mzn** that you also see in the last figure:
 
