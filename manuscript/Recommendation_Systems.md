@@ -247,7 +247,7 @@ If you need to write a recommendation system for your work then I hope this shor
 
 Thank you, dear reader, for spending the time for taking an adventure with me: exploring AI programming ideas using Python. Because some of the material will be dated quickly, I was motivated to write this book and release it quickly. Indeed, I wrote this book in just a two and a half month period.
 
-My first ten books were published as conventional print books by McGraw-Hill, Springer-Verlag, John Riley, and other publishers. I then published several books with free licenses that can be downloaded from [https://markwatson.com](https://markwatson.com). My seven eBooks subsequently [published on Leanpub](https://leanpub.com/u/markwatson) have cumulatively been updated many times to new editions. I would like to that the Leanpub platform for simplifying the process of writing and frequently updating eBooks.
+My first ten books were published as conventional print books by McGraw-Hill, Springer-Verlag, John Riley, and other publishers. I then published several books with free licenses that can be downloaded from [https://markwatson.com](https://markwatson.com). My seven eBooks subsequently [published on Leanpub](https://leanpub.com/u/markwatson) have cumulatively been updated many times to new editions. I would like to thank the Leanpub platform for simplifying the process of writing and frequently updating eBooks.
 
 I tend to remove some material in new eBook editions that might be outdated, and add new chapters on different topics. Because of this, when you get new editions of my books (free on Leanpub), consider also keeping the old editions.
 
