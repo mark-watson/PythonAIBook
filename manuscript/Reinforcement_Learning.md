@@ -2,6 +2,8 @@
 
 Reinforcement Learning has been used in various applications such as robotics, game playing, recommendation systems, etc. Reinforcement Learning (RL) is a broad topic and we will only cover aspects RL that I use myself.
 
+We will start with suggested paths of study and end with an introduction to Markov Decision Process and then build on that with a concrete RL example.
+
 {class: information}
 This is a common theme in this book: if I don't love a topic or I don't have much practical experience with it, I generally don't write about it or cover it lightly with references for further study. I have limited experience using RL professionally, mostly for a project a few years ago at Capital One and here I am guiding you on the same learning path that I took prior to working on that project.
 
@@ -40,6 +42,19 @@ For initial experiments with RL, I would recommend taking the same path that I t
 - The Sutton/Barto RL Book and accompanying Common Lisp or Python examples.
 
 The original OpenAI RL Gym was a good environment for getting started with simple environments and examples but I didn't get very far with self-study. The RL Coursera classes were a great overview of theory and practice, and I then spend as much time as I could spare working through Sutton/Barto before my project started.
+
+## An Introduction to Markov Decision Process
+
+Here we learn the basic ideas of Markov Decision Process (MDP) and look at a few examples using a popular Python MDP library.
+
+TBD
+
+TBD: use the excellent library https://github.com/sawcordwell/pymdptoolbox
+
+## A Concrete Example Implementing RL
+
+TBD: build on the last section on MDP
+
 
 ## Reinforcement Learning Wrap-up
 
