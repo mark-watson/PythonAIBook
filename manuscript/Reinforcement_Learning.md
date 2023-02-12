@@ -47,6 +47,14 @@ The original OpenAI RL Gym was a good environment for getting started with simpl
 
 Here we learn the basic ideas of Markov Decision Process (MDP) and look at a few examples using a popular Python MDP library.
 
+Let's start with defining a few terms you will need to know:
+
+- Sequential decision problem:
+- Observable:
+- Stochastic environment: 
+- Bellman equation: 
+-   
+
 TBD
 
 TBD: use the excellent library https://github.com/sawcordwell/pymdptoolbox
