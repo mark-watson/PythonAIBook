@@ -32,7 +32,7 @@ Overall, the OpenAI GPT-3 APIs provide a powerful and easy-to-use tool for devel
 
 We will only use the GPT-3 APIs here. The following examples are derived from the official set of cookbook examples at [https://github.com/openai/openai-cookbook](https://github.com/openai/openai-cookbook). The first example calls the OpenAI GPT-3 Completion API with a sample of input text and the model completes the text (deep-learning/openai/openai-example.py):
 
-$Note: this example was updated March 1, 2023 to use the ChatGPT API instead of the GPT-3 API.$
+Note: this example was updated March 1, 2023 to use the ChatGPT API instead of the GPT-3 API.
 
 ```python
 # Using ChatGPT API (from OpenAI's documentation)
