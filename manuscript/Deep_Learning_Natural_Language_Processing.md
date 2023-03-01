@@ -14,7 +14,7 @@ As a result, Deep Learning in NLP has greatly improved the performance of variou
 
 In the last decade deep learning techniques have solved most NLP problems, at least in a "good enough" engineering sense. As I write this the ChatGPT model has scored 80% accuracy on the verbal SAT college admissions test. In this chapter we will experiment with a few useful public models that can be used as paid for API calls or in many cases you can run the models yourself.
 
-## OpenAI GPT-3 APIs
+## OpenAI GPT-3 and ChatGPT APIs
 
 OpenAI GPT-3 (Generative Pre-trained Transformer 3) is an advanced language processing model developed by OpenAI. There are three general classes of OpenAI API services:
 
@@ -32,15 +32,49 @@ Overall, the OpenAI GPT-3 APIs provide a powerful and easy-to-use tool for devel
 
 We will only use the GPT-3 APIs here. The following examples are derived from the official set of cookbook examples at [https://github.com/openai/openai-cookbook](https://github.com/openai/openai-cookbook). The first example calls the OpenAI GPT-3 Completion API with a sample of input text and the model completes the text (deep-learning/openai/openai-example.py):
 
-{caption: "OpenAI GPT-3 Completion Example"}
-{format: python}
-![](openai-example.py)
+$Note: this example was updated March 1, 2023 to use the ChatGPT API instead of the GPT-3 API.$
+
+```python
+# Using ChatGPT API (from OpenAI's documentation)
+
+import os
+
+import openai
+
+openai.api_key = os.environ.get('OPENAI_KEY')
+
+completion = openai.ChatCompletion.create(
+  model="gpt-3.5-turbo", 
+  messages=[{"role": "user", "content": "What do I do when Emacs goes to the background and I can't access it?"}]
+)
+
+print(completion)
+```
 
 Every time you run this example you get different output. Here is one example run:
 
-```
-$ python openai-example.py
- bread, butter, and tomatoes. She ran into some old friends, but she
+```json
+{
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "\n\nThere are a few steps you can take if Emacs goes to the background and you can't access it:\n\n1. Try pressing the Alt and Tab keys together to cycle through all the open windows on your computer. This may help you find Emacs and bring it to the foreground.\n\n2. If the above step doesn't work, try clicking on the Emacs icon in your taskbar or dock, depending on your operating system. This should bring Emacs to the front.\n\n3. If Emacs is still not accessible after trying the above steps, check if it is still running by opening your system's task manager or activity monitor. If Emacs is there, you can try to force it to quit and relaunch it.\n\n4. If none of these steps work, you can always restart your computer to clear any glitches or issues that may be causing Emacs to stay in the background.",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1677695823,
+  "id": "chatcmpl-6pLbzAdQahv3nYpY8BrCglE428Y80",
+  "model": "gpt-3.5-turbo-0301",
+  "object": "chat.completion",
+  "usage": {
+    "completion_tokens": 175,
+    "prompt_tokens": 24,
+    "total_tokens": 199
+  }
+}
 ```
 
 ### Using GPT-3 to Name K-Means Clusters
@@ -184,7 +218,7 @@ $ python hf-sentence_similarities.py
 
 Here we are using one of the free Hugging Face APIs. At the end of this chapter we will use an alternative sentence embedding model that you can easily run on your laptop.
 
-### Summarizing Text Using a Pre-trained Hugging Face Model on Your Laptiop
+### Summarizing Text Using a Pre-trained Hugging Face Model on Your Laptop
 
 For most Hugging Face pre-trained models you can either use them running on Hugging Face servers via an API call or use the **transformers** library to download and run the model on your laptop. The downloaded model and associated files are a little less than two gigabytes of data. Once a model is downloaded to **~/.cache/huggingface** on your local filesystem you can use the model again without re-downloading it.
 

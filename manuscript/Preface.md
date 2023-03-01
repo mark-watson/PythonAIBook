@@ -8,7 +8,7 @@ Please visit [my website](http://markwatson.com) and follow me on social media.
 
 # Preface
 
-This book is intended, dear reader, to show you a wide variety of practical AI techniques and examples, and to be a jumping off point when you discover things that interest you or may be useful in your work. A common theme here is covering AI programming tasks that used to be difficult or impossible but are now much simpler using deep learning, of at least possible. I also cover a wide variety on non-deep learning material including a chapter on Symbolic AI that has historic interest and some current practical value.
+This book is intended, dear reader, to show you a wide variety of practical AI techniques and examples, and to be a jumping off point when you discover things that interest you or may be useful in your work. A common theme here is covering AI programming tasks that used to be difficult or impossible but are now much simpler using deep learning, or at least possible. I also cover a wide variety of non-deep learning material including a chapter on Symbolic AI that has historic interest and some current practical value.
 
 {class: tip}
 I try to update my books at least once a year so when purchasing on Leanpub please indicate that you want to be notified when new editions are available. Updates to new editions are free for my Leanpub books.

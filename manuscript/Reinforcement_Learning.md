@@ -57,7 +57,7 @@ Let's start with defining a few terms you will need to know:
 
 TBD
 
-TBD: use the excellent library https://github.com/sawcordwell/pymdptoolbox
+TBD: use the library https://github.com/sawcordwell/pymdptoolbox
 
 ## A Concrete Example Implementing RL
 
