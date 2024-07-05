@@ -1,6 +1,6 @@
 # Cover Material, Copyright, and License
 
-Copyright 2022-2023 Mark Watson. All rights reserved. This book may be shared using the Creative Commons "share and share alike, no modifications, no commercial reuse" license.
+Copyright 2022-2024 Mark Watson. All rights reserved. This book may be shared using the Creative Commons "share and share alike, no modifications, no commercial reuse" license.
 
 This eBook will be updated occasionally so please periodically check the [leanpub.com web page for this book](https://leanpub.com/pythonai) for updates.
 
@@ -9,6 +9,8 @@ Please visit [my website](http://markwatson.com) and follow me on social media.
 # Preface
 
 This book is intended, dear reader, to show you a wide variety of practical AI techniques and examples, and to be a jumping off point when you discover things that interest you or may be useful in your work. A common theme here is covering AI programming tasks that used to be difficult or impossible but are now much simpler using deep learning, or at least possible. I also cover a wide variety of non-deep learning material including a chapter on Symbolic AI that has historic interest and some current practical value.
+
+This book is not intended as a textbook that is to be read start to finish. Probably the most useful material useful is the newest material in Part 3 on Large Language Models (LLMs). Usually the parts or even chapters of this book can be read in any order.
 
 {class: tip}
 I try to update my books at least once a year so when purchasing on Leanpub please indicate that you want to be notified when new editions are available. Updates to new editions are free for my Leanpub books.
