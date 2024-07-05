@@ -1,0 +1,4 @@
+1. Add RNN material to Deep learning
+
+2. move any earlier LLM material from the deep learning section of the book to the LLM part of the book.
+
