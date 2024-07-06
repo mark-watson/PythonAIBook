@@ -1,9 +1,1 @@
-Python_Development_Environment.md
-Machine_Learning.md
-Deep_Learning_The_Basics.md
-Reinforcement_Learning.md
-Recommendation_Systems.md
-Symbolic_AI.md
-Knowledge_Representation_Using_Graph_and_Relational_Databases.md
-Knowledge_Representation_Graph_and_Relational_Databases.md
 Knowledge_Representation_Semantic_Web_and_Linked_Data.md
