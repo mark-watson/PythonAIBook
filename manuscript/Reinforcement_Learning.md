@@ -32,3 +32,37 @@ The core idea of RL is that we train a software agent to interact with and chang
 There are two general approaches to providing training environments to Reinforcement Learning trained agents: physically devices in the real world or simulated environments. This is not a book on robotics so we use the second option.
 
 The end goal for modeling a RL problem is calculating a policy that can be used to control an agent in environments that are similar to the training environment. In a model at time **t** we have a given State~t~. RL policies can be continually be updated during training and in production environments. A policy given a State~t~, calculates an Action~t~ to execute and changes the state to State~t+1~.
+
+## Available RL Tools
+
+For initial experiments with RL, I would recommend taking the same path that I took before using RL at work:
+
+- Using a maintained fork of OpenAI’s Gym library [Gymnasium](https://github.com/Farama-Foundation/Gymnasium).
+- Taking the Coursera classes by Martha and Adam White.
+- The Sutton/Barto RL Book and accompanying Common Lisp or Python examples.
+
+The original OpenAI RL Gym was a good environment for getting started with simple environments and examples but I didn't get very far with self-study. The RL Coursera classes were a great overview of theory and practice, and I then spend as much time as I could spare working through Sutton/Barto before my project started.
+
+## An Introduction to Markov Decision Process
+
+Here we learn the basic ideas of Markov Decision Process (MDP) and look at a few examples using a popular Python MDP library.
+
+Let's start with defining a few terms you will need to know:
+
+- Sequential decision problem:
+- Observable:
+- Stochastic environment: 
+- Bellman equation:  
+
+TBD
+
+TBD: use the library https://github.com/sawcordwell/pymdptoolbox
+
+## A Concrete Example Implementing RL
+
+TBD: build on the last section on MDP
+
+
+## Reinforcement Learning Wrap-up
+
+Dear reader, please pardon the brevity of this overview chapter. I may re-work this chapter with a few examples in the next edition of this book. I tagged this chapter as optional material because I feel that most readers will be better off investing limited learning time in understanding how to use deep learning and pre-trained models.
