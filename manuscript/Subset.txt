@@ -9,7 +9,6 @@ Deep_Learning_Image_Generation.md
 Reinforcement_Learning.md
 Recommendation_Systems.md
 Part3_llms.md
-LLM_1_transformers.md
 LLM_2_tokenizers.md
 LLM_3_public_apis.md
 LLM_4_local_models.md
