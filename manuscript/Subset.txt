@@ -4,7 +4,6 @@ Part1_machine_learning.md
 Machine_Learning.md
 Part2_deep_learning.md
 Deep_Learning_The_Basics.md
-Deep_Learning_Natural_Language_Processing.md
 Reinforcement_Learning.md
 Recommendation_Systems.md
 Part3_llms.md
