@@ -1,1 +1,3 @@
-Knowledge_Representation_Semantic_Web_and_Linked_Data.md
+Preface.md
+Python_Development_Environment.md
+Part1_machine_learning.md
