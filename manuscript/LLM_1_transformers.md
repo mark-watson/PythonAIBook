@@ -23,17 +23,17 @@ Transformers have revolutionized the field of natural language processing (NLP) 
 ### Differences Between Transformers and RNNs
 
 - Sequential Processing vs. Parallel Processing:
--- RNNs: Process input sequences one token at a time, which makes them inherently sequential and slower, especially for long sequences.
--- Transformers: Process all tokens in the input sequence simultaneously, leveraging parallel computation and significantly improving efficiency.
+  - RNNs: Process input sequences one token at a time, which makes them inherently sequential and slower, especially for long sequences.
+  - Transformers: Process all tokens in the input sequence simultaneously, leveraging parallel computation and significantly improving efficiency.
 - Long-Range Dependencies:
--- RNNs: Struggle with long-range dependencies due to vanishing gradient issues and limited context window.
--- Transformers: Handle long-range dependencies effectively using self-attention, where each token can directly attend to all other tokens in the sequence.
+  - RNNs: Struggle with long-range dependencies due to vanishing gradient issues and limited context window.
+  - ransformers: Handle long-range dependencies effectively using self-attention, where each token can directly attend to all other tokens in the sequence.
 - Training Efficiency:
--- RNNs: Require sequential data processing, leading to slower training times.
--- Transformers: Utilize parallel processing, making them faster to train and more scalable.
+  - RNNs: Require sequential data processing, leading to slower training times.
+  - Transformers: Utilize parallel processing, making them faster to train and more scalable.
 - Architectural Complexity:
--- RNNs: Simpler architecture but with inherent limitations in capturing complex patterns.
--- Transformers: More complex architecture with multiple layers of self-attention and feedforward networks, but capable of capturing intricate dependencies.
+  - RNNs: Simpler architecture but with inherent limitations in capturing complex patterns.
+  - Transformers: More complex architecture with multiple layers of self-attention and feedforward networks, but capable of capturing intricate dependencies.
 
 ### Why Transformers Are Revolutionary
 
