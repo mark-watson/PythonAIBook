@@ -1,10 +1,3 @@
-# Part III - Deep Learning
-
-In the next two chapters we explore some basic theory underlying deep learning and then look at practical examples building models from spreadsheet data, performing natural language processing (NLP) tasks, and have fun with models to generate images from text.
-
-When you have finished reading this section and want to learn more about specific deep learning architectures I recommend using this up to date list of short descriptive papers [https://github.com/dair-ai/ML-Papers-Explained](https://github.com/dair-ai/ML-Papers-Explained).
-
-
 # The Basics of Deep Learning
 
 Deep learning is a subfield of machine learning that is concerned with the design and implementation of artificial neural networks (ANNs) with multiple layers, also known as deep neural networks (DNNs). These networks are inspired by the structure and function of the human brain, and are designed to learn from large amounts of data such as images, text, and audio.

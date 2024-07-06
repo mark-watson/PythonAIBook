@@ -14,31 +14,31 @@ Transformers have revolutionized the field of natural language processing (NLP) 
 
 ### Key Concepts and Terminology
 
-	1.	Attention Mechanism: The core innovation in Transformers, allowing the model to weigh the importance of different words in a sentence, regardless of their position.
-	2.	Self-Attention: A specific type of attention where each word in a sequence attends to all other words in the same sequence, enabling the model to capture contextual relationships.
-	3.	Positional Encoding: Since Transformers do not process sequences in order, positional encodings are added to input embeddings to give the model information about the position of words.
-	4.	Encoder-Decoder Architecture: The standard Transformer model consists of an encoder that processes the input sequence and a decoder that generates the output sequence. The encoder and decoder are composed of multiple layers of self-attention and feedforward neural networks.
-	5.	Multi-Head Attention: This mechanism allows the model to attend to different parts of the input sequence from multiple perspectives, enhancing its ability to understand complex patterns.
+- Attention Mechanism: The core innovation in Transformers, allowing the model to weigh the importance of different words in a sentence, regardless of their position.
+- Self-Attention: A specific type of attention where each word in a sequence attends to all other words in the same sequence, enabling the model to capture contextual relationships.
+- Positional Encoding: Since Transformers do not process sequences in order, positional encodings are added to input embeddings to give the model information about the position of words.
+- Encoder-Decoder Architecture: The standard Transformer model consists of an encoder that processes the input sequence and a decoder that generates the output sequence. The encoder and decoder are composed of multiple layers of self-attention and feedforward neural networks.
+- Multi-Head Attention: This mechanism allows the model to attend to different parts of the input sequence from multiple perspectives, enhancing its ability to understand complex patterns.
 
 ### Differences Between Transformers and RNNs
 
-	1.	Sequential Processing vs. Parallel Processing:
-	•	RNNs: Process input sequences one token at a time, which makes them inherently sequential and slower, especially for long sequences.
-	•	Transformers: Process all tokens in the input sequence simultaneously, leveraging parallel computation and significantly improving efficiency.
-	2.	Long-Range Dependencies:
-	•	RNNs: Struggle with long-range dependencies due to vanishing gradient issues and limited context window.
-	•	Transformers: Handle long-range dependencies effectively using self-attention, where each token can directly attend to all other tokens in the sequence.
-	3.	Training Efficiency:
-	•	RNNs: Require sequential data processing, leading to slower training times.
-	•	Transformers: Utilize parallel processing, making them faster to train and more scalable.
-	4.	Architectural Complexity:
-	•	RNNs: Simpler architecture but with inherent limitations in capturing complex patterns.
-	•	Transformers: More complex architecture with multiple layers of self-attention and feedforward networks, but capable of capturing intricate dependencies.
+- Sequential Processing vs. Parallel Processing:
+-- RNNs: Process input sequences one token at a time, which makes them inherently sequential and slower, especially for long sequences.
+-- Transformers: Process all tokens in the input sequence simultaneously, leveraging parallel computation and significantly improving efficiency.
+- Long-Range Dependencies:
+-- RNNs: Struggle with long-range dependencies due to vanishing gradient issues and limited context window.
+-- Transformers: Handle long-range dependencies effectively using self-attention, where each token can directly attend to all other tokens in the sequence.
+- Training Efficiency:
+-- RNNs: Require sequential data processing, leading to slower training times.
+-- Transformers: Utilize parallel processing, making them faster to train and more scalable.
+- Architectural Complexity:
+-- RNNs: Simpler architecture but with inherent limitations in capturing complex patterns.
+-- Transformers: More complex architecture with multiple layers of self-attention and feedforward networks, but capable of capturing intricate dependencies.
 
 ### Why Transformers Are Revolutionary
 
-	1.	Scalability: Transformers can be scaled to very large models, such as GPT-3, which has billions of parameters. This scalability is a key factor in their superior performance across various NLP tasks.
-	2.	Versatility: Transformers are not limited to NLP but have been successfully applied to other domains such as computer vision (e.g., Vision Transformers) and reinforcement learning.
-	3.	State-of-the-Art Performance: Transformers consistently achieve state-of-the-art results on a wide range of benchmarks, including language translation, text generation, and question-answering systems.
+- Scalability: Transformers can be scaled to very large models, such as GPT-3, which has billions of parameters. This scalability is a key factor in their superior performance across various NLP tasks.
+- Versatility: Transformers are not limited to NLP but have been successfully applied to other domains such as computer vision (e.g., Vision Transformers) and reinforcement learning.
+- State-of-the-Art Performance: Transformers consistently achieve state-of-the-art results on a wide range of benchmarks, including language translation, text generation, and question-answering systems.
 
 Transformers represent a significant leap forward in deep learning, primarily due to their efficient handling of long-range dependencies and parallel processing capabilities. By overcoming the limitations of RNNs, Transformers have set new standards for performance and scalability in NLP and beyond. Understanding the fundamental concepts and advantages of Transformers is crucial for anyone involved in AI and machine learning.

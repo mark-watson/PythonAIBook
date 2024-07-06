@@ -34,7 +34,7 @@ The example code that I have written for this book is Apache 2 licensed so feel 
 
 The examples for this book are in the GitHub repository [https://github.com/mark-watson/PythonPracticalAIBookCode](https://github.com/mark-watson/PythonPracticalAIBookCode).
 
-A few of the examples use APIs from Hugging Face and OpenAI's GPT-3. I assume that you have signed up and have access keys that should be available in the environment variables **HF_API_TOKEN** and **OPENAI_KEY**. If you don't want to sign up for these services I still hope that you enjoy reading the sample code and example output.
+A few of the examples use APIs from Hugging Face and OpenAI's GPT-4. I assume that you have signed up and have access keys that should be available in the environment variables **HF_API_TOKEN** and **OPENAI_KEY**. If you don't want to sign up for these services I still hope that you enjoy reading the sample code and example output.
 
 {class: warning}
 The GitHub repository [https://github.com/mark-watson/PythonPracticalAIBookCode](https://github.com/mark-watson/PythonPracticalAIBookCode) for my code examples will occasionally contain subdirectories containing code not in the current edition of this book but are likely to appear in future editions. These subdirectories contain a file named **NOT_YET_IN_BOOK.md**. I plan on releasing new editions of this book in the future.
