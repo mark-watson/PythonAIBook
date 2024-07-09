@@ -8,12 +8,14 @@ Please visit [my website](http://markwatson.com) and follow me on social media.
 
 # Preface
 
+*Note: I rewrote the first edition of this book in the summer of 2024. Most of the changes reflect much more material on Large Language Models (LLMs) as well as a restructuring of the example programs.*
+
 This book is intended, dear reader, to show you a wide variety of practical AI techniques and examples, and to be a jumping off point when you discover things that interest you or may be useful in your work. A common theme here is covering AI programming tasks that used to be difficult or impossible but are now much simpler using deep learning, or at least possible. I also cover a wide variety of non-deep learning material including a chapter on Symbolic AI that has historic interest and some current practical value.
 
-This book is not intended as a textbook that is to be read start to finish. Probably the most useful material useful is the newest material in Part 3 on Large Language Models (LLMs). Usually the parts or even chapters of this book can be read in any order.
+This book is not intended as a textbook that is to be read start to finish. Probably the most useful material useful is the newest material in Part 4 on Large Language Models (LLMs). The parts or even chapters of this book can be read in any order. I have tried making each chapter independent and able to stand on its own even when I am building on earlier themes in the book.
 
 {class: tip}
-I try to update my books at least once a year so when purchasing on Leanpub please indicate that you want to be notified when new editions are available. Updates to new editions are free for my Leanpub books.
+I try to update my books a few times a year so when purchasing on Leanpub please indicate that you want to be notified when new editions are available. Updates to new editions are free for my Leanpub books.
 
 My career developing AI applications and tools began in 1982. Until the advent of breakthroughs in deep learning around 2010 most of my development work was in Common Lisp, Java, and C++. My language preference changed when I started spending most of my time creating deep learning models. Python has the most tooling, libraries, and frameworks for deep learning so as a practical matter I have adopted Python as a primary programming language. That said I still also heavily use Common Lisp, Haskell, Swift, and Scheme. I recommend not having an "always use one programming language" mindset.
 
@@ -30,7 +32,7 @@ If you would like to support my work please consider purchasing my books on [Lea
 
 ## Using the Example Code
 
-The example code that I have written for this book is Apache 2 licensed so feel free to reuse it. I also use several existing open source packages and libraries in the examples that use liberal-use licenses (I link GitHub repositories, so check the licenses for applicability in your projects). Most of the deep learning examples and the few "classic" machine learning examples in this book are available as Jupyter notebooks in the **jupyter_notebooks** directory that can be run as-is on [Google Colab](https://colab.research.google.com) (or install Jupyter locally on your laptop) or the equivalent Python source files are in the **deep-learning** directory. One advantage of using Colab is that most of the required libraries are pre-installed.
+The example code that I have written for this book is Apache 2 licensed so feel free to reuse it. I also use several existing open source packages and libraries in the examples that use liberal-use licenses (I link GitHub repositories, so check the licenses for applicability in your projects). Some of the deep learning examples and the few "classic" machine learning examples in this book are available as Jupyter notebooks in the **jupyter_notebooks** directory that can be run as-is on [Google Colab](https://colab.research.google.com) (or install Jupyter locally on your laptop) or the equivalent Python source files are in the **deep-learning** directory. One advantage of using Colab is that most of the required libraries are pre-installed.
 
 The examples for this book are in the GitHub repository [https://github.com/mark-watson/PythonPracticalAIBookCode](https://github.com/mark-watson/PythonPracticalAIBookCode).
 
