@@ -22,7 +22,11 @@ So, Deep Learning is a subfield of machine learning that is focused on the desig
 
 Here we cover just a single example of what I think of as "classic machine learning" using the [scikit-learn](https://scikit-learn.org/stable/) Python library. Later we cover deep learning in three separate chapters. Deep learning models are more general and powerful but it is important to recognize the types of problems that can be solved using the simpler techniques.
 
-They only requirements for this chapter is **pip install scikit-learn pandas**.
+The only requirements for this chapter are:
+
+```bash
+uv pip install scikit-learn pandas
+```
 
 Please note that the content in this book is heavily influenced by what I use in my own work. I mostly use deep learning so its coverage comprises half this book. For this classic machine learning chapter I only use a classification model. I will not be covering regression or clustering models.
 
@@ -51,32 +55,33 @@ DataFrames are widely used in data science and machine learning projects for loa
 Listing of **load_data.py**:
 
 ```python
-import pandas
+import pandas as pd
+
 
 def load_data():
+    train_df = pd.read_csv("labeled_cancer_data.csv")
+    test_df = pd.read_csv("labeled_test_data.csv")
 
-    train_df = pandas.read_csv("labeled_cancer_data.csv")
-    test_df = pandas.read_csv("labeled_test_data.csv")
-
-    train = train_df.values
-    X_train = train[:,0:9].astype(float) # 9 inputs
+    train = train_df.to_numpy()
+    X_train = train[:, 0:9].astype(float)  # 9 input features
     print("Number training examples:", len(X_train))
-    # Training data: one target output (0 for no cancer, 1 for malignant)
-    Y_train = train[:,-1].astype(float)
-    test = test_df.values
-    X_test = test[:,0:9].astype(float)
-    Y_test = test[:,-1].astype(float)
+    # Training target: one output (0 for non-malignant, 1 for malignant)
+    Y_train = train[:, -1].astype(float)
+
+    test = test_df.to_numpy()
+    X_test = test[:, 0:9].astype(float)
+    Y_test = test[:, -1].astype(float)
     print("Number testing examples:", len(X_test))
     return (X_train, Y_train, X_test, Y_test)
 ```
 
-In line 8 we fetch the values array from the data frame and in line 9 we copy all rows of data, skipping the last column (target classification we want to be able to predict) and converting all data to floating point numbers. In line 14 we copy just the last column of the training data array for use as the target classification.
+In line 6 we read the CSV training data into a Pandas DataFrame. In line 9 we convert the DataFrame to a NumPy array using the `to_numpy()` method (preferred over the older `.values` property). In line 10 we copy all rows of data, skipping the last column (target classification we want to be able to predict) and converting all data to floating point numbers. In line 13 we copy just the last column of the training data array for use as the target classification.
 
 ## Classification Models using Scikit-learn
 
 Classification is a type of supervised machine learning problem where the goal is to predict the class or category of an input sample based on a set of features. The goal of a classification model is to learn a mapping from the input features to the output class labels.
 
-Scikit-learn (sklearn) is a popular Python library for machine learning that is effective for several reasons (partially derived from the [Skikit-learn documentation](https://scikit-learn.org/0.21/documentation.html)):
+Scikit-learn (sklearn) is a popular Python library for machine learning that is effective for several reasons (partially derived from the [Skikit-learn documentation](https://scikit-learn.org/stable/)):
 
 - Scikit-learn provides a consistent and intuitive API for a wide range of machine learning models, which makes it easy to switch between different algorithms and experiment with different approaches.
 - Scikit-learn includes a large collection of models for supervised, unsupervised, and semi-supervised learning (e.g., linear and non-linear models, clustering, and dimensionality reduction).
@@ -89,7 +94,7 @@ Scikit-learn (sklearn) is a popular Python library for machine learning that is 
 All these features make Scikit-learn a powerful and widely used machine learning library for various types of machine learning tasks.
 
 ```python
-from sklearn.preprocessing import StandardScaler 
+from sklearn.preprocessing import StandardScaler
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics import classification_report, confusion_matrix
 
@@ -98,23 +103,23 @@ from load_data import load_data
 (X_train, Y_train, X_test, Y_test) = load_data()
 
 # Remove mean and scale to unit variance:
-scaler1 = StandardScaler()
-scaler2 = StandardScaler()
-
-X_train = scaler1.fit_transform(X_train)
-X_test = scaler2.fit_transform(X_test)
+scaler = StandardScaler()
+X_train = scaler.fit_transform(X_train)
+X_test = scaler.transform(X_test)
 
 # Use the KNN classifier to fit data:
 classifier = KNeighborsClassifier(n_neighbors=5)
 classifier.fit(X_train, Y_train)
 
-# Predict y data with classifier: 
+# Predict y data with classifier:
 y_predict = classifier.predict(X_test)
 
-# Print results: 
+# Print results:
 print(confusion_matrix(Y_test, y_predict))
 print(classification_report(Y_test, y_predict))
 ```
+
+Note that we fit the `StandardScaler` on the training data and then use the same fitted scaler to transform the test data. This is important: scaling the test data with parameters learned from the training set prevents data leakage and ensures a fair evaluation.
 
 We can now train and test the model and evaluate how accurate the model is. In reading the following output, you should understand a few definitions. In machine learning, precision, recall, F1-score, and support are all metrics used to evaluate the performance of a classification model, specifically in regards to binary classification:
 
@@ -127,18 +132,18 @@ These metrics provide an overall view of a model's performance in terms of both 
 
 
 ```bash
-$ python classification.py 
-Number training examples: 677
+$ python classification.py
+Number training examples: 554
 Number testing examples: 15
-[[7 0]
- [1 7]]
+[[8 1]
+ [0 6]]
               precision    recall  f1-score   support
 
-         0.0       0.88      1.00      0.93         7
-         1.0       1.00      0.88      0.93         8
+         0.0       1.00      0.89      0.94         9
+         1.0       0.86      1.00      0.92         6
 
     accuracy                           0.93        15
-   macro avg       0.94      0.94      0.93        15
+   macro avg       0.93      0.94      0.93        15
 weighted avg       0.94      0.93      0.93        15
 ```
 

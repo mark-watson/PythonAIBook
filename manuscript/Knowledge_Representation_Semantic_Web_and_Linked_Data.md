@@ -538,8 +538,8 @@ I published my **kgcreator** command line Python app to PyPy: [https://pypi.org/
 You can install my **kgcreator** library with:
 
 ```bash
-pip install kgcreator
-pip install spacy
+uv pip install kgcreator
+uv pip install spacy
 python -m spacy download en_core_web_sm
 ```
 

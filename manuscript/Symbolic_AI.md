@@ -201,7 +201,7 @@ Similarly, handling JSON data is a common task so here is an example for doing t
 
 You need to install the Python bridge library that is supported by the Swi-Prolog developers:
 
-     pip install swiplserver
+     uv pip install swiplserver
 
 I copied a Prolog program from the [Swi-Prolog documentation](https://www.swi-prolog.org/pldoc/man?section=clpfd-n-queens) to calculate how to eight queens on a chess board in such a way that no queen can capture another queen. Here I get three results by entering the semicolon key to get another answer or the period key to stop:
 
@@ -636,7 +636,7 @@ MiniZinc provides a feature called "Annotations", which allows the user to speci
 
 ### Installation and Setup for MiniZinc and Python
 
-You need to first install the MiniZinc system. For macOS this can be done with **brew install minizinc** or can be [installed from source code on macOs and Linux](https://www.minizinc.org/doc-2.5.5/en/installation_detailed_linux.html). The Python interface can be installed with **pip install minizinc**.
+You need to first install the MiniZinc system. For macOS this can be done with **brew install minizinc** or can be [installed from source code on macOs and Linux](https://www.minizinc.org/doc-2.5.5/en/installation_detailed_linux.html). The Python interface can be installed with **uv pip install minizinc**.
 
 The following figure shows the MiniZincIDE with simple constraint satisfaction problem:
 

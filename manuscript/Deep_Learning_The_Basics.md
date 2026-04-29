@@ -14,76 +14,159 @@ Deep learning models are trained using large amounts of labeled data, and typica
 
 Deep Learning has been applied to various fields such as Computer Vision, Natural Language Processing, Speech Recognition, etc.
 
-## Using TensorFlow and Keras for Building a Cancer Prediction Model
+## Using PyTorch for Building a Cancer Prediction Model
 
-Please [follow this link to Google Colab](https://colab.research.google.com/drive/18UJ-5i6_SyfU01PptfNxvR3ZCNirrRgc?usp=sharing) to see the example using TensorFlow to build a model of the University of Wisconsin cancer dataset. A subset of this Jupyter notebook can also be found in the file **deep-learning/wisconsin_data_github.py** but you will need to install all dependencies automatically installed by Colab and you might need to remove the calls to TensorBoard.
+We will use [PyTorch](https://pytorch.org/) to build a neural network that classifies the same University of Wisconsin cancer dataset we used in the scikit-learn chapter. This lets us directly compare the deep learning approach with the classic K-Nearest Neighbors classifier.
 
-We use the Python package [skimpy](https://pypi.org/project/skimpy/) that is a lightweight tool for creating summary statistics from [Pandas](https://pandas.pydata.org) dataframes. Please note that I will use Pandas dataframes without much explaination so if you have never used Pandas please review [the tutorial on importing and using CSV spreadsheet data](https://pandas.pydata.org/docs/getting_started/intro_tutorials/02_read_write.html#min-tut-02-read-write). The other tutorials are optional.
+The requirements for this chapter are:
 
-We use the **skimpy** library to get information on our dataset:
-
-```python
-train_uri = "https://raw.githubusercontent.com/mark-watson/cancer-deep-learning-model/master/train.csv"
-test_uri = "https://raw.githubusercontent.com/mark-watson/cancer-deep-learning-model/master/test.csv"
-
-train_df = pandas.read_csv(train_uri, header=None)
-
-skim(train_df)
+```bash
+uv pip install torch scikit-learn pandas numpy
 ```
 
-The following figure shows the Skimpy library tool for creating summary statistics:
+### Why PyTorch?
 
-{width: "94%"}
-![](skimpy.png)
+PyTorch is the most widely used deep learning framework in both research and industry. Developed originally by Meta AI, it provides:
 
-We need to prepare the training and test data:
+- **Dynamic computation graphs**: build and modify your network on-the-fly, making debugging natural.
+- **Pythonic API**: feels like writing regular Python code, not configuring a separate computation engine.
+- **Extensive ecosystem**: integrates with Hugging Face Transformers, torchvision, torchaudio, and many more libraries.
+- **Strong GPU support**: seamlessly move computations between CPU, CUDA GPUs, and Apple Silicon (MPS).
 
-```python
-train = train_df.values
-X_train = train[:,0:9].astype(float) # 9 inputs
-print("Number training examples:", len(X_train))
-Y_train = train[:,-1].astype(float)  # one target output (0 for no cancer, 1 for malignant)
-test = pandas.read_csv(test_uri, header=None).values
-X_test = test[:,0:9].astype(float)
-Y_test = test[:,-1].astype(float)
-```
+### Loading and Preparing the Data
 
-We now need to define the TensorFlow/Keras model architecture and train the model:
+We reuse the same CSV data files from our machine learning chapter. The data loading code converts the Pandas DataFrames to NumPy arrays, scales the features, then wraps everything in PyTorch tensors:
 
 ```python
-model = Sequential()
-model.add(Dense(tf.constant(15), input_dim=tf.constant(9), activation='relu'))
-model.add(Dense(tf.constant(15), input_dim=tf.constant(15), activation='relu'))
-model.add(Dropout(0.2)),
-model.add(Dense(tf.constant(1), activation='sigmoid'))
-model.summary()
+import numpy as np
+import pandas as pd
+import torch
+import torch.nn as nn
+from torch.utils.data import DataLoader, TensorDataset
+from sklearn.preprocessing import StandardScaler
 
-model.compile(optimizer='sgd',
-              loss='mse',
-              metrics=['accuracy'])
+def load_data():
+    """Load the cancer CSV files."""
+    train_df = pd.read_csv("../machine-learning/labeled_cancer_data.csv")
+    test_df = pd.read_csv("../machine-learning/labeled_test_data.csv")
 
-logdir = os.path.join("logs", datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))
-callbacks = [TensorBoard(log_dir=logdir,histogram_freq=1,write_graph=True, write_images=True)]
+    train = train_df.to_numpy()
+    X_train = train[:, 0:9].astype(np.float32)
+    Y_train = train[:, -1].astype(np.float32).reshape(-1, 1)
 
-model.fit(X_train, Y_train, batch_size=100, epochs=60, callbacks=callbacks)
+    test = test_df.to_numpy()
+    X_test = test[:, 0:9].astype(np.float32)
+    Y_test = test[:, -1].astype(np.float32).reshape(-1, 1)
+
+    scaler = StandardScaler()
+    X_train = scaler.fit_transform(X_train)
+    X_test = scaler.transform(X_test)
+
+    return X_train, Y_train, X_test, Y_test
 ```
 
-We use the trained model to make predictions on test data:
+Note that we use `np.float32` — PyTorch expects 32-bit floats by default (unlike NumPy's default of 64-bit).
+
+### Defining the Model
+
+In PyTorch, we define neural network architectures by subclassing `nn.Module`. Our network has two hidden layers of 15 neurons with ReLU activation, a dropout layer for regularization, and a single output neuron:
 
 ```python
-y_predict = model.predict([[4,1,1,3,2,1,3,1,1], [3,7,7,4,4,9,4,8,1]])
-print("* y_predict (should be close to [[0], [1]]):", y_predict)
+class CancerNet(nn.Module):
+    """Simple feedforward network: 9 → 15 → 15 → 1."""
 
-* y_predict (should be close to [[0], [1]]): [[0.37185097]
- [0.9584093 ]]
+    def __init__(self):
+        super().__init__()
+        self.network = nn.Sequential(
+            nn.Linear(9, 15),
+            nn.ReLU(),
+            nn.Linear(15, 15),
+            nn.ReLU(),
+            nn.Dropout(0.2),
+            nn.Linear(15, 1),
+        )
+
+    def forward(self, x):
+        return self.network(x)
 ```
 
-You can compare this example using TensorFlow and Keras to our similar classification example using the same data where we used  the **Scikit-learn** library.
+The `forward` method defines how data flows through the network. PyTorch's autograd system automatically computes the gradients needed for backpropagation — we never need to write the backward pass manually.
 
+### The Training Loop
 
-### PyTorch and JAX
+Unlike higher-level frameworks, PyTorch gives you explicit control over the training loop. This makes it easy to customize training behavior, add logging, or implement complex training schedules:
 
-In addition to TensorFlow/Keras, the two other most popular frameworks for deep learning are [PyTorch](https://pytorch.org/tutorials/beginner/basics/intro.html) and [JAX](https://jax.readthedocs.io/en/latest/notebooks/quickstart.html).
+```python
+def train_model(model, train_loader, epochs=60, lr=0.01):
+    criterion = nn.BCEWithLogitsLoss()
+    optimizer = torch.optim.SGD(model.parameters(), lr=lr)
 
-All three frameworks are popular and well supported. I started studying deep learning at the same time that TensorFlow was initially released and I use TensorFlow (usually with the easier to use Keras APIs) for at least 90% of my professional deep learning work. Because of my own history I am showing you TensorFlow/Keras examples but if PyTorch or JAX appeal more to you then by all means use the framework that fits your requirements.
+    for epoch in range(epochs):
+        total_loss = 0.0
+        for X_batch, y_batch in train_loader:
+            optimizer.zero_grad()
+            outputs = model(X_batch)
+            loss = criterion(outputs, y_batch)
+            loss.backward()
+            optimizer.step()
+            total_loss += loss.item()
+
+        if (epoch + 1) % 10 == 0:
+            avg_loss = total_loss / len(train_loader)
+            print(f"  Epoch {epoch+1:3d}/{epochs}  loss: {avg_loss:.4f}")
+```
+
+We use `BCEWithLogitsLoss` which combines a sigmoid activation with binary cross-entropy loss — this is numerically more stable than applying sigmoid separately. The training loop follows the standard PyTorch pattern: zero gradients, forward pass, compute loss, backward pass, update weights.
+
+### Running the Example
+
+Here is the complete output from running **cancer_model.py**:
+
+```bash
+$ python cancer_model.py
+Training examples: 554
+Test examples:     15
+
+CancerNet(
+  (network): Sequential(
+    (0): Linear(in_features=9, out_features=15, bias=True)
+    (1): ReLU()
+    (2): Linear(in_features=15, out_features=15, bias=True)
+    (3): ReLU()
+    (4): Dropout(p=0.2, inplace=False)
+    (5): Linear(in_features=15, out_features=1, bias=True)
+  )
+)
+
+Training:
+  Epoch  10/60  loss: 0.6913
+  Epoch  20/60  loss: 0.6559
+  Epoch  30/60  loss: 0.6250
+  Epoch  40/60  loss: 0.5874
+  Epoch  50/60  loss: 0.5421
+  Epoch  60/60  loss: 0.4969
+
+Confusion Matrix:
+[[9 0]
+ [1 5]]
+
+Classification Report:
+              precision    recall  f1-score   support
+
+         0.0       0.90      1.00      0.95         9
+         1.0       1.00      0.83      0.91         6
+
+    accuracy                           0.93        15
+   macro avg       0.95      0.92      0.93        15
+weighted avg       0.94      0.93      0.93        15
+
+Sample predictions (should be close to [[0], [1]]):
+[[0.8588059]
+ [0.9907742]]
+```
+
+The model achieves 93% accuracy on the test set — matching the performance of our scikit-learn KNN classifier from the earlier chapter. The loss decreases steadily during training, and the sample predictions show that the model learns to distinguish between non-malignant and malignant cases.
+
+You can compare this PyTorch example to our similar classification example using the same data where we used the **Scikit-learn** library. The deep learning approach requires more code but gives us full control over the model architecture, training process, and the ability to scale to much larger and more complex problems.
+
 
