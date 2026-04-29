@@ -1,11 +1,15 @@
 # Overview of Reinforcement Learning (Optional Material)
 
-Reinforcement Learning has been used in various applications such as robotics, game playing, recommendation systems, etc. Reinforcement Learning (RL) is a broad topic and we will only cover aspects RL that I use myself.
-
-We will start with suggested paths of study and end with an introduction to Markov Decision Process and then build on that with a concrete RL example.
+Reinforcement Learning has been used in various applications such as robotics, game playing, recommendation systems, and more. Reinforcement Learning (RL) is a broad topic and we will only cover aspects of RL that I use myself.
 
 {class: information}
 This is a common theme in this book: if I don't love a topic or I don't have much practical experience with it, I generally don't write about it or cover it lightly with references for further study. I have limited experience using RL professionally, mostly for a project a few years ago at Capital One and here I am guiding you on the same learning path that I took prior to working on that project.
+
+The requirements for this chapter are:
+
+```bash
+uv pip install gymnasium numpy pymdptoolbox
+```
 
 ## Overview
 
@@ -13,11 +17,11 @@ Reinforcement Learning is a type of machine learning that is concerned with deci
 
 There are several key components to RL:
 
-- Environment: the system or "world" that the agent interacts with.
-- Agent: the decision-maker that chooses actions based on its current state, the current environment, and its policy.
-- State: a representation of the current environment, the parameters and trained policy of the agent, and possibly the visible actions of other agents in the environment.
-- Action: a decision taken by the agent.
-- Reward: a scalar value that the agent receives as feedback for its actions.
+- **Environment**: the system or "world" that the agent interacts with.
+- **Agent**: the decision-maker that chooses actions based on its current state, the current environment, and its policy.
+- **State**: a representation of the current environment, the parameters and trained policy of the agent, and possibly the visible actions of other agents in the environment.
+- **Action**: a decision taken by the agent.
+- **Reward**: a scalar value that the agent receives as feedback for its actions.
 
 Reinforcement learning algorithms can be divided into two main categories: value-based and policy-based. In value-based RL the agent learns an estimate of the value of different states or state-action pairs which are then used to determine the optimal policy. In contrast, in policy-based RL the agent directly learns a policy without estimating the value of states or state-action pairs.
 
@@ -37,7 +41,7 @@ The end goal for modeling a RL problem is calculating a policy that can be used 
 
 For initial experiments with RL, I would recommend taking the same path that I took before using RL at work:
 
-- Using a maintained fork of OpenAI’s Gym library [Gymnasium](https://github.com/Farama-Foundation/Gymnasium).
+- Using a maintained fork of OpenAI's Gym library [Gymnasium](https://github.com/Farama-Foundation/Gymnasium).
 - Taking the Coursera classes by Martha and Adam White.
 - The Sutton/Barto RL Book and accompanying Common Lisp or Python examples.
 
@@ -45,24 +49,364 @@ The original OpenAI RL Gym was a good environment for getting started with simpl
 
 ## An Introduction to Markov Decision Process
 
-Here we learn the basic ideas of Markov Decision Process (MDP) and look at a few examples using a popular Python MDP library.
+Before we can write a reinforcement learning agent, we need to understand the mathematical framework that RL is built upon: the **Markov Decision Process** (MDP). An MDP provides a formal way to model sequential decision-making problems where outcomes are partly random and partly under the control of a decision-maker.
 
-Let's start with defining a few terms you will need to know:
+Let's start by defining the key terms:
 
-- Sequential decision problem:
-- Observable:
-- Stochastic environment: 
-- Bellman equation:  
+- **Sequential decision problem**: a problem where decisions are made in sequence over time, and each decision affects future states and rewards. Unlike one-shot classification or regression, you must think ahead.
 
-TBD
+- **Fully observable**: the agent can see the complete state of the environment at each step. No hidden information or partial views.
 
-TBD: use the library https://github.com/sawcordwell/pymdptoolbox
+- **Stochastic environment**: transitions between states are not deterministic. An action taken in a given state may lead to different outcomes with certain probabilities. The real world is uncertain, and MDPs model this uncertainty.
 
-## A Concrete Example Implementing RL
+- **Markov property**: the future depends only on the current state and action, not on the history of how you got there. Formally, P(State~t+1~ | State~t~, Action~t~) = P(State~t+1~ | State~t~, Action~t~, State~t-1~, Action~t-1~, ...).
 
-TBD: build on the last section on MDP
+- **Bellman equation**: the recursive relationship that expresses the value of a state as the expected immediate reward plus the discounted value of the next state. This is the foundation of dynamic programming in RL: V(s) = max_a [ R(s,a) + γ Σ P(s'|s,a) V(s') ] where γ (gamma) is the discount factor.
 
+The **discount factor** γ (between 0 and 1) controls how much the agent values future rewards versus immediate rewards:
+- γ close to 0: agent is shortsighted, cares mostly about immediate reward
+- γ close to 1: agent is farsighted, cares about long-term cumulative reward
+
+### Solving MDPs with pymdptoolbox
+
+The [pymdptoolbox](https://github.com/sawcordwell/pymdptoolbox) library provides classic MDP solution algorithms. Let's work through two examples: a custom grid world and the built-in forest management problem.
+
+Listing of **mdp_demo.py**:
+
+```python
+import mdptoolbox.example
+import numpy as np
+
+print("=" * 55)
+print("Markov Decision Process Demo")
+print("=" * 55)
+
+print("\n--- Example 1: Custom 3x3 Grid World ---")
+n_states = 9
+n_actions = 4
+
+P = np.zeros((n_actions, n_states, n_states))
+grid = [(r, c) for r in range(3) for c in range(3)]
+for s, (r, c) in enumerate(grid):
+    for a, (dr, dc) in enumerate([(-1, 0), (0, 1), (1, 0), (0, -1)]):
+        nr, nc = r + dr, c + dc
+        if 0 <= nr < 3 and 0 <= nc < 3:
+            ns = nr * 3 + nc
+        else:
+            ns = s
+        P[a, s, ns] = 1.0
+
+R = np.zeros((n_states, n_actions))
+R[8, :] = 10.0
+R[5, :] = -5.0
+
+vi = mdptoolbox.mdp.ValueIteration(P, R, 0.9)
+vi.run()
+actions = ["↑", "→", "↓", "←"]
+print("Optimal policy:")
+for r in range(3):
+    row = ""
+    for c in range(3):
+        s = r * 3 + c
+        row += f"  {actions[vi.policy[s]]}  "
+    print(row)
+print(f"\nValue function: {np.round(vi.V, 2)}")
+print(f"Iterations to converge: {vi.iter}")
+
+print("\n--- Policy Iteration on same grid ---")
+pi = mdptoolbox.mdp.PolicyIteration(P, R, 0.9)
+pi.run()
+print(f"Policy: {tuple(pi.policy)}")
+print(f"Iterations: {pi.iter}")
+
+print("\n--- Example 2: Forest Management (built-in) ---")
+P2, R2 = mdptoolbox.example.forest(S=5, r1=4, r2=2, p=0.1)
+print("States: 5 (forest age classes 0-4)")
+print("Action 0 = Wait, Action 1 = Cut")
+print("p(fire) = 0.1 each year")
+print(f"Reward shape: {R2.shape} (states × actions)")
+
+vi2 = mdptoolbox.mdp.ValueIteration(P2, R2, 0.9)
+vi2.run()
+print(f"Optimal policy: {tuple(vi2.policy)}")
+for s, a in enumerate(vi2.policy):
+    print(f"  Forest age {s}: {'Wait' if a == 0 else 'Cut'}")
+print(f"Value function: {np.round(vi2.V, 2)}")
+print(f"Iterations: {vi2.iter}")
+```
+
+Here is the output of running **mdp_demo.py**:
+
+```bash
+$ python mdp_demo.py
+=======================================================
+Markov Decision Process Demo
+=======================================================
+
+--- Example 1: Custom 3x3 Grid World ---
+Optimal policy:
+  →    ↓    ↓  
+  →    ↓    ↓  
+  →    →    →  
+
+Value function: [ 6.56 13.85 17.45 13.85 21.95 25.95 21.95 30.95 40.95]
+Iterations to converge: 5
+
+--- Policy Iteration on same grid ---
+Policy: (1, 2, 2, 1, 2, 2, 1, 1, 1)
+Iterations: 5
+
+--- Example 2: Forest Management (built-in) ---
+States: 5 (forest age classes 0-4)
+Action 0 = Wait, Action 1 = Cut
+p(fire) = 0.1 each year
+Reward shape: (5, 2) (states × actions)
+Optimal policy: (0, 0, 0, 0, 0)
+  Forest age 0: Wait
+  Forest age 1: Wait
+  Forest age 2: Wait
+  Forest age 3: Wait
+  Forest age 4: Wait
+Value function: [ 3.49  5.62  8.24 11.48 15.48]
+Iterations: 6
+```
+
+Walking through **Example 1**, we create a 3×3 grid where each cell is a state (0 through 8). The agent can move up, right, down, or left. The transition matrix `P` has shape `(actions, states, states)` — for each action and current state, it specifies the probability of landing in each next state. Our grid is deterministic (probability of 1.0 for each move), and bumping into walls keeps the agent in place.
+
+The reward matrix `R` gives 10 for reaching the goal (bottom-right, state 8) and -5 for the trap (state 5, which is the middle-right cell). Value iteration converges in 5 iterations and produces a sensible policy: the arrows point around the trap toward the goal. The value function shows that states closer to the goal have higher values.
+
+I also ran **Policy Iteration** on the same grid. Both algorithms arrived at the same policy but through different means: value iteration improves value estimates until convergence, while policy iteration alternates between evaluating a fixed policy and improving it greedily.
+
+In **Example 2**, we use pymdptoolbox's built-in forest management problem. At each year, you choose to Wait (let the forest grow one age class) or Cut (harvest timber, resetting the forest to age 0). There is a 10% chance of fire each year that also resets the forest to age 0. With these parameters the optimal policy is to always Wait — the expected value of older forest outweighs the immediate reward of cutting.
+
+The key takeaway: MDPs give you a formal language to describe decision problems, and algorithms like value iteration and policy iteration compute optimal policies. In the next section, we will tackle environments where we do *not* know the transition probabilities in advance — which is where reinforcement learning comes in.
+
+## A Concrete Example: Q-Learning with Gymnasium
+
+When the transition and reward models are unknown, the agent must learn through trial and error. **Q-learning** is one of the simplest and most widely used model-free RL algorithms. It learns an action-value function Q(s,a) — the expected cumulative reward of taking action **a** in state **s** and following the optimal policy thereafter.
+
+The Q-learning update rule is:
+
+Q(s,a) ← Q(s,a) + α [ r + γ · max_a' Q(s',a') — Q(s,a) ]
+
+Where:
+- α (alpha) is the learning rate
+- γ (gamma) is the discount factor
+- r is the immediate reward received
+- s' is the next state
+
+The agent also needs to balance **exploration** (trying random actions to discover better strategies) against **exploitation** (using known good actions). We use an **epsilon-greedy** strategy: with probability ε, take a random action; otherwise take the action with the highest Q-value. Over time we decay ε so the agent explores less and exploits more.
+
+We will use [Gymnasium](https://gymnasium.farama.org/) (the maintained successor to OpenAI Gym) and its **FrozenLake** environment. In FrozenLake, the agent navigates a 4×4 grid of frozen and cracked ice to reach a goal without falling through. By default, the ice is slippery — your intended move only succeeds with 1/3 probability, and you slide perpendicular otherwise.
+
+Listing of **frozen_lake_qlearning.py**:
+
+```python
+import gymnasium as gym
+import numpy as np
+
+np.random.seed(42)
+
+
+def q_learning(env, episodes=10000, alpha=0.1, gamma=0.99,
+               epsilon=1.0, epsilon_decay=0.999, min_epsilon=0.01):
+    n_states = env.observation_space.n
+    n_actions = env.action_space.n
+    Q = np.zeros((n_states, n_actions))
+    success_history = []
+
+    for episode in range(episodes):
+        state, _ = env.reset()
+        done = False
+
+        while not done:
+            if np.random.random() < epsilon:
+                action = env.action_space.sample()
+            else:
+                action = np.argmax(Q[state])
+
+            next_state, reward, terminated, truncated, _ = env.step(action)
+            done = terminated or truncated
+
+            best_next = np.max(Q[next_state])
+            Q[state, action] += alpha * (
+                reward + gamma * best_next - Q[state, action]
+            )
+
+            state = next_state
+
+        epsilon = max(min_epsilon, epsilon * epsilon_decay)
+
+        if (episode + 1) % 1000 == 0:
+            success_rate = evaluate(env, Q, episodes=100)
+            success_history.append((episode + 1, success_rate))
+            print(f"  Episode {episode + 1:>5}: success rate = {success_rate:.2f}")
+
+    return Q, success_history
+
+
+def evaluate(env, Q, episodes=100):
+    successes = 0
+    for _ in range(episodes):
+        state, _ = env.reset()
+        done = False
+        while not done:
+            action = np.argmax(Q[state])
+            state, reward, terminated, truncated, _ = env.step(action)
+            done = terminated or truncated
+            if terminated and reward == 1.0:
+                successes += 1
+    return successes / episodes
+
+
+def print_policy(Q, env_name):
+    n_states = Q.shape[0]
+    size = int(np.sqrt(n_states))
+    arrows = {0: "←", 1: "↓", 2: "→", 3: "↑"}
+
+    print(f"\nLearned policy for {env_name}:")
+    for row in range(size):
+        row_str = ""
+        for col in range(size):
+            s = row * size + col
+            row_str += arrows[np.argmax(Q[s])]
+        print(f"  {row_str}")
+    print("  (←=left ↓=down →=right ↑=up)")
+
+
+print("=" * 55)
+print("Q-Learning on FrozenLake (slippery)")
+print("=" * 55)
+
+env = gym.make("FrozenLake-v1", is_slippery=True)
+print(f"States: {env.observation_space.n}")
+print(f"Actions: {env.action_space.n}")
+print(f"Map size: 4x4")
+
+print("\nTraining:")
+Q, history = q_learning(env)
+
+print_policy(Q, "FrozenLake-v1 (slippery)")
+
+print("\nFinal evaluation (1000 episodes):")
+final_rate = evaluate(env, Q, episodes=1000)
+print(f"  Success rate: {final_rate:.2f}")
+
+print("\n" + "=" * 55)
+print("Q-Learning on FrozenLake (deterministic, no slipping)")
+print("=" * 55)
+
+env2 = gym.make("FrozenLake-v1", is_slippery=False)
+print(f"States: {env2.observation_space.n}")
+print(f"Actions: {env2.action_space.n}")
+
+print("\nTraining:")
+Q2, _ = q_learning(env2, episodes=2000)
+
+print_policy(Q2, "FrozenLake-v1 (deterministic)")
+
+print("\nFinal evaluation (1000 episodes):")
+final_rate2 = evaluate(env2, Q2, episodes=1000)
+print(f"  Success rate: {final_rate2:.2f}")
+
+env.close()
+env2.close()
+```
+
+Here is the output:
+
+```bash
+$ python frozen_lake_qlearning.py
+=======================================================
+Q-Learning on FrozenLake (slippery)
+=======================================================
+States: 16
+Actions: 4
+Map size: 4x4
+
+Training:
+  Episode  1000: success rate = 0.68
+  Episode  2000: success rate = 0.77
+  Episode  3000: success rate = 0.69
+  Episode  4000: success rate = 0.75
+  Episode  5000: success rate = 0.77
+  Episode  6000: success rate = 0.50
+  Episode  7000: success rate = 0.77
+  Episode  8000: success rate = 0.77
+  Episode  9000: success rate = 0.70
+  Episode 10000: success rate = 0.75
+
+Learned policy for FrozenLake-v1 (slippery):
+  ←↑↑↑
+  ←←→←
+  ↑↓←←
+  ←→↓←
+  (←=left ↓=down →=right ↑=up)
+
+Final evaluation (1000 episodes):
+  Success rate: 0.74
+
+=======================================================
+Q-Learning on FrozenLake (deterministic, no slipping)
+=======================================================
+States: 16
+Actions: 4
+
+Training:
+  Episode  1000: success rate = 1.00
+  Episode  2000: success rate = 1.00
+
+Learned policy for FrozenLake-v1 (deterministic):
+  ↓←←←
+  ↓←↓←
+  →→↓←
+  ←→→←
+  (←=left ↓=down →=right ↑=up)
+
+Final evaluation (1000 episodes):
+  Success rate: 1.00
+```
+
+The `q_learning` function implements the core algorithm. We maintain a Q-table of shape `(n_states, n_actions)` initialized to zeros. Each episode runs until termination (falling in a hole or reaching the goal) or truncation (100-step limit). The epsilon-greedy strategy decays from 1.0 (pure exploration) to 0.01 over time, following the decay schedule `epsilon *= 0.999` each episode.
+
+The Q-value update is the heart of Q-learning:
+
+```python
+best_next = np.max(Q[next_state])
+Q[state, action] += alpha * (reward + gamma * best_next - Q[state, action])
+```
+
+This says: move Q(s,a) a small step (controlled by alpha) toward `r + γ·max_a' Q(s',a')`. The difference `r + γ·max Q - Q` is called the **temporal-difference error** — how much better or worse the outcome was than predicted.
+
+Let's discuss the results:
+
+**Slippery version**: Achieves ~75% success rate after 10,000 episodes. This is about as good as tabular Q-learning gets on the slippery FrozenLake — the randomness of ice physics means some runs are doomed regardless of policy. The learned policy arrows point toward the goal, though the randomness makes the policy harder to interpret visually than the deterministic case. You can also see the success rate fluctuate (e.g., dropping to 0.50 at episode 6000) — this is normal for Q-learning on stochastic environments and reflects the exploration-exploitation trade-off.
+
+**Deterministic version** (is_slippery=False): Converges to a 100% success rate within 1,000 episodes. Without slipping, the task reduces to a simple shortest-path problem and Q-learning finds it quickly.
+
+### Other Gymnasium Environments Worth Exploring
+
+Once you are comfortable with FrozenLake, Gymnasium offers many environments to experiment with:
+
+- **Taxi-v3**: 500 discrete states, the agent must pick up and drop off a passenger at correct locations. 5 actions (move directions + pickup/dropoff). Good for testing discrete Q-learning at slightly larger scale.
+- **CartPole-v1**: balance a pole on a cart. Continuous observation space (4 values), discrete actions (2). Requires function approximation (e.g., a neural network) rather than a Q-table.
+- **MountainCar-v0**: drive an underpowered car up a hill. Continuous observations, discrete actions. Classic example where exploration strategy matters deeply.
+- **LunarLander-v3**: land a spacecraft on a landing pad. 8 continuous observations, 4 discrete actions. More complex dynamics.
+
+For continuous observation spaces, you cannot use a lookup table — you need **Deep Q-Networks (DQN)** which use neural networks to approximate Q(s,a). That topic is beyond our scope here, but the Sutton/Barto book covers it well.
+
+{class: tip}
+When learning RL, start with tabular methods (Q-learning on discrete environments) before moving to deep RL. The concepts transfer directly, but debugging is far easier when you can inspect every Q-value in a table.
 
 ## Reinforcement Learning Wrap-up
 
-Dear reader, please pardon the brevity of this overview chapter. I may re-work this chapter with a few examples in the next edition of this book. I tagged this chapter as optional material because I feel that most readers will be better off investing limited learning time in understanding how to use deep learning and pre-trained models.
+In this chapter we covered:
+
+- **Markov Decision Processes**: the mathematical foundation of RL, including states, actions, rewards, transition probabilities, the Bellman equation, and discount factors.
+- **MDP solving with pymdptoolbox**: value iteration and policy iteration on custom and built-in problems.
+- **Q-learning**: a model-free algorithm that learns from experience without needing transition probabilities. We implemented it from scratch and trained agents on the FrozenLake environment.
+- **Exploration vs exploitation**: controlled by the epsilon-greedy strategy with decaying epsilon.
+
+If this chapter sparked your interest, I encourage you to work through the Coursera specialization by Martha and Adam White and the Sutton/Barto book. For Python-focused RL, the [Stable-Baselines3](https://stable-baselines3.readthedocs.io/) library provides reliable implementations of DQN, A2C, PPO, and other algorithms ready to use with Gymnasium environments.
+
+I tagged this chapter as optional material because I believe most readers will get more immediate value from mastering deep learning and pre-trained models. But if you find yourself working on sequential decision-making problems — robotics, game AI, resource allocation, dynamic pricing — the RL toolkit becomes indispensable.
