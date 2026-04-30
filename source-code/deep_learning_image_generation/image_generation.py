@@ -11,30 +11,31 @@ Requirements:
 """
 
 import torch
-from diffusers import StableDiffusionPipeline
+from diffusers import DiffusionPipeline
 
 
 def main():
-    model_id = "stabilityai/stable-diffusion-2-1"
+    # A smaller model (~1GB) for faster downloading
+    model_id = "segmind/tiny-sd"
     print(f"Loading model: {model_id}")
-    print("(First run will download ~5 GB of model weights)\n")
+    print("(First run will download about 1.1 GB of model weights)\n")
 
     # Use float16 for GPU/MPS, float32 for CPU
     if torch.cuda.is_available():
-        # NVIDIA GPU: use half-precision for speed
-        pipe = StableDiffusionPipeline.from_pretrained(
+        # NVIDIA GPU
+        pipe = DiffusionPipeline.from_pretrained(
             model_id, torch_dtype=torch.float16
         )
         pipe = pipe.to("cuda")
     elif torch.backends.mps.is_available():
-        # Apple Silicon GPU: use half-precision
-        pipe = StableDiffusionPipeline.from_pretrained(
+        # Apple Silicon GPU
+        pipe = DiffusionPipeline.from_pretrained(
             model_id, torch_dtype=torch.float16
         )
         pipe = pipe.to("mps")
     else:
-        # CPU fallback: full precision
-        pipe = StableDiffusionPipeline.from_pretrained(
+        # CPU fallback
+        pipe = DiffusionPipeline.from_pretrained(
             model_id
         )
 
@@ -45,9 +46,9 @@ def main():
     )
     print(f"Generating image for prompt: '{prompt}'")
 
-    # Run the diffusion pipeline (30 denoising steps)
+    # Run the diffusion pipeline (25 steps for tiny-sd)
     image = pipe(
-        prompt, num_inference_steps=30
+        prompt, num_inference_steps=25
     ).images[0]
 
     # Save the generated image to disk

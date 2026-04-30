@@ -44,7 +44,7 @@ image = pipe(prompt, num_inference_steps=30).images[0]
 image.save("generated_landscape.png")
 ```
 
-The first time you run this code, the model weights (5 GB) will be downloaded to **.cache/huggingface** in your home directory. Subsequent runs use the cached model.
+The first time you run this code, the model weights (5 GB) will be downloaded to **.cache/huggingface** in your. Subsequent runs use the cached model.
 
 The code automatically detects available hardware: NVIDIA GPU (CUDA), Apple Silicon (MPS), or CPU. GPU acceleration dramatically speeds up image generation — from minutes on CPU to seconds on a modern GPU.
 
@@ -106,6 +106,12 @@ image.save(text.replace(" ", "_") + ".png")
 If **is_mega** is true then a larger model is constructed. If **is_reusable** is true then the same model is reused to create additional images.
 
 You can try changing the temperature (increase for more randomness and differences from training examples), random seed, and text prompt.
+
+Here is a sample generated image:
+
+{width: "50%"}
+![Generated image](generated_landscape.png)
+
 
 The three Python model files in the GitHub repository comprise about 600 lines of code making this a fairly short complete Attention Network/Transformer example. If you are interested in the implementation please read the original paper from Open AI [Zero-Shot Text-to-Image Generation](https://arxiv.org/abs/2102.12092) before reading the [code for the models](https://github.com/kuprel/min-dalle/tree/main/min_dalle/models).
 
