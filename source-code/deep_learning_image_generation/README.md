@@ -8,7 +8,7 @@ This directory contains example code for the **Overview of Image Generation** ch
 uv run image_generation.py
 ```
 
-Example generated image:
+Example very low-res generated image (prompt: "a serene mountain landscape at sunset, oil painting style")
 
 
 ![Generated image](generated_landscape.png)
