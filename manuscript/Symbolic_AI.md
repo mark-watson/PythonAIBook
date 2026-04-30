@@ -498,20 +498,13 @@ Soar Operator transitioning from one state to another (figure is from the Soar T
 
 ### Setup Python and Soar Development Environment
 
-It will take you a few minutes to install Soar on your system and create the Python bindings. Start by cloning the [Soar GitHub repository](https://github.com/SoarGroup/Soar) and run the install script from the top directory:
+The Soar Python bindings are available as a pip package, making installation straightforward:
 
 ```bash
-python scons/scons.py sml_python
+uv pip install soar-sml
 ```
 
-If you want all language bindings replace **sml_python** with **all**. Change directory to the **out** subdirectory and note the directory path. On my system:
-
-```bash
-$ pwd
-/Users/markw/SOAR/Soar/out
-$ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/Users/markw/SOAR/Soar/out
-$ export PYTHONPATH=$PYTHONPATH:/Users/markw/SOAR/Soar/out
-```
+This installs prebuilt bindings for the Soar kernel — no need to clone the repository or compile from source.
 
 I will present here a simple example and explain a subset of the capabilities of Soar. When we are done here you can reference a recent paper by Neha Rajan and 2Sunderrajan Srinivasan [Exploring Learning Capability of an Agent in SOAR: Using 8- Queens Problem](https://thescipub.com/pdf/jcssp.2020.642.650.pdf) for a complete example using Soar for cognitive modeling and a more complex example.
 
@@ -543,10 +536,10 @@ Rule right-hand side actions can modify, delete, or add working memory data. For
 
 ### Example Soar System With Python Interop
 
-We will use the simplest blocks world example in the Soar Tutorial in our Python interop example. In the examples directories in the Soar Tutorial, this example is spread through eight source files. I have copied them to a single file **Soar/blocks-world/bw.soar** in the GitHub repository for this book.
+We will use the blocks world example from the [official Soar Tutorial](https://soar.eecs.umich.edu/). The agent starts with three blocks (A, B, C) on the table and moves them randomly until they are stacked A on B on C. The Soar production rules are in the file **bw.soar** in this book's GitHub repository.
 
 ```python
-import Python_sml_ClientInterface as sml
+import soar_sml as sml
 
 def callback_debug(mid, user_data, agent, message):
     print(message)
@@ -564,63 +557,21 @@ if __name__ == "__main__":
 Run this example:
 
 ```bash
+$ uv run bw.py
 
-$ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/Users/markw/SOAR/Soar/out
-$ export PYTHONPATH=$PYTHONPATH:/Users/markw/SOAR/Soar/out
-$ python bw.py                                     
-
-     1:    O: O1 (initialize-blocks-world)
-Five Blocks World - just move blocks.
-The goal is to get EDBCA.
-AC
-DEB
-
-     2:    O: O8 (move-block)
- Apply O8: move-block(C,table)P10*apply*move-block*internal
-A
-DEB
-C
-
-     3:    O: O7 (move-block)
- Apply O7: move-block(B,table)P10*apply*move-block*internal
-DE
-B
-C
-A
-
-     4:    O: O17 (move-block)
- Apply O17: move-block(E,table)P10*apply*move-block*internal
-D
-B
-C
-A
-E
-
-     5:    O: O25 (move-block)
- Apply O25: move-block(D,E)P10*apply*move-block*internal
-B
-C
-A
-ED
-
-     6:    O: O27 (move-block)
- Apply O27: move-block(C,D)P10*apply*move-block*internal
-B
-EDC
-A
-
-     7:    O: O10 (move-block)
- Apply O10: move-block(B,C)P10*apply*move-block*internal
-EDCB
-A
-
-     8:    O: O11 (move-block)
- Apply O11: move-block(A,B)P10*apply*move-block*internal
-EDCBA
-Goal Achieved (five blocks).
-System halted.
-Interrupt received.This Agent halted.
+Initial state has A, B, and C on the table.
+Moving Block: A to: B
+Moving Block: C to: A
+Moving Block: C to: TABLE
+Moving Block: A to: C
+Moving Block: B to: A
+Moving Block: A to: TABLE
+Moving Block: B to: C
+Moving Block: A to: B
+Achieved A, B, C
 ```
+
+Because the blocks are moved at random, the exact sequence of moves will vary between runs, but the agent always reaches the goal state (A on B on C on TABLE) and halts.
 
 I consider Soar to be of historic interest and is an important example of a large multiple-decade research project in building large scale reasoning systems.
 
@@ -647,7 +598,7 @@ The following figure shows the MiniZincIDE with simple constraint satisfaction p
 {width: "85%"}
 ![](MiniZincIDE.png)
 
-When I installed **minizinc** on macOS with **brew**, the solver **coinbc** was installed automatically so that is what we use here. Here is the MiniZinc source file **test1.mzn** that you also see in the last figure:
+When I installed **minizinc** on macOS with **brew**, the solver **coinbc** was installed automatically so that is what we use here. Here is the MiniZinc source file **test_mzn.mzn** that you also see in the last figure:
 
 ```python
 int: n;
@@ -667,7 +618,7 @@ from minizinc import Instance, Model, Solver
 
 coinbc = Solver.lookup("coinbc")
 
-test1 = Model("./test1.mzn")
+test1 = Model("./test_mzn.mzn")
 instance = Instance(coinbc, test1)
 instance["n"] = 30
 instance["m"] = 200
@@ -681,7 +632,7 @@ print(result["y"])
 The result is:
 
 ```bash
-$ python test1.py
+$ python test_mzn.py
 Solution(x=20, y=10, _checker='')
 20
 10
