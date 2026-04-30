@@ -1,9 +1,7 @@
 # Overview of Reinforcement Learning (Optional Material)
 
-Reinforcement Learning has been used in various applications such as robotics, game playing, recommendation systems, and more. Reinforcement Learning (RL) is a broad topic and we will only cover aspects of RL that I use myself.
+Reinforcement Learning has been used in various applications such as robotics, game playing, recommendation systems, and more. Reinforcement Learning (RL) is a broad topic and we will only cover basic aspects of RL.
 
-{class: information}
-This is a common theme in this book: if I don't love a topic or I don't have much practical experience with it, I generally don't write about it or cover it lightly with references for further study. I have limited experience using RL professionally, mostly for a project a few years ago at Capital One and here I am guiding you on the same learning path that I took prior to working on that project.
 
 The requirements for this chapter are:
 
@@ -137,7 +135,7 @@ print(f"Value function: {np.round(vi2.V, 2)}")
 print(f"Iterations: {vi2.iter}")
 ```
 
-Here is the output of running **mdp_demo.py**:
+Here is the output of running **mdp_demo.py** (the unicode characters for directionsin the Optimal policy output don't print correctly):
 
 ```bash
 $ python mdp_demo.py

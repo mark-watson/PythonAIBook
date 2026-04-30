@@ -20,31 +20,32 @@ Stable Diffusion is an open-source deep learning model for text-to-image generat
 
 ```python
 import torch
-from diffusers import StableDiffusionPipeline
+from diffusers import DiffusionPipeline
 
-model_id = "stabilityai/stable-diffusion-2-1"
+# A smaller model (~1GB) for faster downloading
+model_id = "segmind/tiny-sd"
 print(f"Loading model: {model_id}")
 
-# Use float16 for GPU, float32 for CPU
+# Use float16 for GPU/MPS, float32 for CPU
 if torch.cuda.is_available():
-    pipe = StableDiffusionPipeline.from_pretrained(
+    pipe = DiffusionPipeline.from_pretrained(
         model_id, torch_dtype=torch.float16
     )
     pipe = pipe.to("cuda")
 elif torch.backends.mps.is_available():
-    pipe = StableDiffusionPipeline.from_pretrained(
+    pipe = DiffusionPipeline.from_pretrained(
         model_id, torch_dtype=torch.float16
     )
     pipe = pipe.to("mps")
 else:
-    pipe = StableDiffusionPipeline.from_pretrained(model_id)
+    pipe = DiffusionPipeline.from_pretrained(model_id)
 
 prompt = "a serene mountain landscape at sunset, oil painting style"
-image = pipe(prompt, num_inference_steps=30).images[0]
+image = pipe(prompt, num_inference_steps=25).images[0]
 image.save("generated_landscape.png")
 ```
 
-The first time you run this code, the model weights (5 GB) will be downloaded to **.cache/huggingface** in your. Subsequent runs use the cached model.
+The first time you run this code, the model weights (about 1.1 GB) will be downloaded to **~/.cache/huggingface** in your home directory. Subsequent runs use the cached model.
 
 The code automatically detects available hardware: NVIDIA GPU (CUDA), Apple Silicon (MPS), or CPU. GPU acceleration dramatically speeds up image generation — from minutes on CPU to seconds on a modern GPU.
 
@@ -52,11 +53,10 @@ You can experiment with different prompts, and the `num_inference_steps` paramet
 
 ```bash
 $ python image_generation.py
-Loading model: stabilityai/stable-diffusion-2-1
-(First run will download ~5 GB of model weights)
+Loading model: segmind/tiny-sd
+(First run will download about 1.1 GB of model weights)
 
-Generating image for prompt: 'a serene mountain landscape at sunset,
-oil painting style'
+Generating image for prompt: 'a serene mountain landscape at sunset, oil painting style'
 Image saved to: generated_landscape.png
 ```
 
