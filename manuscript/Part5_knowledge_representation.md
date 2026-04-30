@@ -1,4 +1,4 @@
-# Part II - Knowledge Representation
+# Part 5 - Knowledge Representation
 
 In the next two chapters we will look at a variety of techniques for encoding information and knowledge for automated processing by AI systems. We will follow the material from the last chapter by diving into using graph data stores and relational databases. We finish this part of the book by reviewing the theory behind the Semantic Web and Linked Data and look at some practical applications.
 
