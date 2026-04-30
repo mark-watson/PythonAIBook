@@ -5,15 +5,16 @@ In the next three chapters we setup our Python programming environment, use the 
 
 # Python Development Environment
 
-I don't use a single development setup for Python. Here I will describe the tools I use and in what contexts I use them.
+I use the tool **uv** to manage Pythonlibrary installation and running Python programs.
+
 
 When you are setting up a Python development environment there are a few things to consider in order to ensure that your environment is set up correctly and is able to run your code correctly. Here are a few pieces of advice to help you get started (web references: [getting started](https://www.python.org/about/gettingstarted/), [testing](https://docs.python.org/3/library/unittest.html), and [packaging](https://packaging.python.org/en/latest/tutorials/managing-dependencies/)):
 
 - Use Git or other version control systems to manage your codebase and keep track of changes. This will make it easier to collaborate with other developers and keep your code organized. I will not cover Git here so [read a good tutorial](https://git-scm.com/docs/gittutorial) if you have not used it before.
-- Use a virtual environment to isolate your development environment and dependencies from the rest of your system. This will make it easier to manage your dependencies and avoid conflicts with other software on your system.
+- Use a virtual environment to isolate your development environment and dependencies from the rest of your system. This will make it easier to manage your dependencies and avoid conflicts with other software on your system. **uv** manages per-project virtual environments.
 - Use **uv** as your primary tool for managing Python versions, virtual environments, and package dependencies. It is incredibly fast and replaces older tools like `pip`, `venv`, and `conda`.
-- For large programs use an IDE such as PyCharm, VSCode or any other to write, run and debug your code. For short Python programs I usually skip using an IDE and instead use Emacs + Python mode.
-- Test your code: Be sure to test your code. Use testing frameworks such as unittest, nose or pytest to automate your testing process.
+- You may wish to use IDEs such as PyCharm, VSCode to run and debug your code. I skip using an IDE and instead use Emacs + Python mode.
+- Test your code: Be sure to test your code. Use testing frameworks such as unittest, nose or pytest to automate your testing process. The examples in this book are very short programs that are intended to be reused in your projects. I did not add tests for the short examples.
 - Keep your environment and dependencies up-to-date, to ensure that you are using the latest versions of packages and that your code runs correctly.
 - Add comments and documentation to your code so that other developers (and you!!) can understand what your code is doing and how it works. Even if you are working on personal projects your "future you" will thank you for adding comments when you need to revisit your own code later.
 
@@ -54,17 +55,6 @@ $ uv venv --python 3.11
 ```
 
 This single tool handles everything I used to do with `Anaconda` and `venv`, but with significantly better performance.
-
-
-## Editors and IDEs
-
-I assume that you already have a favorite Python editor or IDE. Here I will just mention what I use and why I choose different tools for different types of tasks.
-
-I like VSCode when I am working on a large Python project that has many source files scattered over many directories and subdirectories because I find navigation and code browsing is fast and easy.
-
-I prefer Emacs with **python-mode** for most of my work that consists of smaller projects where all code is in either a single or just a few source files. For larger projects I sometimes use Emacs with *treemacs* for rapid navigation between files. I especially like the interactive coding style with Emacs and **emacs-mode** because it is simple to load an entire file, re-load a changed function definition, etc., and work interactively in the provided REPL.
-
-I sometimes use the PyCharm IDE. PyCharm also has excellent rapid code navigation support and is generally full featured. Until about a year ago I used PyCharm for most of my development work but lately I have gone back to using Emacs and **python-mode** as my main daily driver.
 
 
 ## Code Style
