@@ -4,4 +4,4 @@ Deep learning extends classical machine learning with neural networks that can l
 
 We start with the basics of deep learning: network architectures, training, and evaluation. We then explore natural language processing with deep learning, including text classification and working with pre-trained transformer models. The remaining chapters provide overviews of image generation, reinforcement learning, and recommendation systems.
 
-When you have finished reading this section and want to learn more about specific deep learning architectures, I recommend this curated list of explained papers: [ML-Papers-Explained](https://github.com/dair-ai/ML-Papers-Explained).
+When you have finished reading this section and want to learn more about specific deep learning architectures, I recommend this curated list of explained papers: [ML-Papers-Explained](https://github.com/dair-ai/ML-Papers-Explained). This ML Papers directory lists papers in chronological order and also includes LLM papers you might find useful after finishing this book.
