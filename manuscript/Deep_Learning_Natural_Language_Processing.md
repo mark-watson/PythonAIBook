@@ -31,6 +31,8 @@ The requirements for the examples in this chapter are:
 uv pip install torch transformers sentence-transformers
 ```
 
+The examples for this chapter are in the directory **source-code/deep_learning_nlp**.
+
 All models will be downloaded automatically to **~/.cache/huggingface** the first time you run each script. Subsequent runs will use the cached models without re-downloading.
 
 ### Summarizing Text Using a Pre-trained Model on Your Laptop

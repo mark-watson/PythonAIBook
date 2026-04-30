@@ -18,6 +18,8 @@ Deep Learning has been applied to various fields such as Computer Vision, Natura
 
 We will use [PyTorch](https://pytorch.org/) to build a neural network that classifies the same University of Wisconsin cancer dataset we used in the scikit-learn chapter. This lets us directly compare the deep learning approach with the classic K-Nearest Neighbors classifier.
 
+The examples for this chapter are in the directory **source-code/deep_learning_basics**.
+
 The requirements for this chapter are:
 
 ```bash

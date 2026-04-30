@@ -4,6 +4,7 @@ The fastest way to use large language models is through cloud APIs. Google, Open
 
 In this chapter we work through practical examples using the Google Gemini API and the OpenAI API. Both provide Python client libraries that handle authentication, request formatting, and response parsing. The patterns you learn here apply to other API providers as well — the core concepts of sending prompts, receiving completions, and managing conversations are the same across providers.
 
+The examples for this chapter are in the directory **source-code/llm_public_apis**.
 
 ## Setup and Authentication
 

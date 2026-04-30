@@ -6,6 +6,8 @@ In this chapter we focus on [Ollama](https://ollama.com), the most popular tool 
 
 If you want to go deeper into Ollama, including tool use, agents, RAG, and advanced configuration, see my book [Ollama in Action](https://leanpub.com/ollama-in-action).
 
+The examples for this chapter are in the directory **source-code/llm_local_models**.
+
 
 ## Installing Ollama
 

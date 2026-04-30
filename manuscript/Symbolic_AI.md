@@ -10,6 +10,8 @@ I do not implement three examples in this chapter in "pure Python," rather, I us
 
 The material in this chapter is optional for the modern AI practitioner but I hope you find it interesting.
 
+The examples for this chapter are in the directory **source-code/symbolic-AI**.
+
 
 ## Comparison of Symbolic AI and Deep Learning
 

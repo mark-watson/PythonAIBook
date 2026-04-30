@@ -7,6 +7,8 @@ I use several types of data stores in my work but for the purposes of this book 
 
 The next chapter covers RDF and the SPARQL query language in more detail.
 
+The examples for this chapter are in the directory **source-code/knowledge_representation**.
+
 In technical terms, knowledge representation using graph and relational databases involves the use of graph structures and relational data models to represent and organize knowledge in a structured, computationally efficient, and easily accessible way.
 
 A graph structure is a collection of nodes (also known as vertices) and edges (also known as arcs) that connect the nodes. Each node and edge in a graph can have properties, such as labels and attributes which provide information about the entities they represent. Graphs can be used to represent knowledge in a variety of ways, such as through semantic networks and using ontologies to define terms, classes, types, etc.

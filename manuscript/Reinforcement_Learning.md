@@ -11,6 +11,8 @@ The requirements for this chapter are:
 uv pip install gymnasium numpy pymdptoolbox
 ```
 
+The examples for this chapter are in the directory **source-code/reinforcement_learning**.
+
 ## Overview
 
 Reinforcement Learning is a type of machine learning that is concerned with decision-making in dynamic and uncertain environments. RL uses the concept of an agent which interacts with its environment by taking actions and receiving feedback in the form of rewards or penalties. The goal of the agent is to learn a policy which is a mapping from states of the environment to actions with the goal of maximizing the expected cumulative reward over time.

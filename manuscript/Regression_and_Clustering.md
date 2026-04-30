@@ -8,6 +8,8 @@ The requirements for this chapter are:
 uv pip install scikit-learn pandas numpy
 ```
 
+The examples for this chapter are in the directory **source-code/regression_and_clustering**.
+
 ## Regression: Predicting Housing Prices
 
 Regression is a type of supervised machine learning where the goal is to predict a continuous numerical value rather than a class label. While classification asks "which category?", regression asks "how much?" or "how many?"

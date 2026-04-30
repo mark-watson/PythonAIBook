@@ -10,6 +10,8 @@ The requirements for this chapter are:
 uv pip install scikit-learn pandas numpy
 ```
 
+The examples for this chapter are in the directory **source-code/data_analysis_and_feature_engineering**.
+
 We continue using the California Housing dataset from the previous chapter.
 
 ## Exploratory Data Analysis

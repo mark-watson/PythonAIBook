@@ -12,6 +12,8 @@ The requirements for this chapter are:
 uv pip install torch diffusers transformers accelerate
 ```
 
+The examples for this chapter are in the directory **source-code/deep_learning_image_generation**.
+
 ## Image Generation Using Stable Diffusion and PyTorch
 
 Stable Diffusion is an open-source deep learning model for text-to-image generation. The Hugging Face **diffusers** library makes it straightforward to load and run Stable Diffusion models using PyTorch. Here is a complete example that generates an image from a text prompt:
@@ -42,7 +44,7 @@ image = pipe(prompt, num_inference_steps=30).images[0]
 image.save("generated_landscape.png")
 ```
 
-The first time you run this code, the model weights (~5 GB) will be downloaded to **~/.cache/huggingface**. Subsequent runs use the cached model.
+The first time you run this code, the model weights (5 GB) will be downloaded to **.cache/huggingface** in your home directory. Subsequent runs use the cached model.
 
 The code automatically detects available hardware: NVIDIA GPU (CUDA), Apple Silicon (MPS), or CPU. GPU acceleration dramatically speeds up image generation — from minutes on CPU to seconds on a modern GPU.
 
