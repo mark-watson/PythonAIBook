@@ -1,39 +1,51 @@
 """
-Sentence similarity using the sentence-transformers library (PyTorch).
+Sentence similarity using the sentence-transformers
+library (PyTorch).
 
-Computes cosine similarity between all pairs of sentences and
-ranks them by similarity.
+Computes cosine similarity between all pairs of sentences
+and ranks them by similarity.
 """
 
-from sentence_transformers import SentenceTransformer, util
+from sentence_transformers import (
+    SentenceTransformer,
+    util,
+)
 
 
 def main():
-    print("Loading sentence-transformers model (all-MiniLM-L6-v2)...")
+    print("Loading sentence-transformers model")
+    print("  (all-MiniLM-L6-v2)...\n")
+
+    # Load a lightweight sentence embedding model
     model = SentenceTransformer("all-MiniLM-L6-v2")
 
+    # Sentences to compare for semantic similarity
     sentences = [
         "The IRS has new tax laws.",
         "Congress debating the economy.",
         "The politician fled to South America.",
         "Canada and the US will be in the playoffs.",
         "The cat ran up the tree.",
-        "The meal tasted good but was expensive and perhaps not worth the price.",
+        "The meal tasted good but was expensive"
+        " and perhaps not worth the price.",
     ]
 
-    # Encode all sentences
+    # Encode all sentences into embedding vectors
     embeddings = model.encode(sentences)
 
-    # Compute cosine similarities between all pairs
+    # Compute pairwise cosine similarity matrix
     cos_sim = util.cos_sim(embeddings, embeddings)
 
-    # Collect all unique pairs with their scores
+    # Collect all unique sentence pairs with scores
     pairs = []
     for i in range(len(cos_sim) - 1):
         for j in range(i + 1, len(cos_sim)):
-            pairs.append((cos_sim[i][j].item(), i, j))
+            # Extract float score from the tensor
+            pairs.append(
+                (cos_sim[i][j].item(), i, j)
+            )
 
-    # Sort by highest similarity
+    # Sort by highest similarity first
     pairs.sort(key=lambda x: x[0], reverse=True)
 
     print("\nTop-8 most similar pairs:")
