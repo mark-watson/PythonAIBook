@@ -6,6 +6,8 @@ Copyright 2022-2024 Mark Watson. This book may be shared using the Creative Comm
 
 This book covers a wide range of practical AI techniques in Python, from classic machine learning and symbolic AI to modern deep learning and large language models.
 
+![Book Cover](manuscript/resources/titlepage2.jpeg)
+
 ## Topics
 
 - Python development environment setup
