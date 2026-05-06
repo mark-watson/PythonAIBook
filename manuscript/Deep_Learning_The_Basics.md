@@ -14,6 +14,9 @@ Deep learning models are trained using large amounts of labeled data, and typica
 
 Deep Learning has been applied to various fields such as Computer Vision, Natural Language Processing, Speech Recognition, etc.
 
+{width: "80%"}
+![Architecture diagram for the Deep Learning Basics example](FIG_deep_learning_basics.jpg)
+
 ## Using PyTorch for Building a Cancer Prediction Model
 
 We will use [PyTorch](https://pytorch.org/) to build a neural network that classifies the same University of Wisconsin cancer dataset we used in the scikit-learn chapter. This lets us directly compare the deep learning approach with the classic K-Nearest Neighbors classifier.

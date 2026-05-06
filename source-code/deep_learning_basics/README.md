@@ -15,3 +15,7 @@ uv run cancer_model.py
 ## Notes
 
 This example references the CSV data files from `../machine-learning/`. Make sure that directory exists with the data files before running.
+
+## Architecture
+
+![PyTorch cancer classification neural network architecture](FIG_deep_learning_basics.jpg)

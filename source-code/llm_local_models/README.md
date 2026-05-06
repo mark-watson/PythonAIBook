@@ -39,3 +39,7 @@ uv run ollama_memory.py
 uv run ollama_caching.py
 uv run ollama_openai_compat.py
 ```
+
+## Architecture
+
+![Ollama local LLM server architecture with six usage patterns](FIG_llm_local_models.jpg)

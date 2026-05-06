@@ -18,6 +18,9 @@ We will be covering a very small subset of "classic" ML, and then dive deeper in
 
 So, Deep Learning is a subfield of machine learning that is focused on the design and implementation of artificial neural networks with many layers which are capable of learning from large-scale and complex data. It is characterized by its deep architecture, non-linearity, and ability to learn features from raw data, which sets it apart from "classic" machine learning algorithms.
 
+{width: "80%"}
+![Architecture diagram for the Machine Learning example](FIG_machine_learning.jpg)
+
 ## Example Material
 
 Here we cover just a single example of what I think of as "classic machine learning" using the [scikit-learn](https://scikit-learn.org/stable/) Python library. Later we cover deep learning in three separate chapters. Deep learning models are more general and powerful but it is important to recognize the types of problems that can be solved using the simpler techniques.

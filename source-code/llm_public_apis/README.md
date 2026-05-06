@@ -29,3 +29,7 @@ uv pip install openai
 
 - **openai_text.py** — Basic text generation with GPT-5.4-nano
 - **openai_search.py** — Web search augmented generation
+
+## Architecture
+
+![Public cloud LLM API architecture for Google Gemini and OpenAI](FIG_llm_public_apis.jpg)

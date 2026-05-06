@@ -12,6 +12,9 @@ Deep learning in NLP has been applied in various industries such as chatbots, au
 
 In the last decade deep learning techniques have solved most NLP problems, at least in a "good enough" engineering sense. In this chapter we will experiment with a few useful pre-trained models that you can run locally on your laptop using PyTorch.
 
+{width: "80%"}
+![Architecture diagram for the Deep Learning NLP example](FIG_deep_learning_nlp.jpg)
+
 ## Hugging Face and the Transformers Library
 
 Hugging Face provides an extensive library of pre-trained models and the **transformers** Python library that allows developers to quickly integrate NLP capabilities into their applications. The pre-trained models are based on state-of-the-art transformer architectures, trained on large corpora of data. Hugging Face maintains a task page listing all kinds of machine learning that they support at [https://huggingface.co/tasks](https://huggingface.co/tasks) for task domains:

@@ -19,3 +19,7 @@ The Stable Diffusion model weights (~5 GB) are downloaded automatically on first
 
 - **image_generation.py** — Text-to-image generation using Stable Diffusion 2.1 via the Hugging Face diffusers library
 - **generated_landscape.png** — Sample output image
+
+## Architecture
+
+![Stable Diffusion image generation pipeline architecture](FIG_deep_learning_image_generation.jpg)

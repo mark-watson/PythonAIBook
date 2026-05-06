@@ -2,6 +2,9 @@
 
 In the previous chapter we used a K-Nearest Neighbors classifier with scikit-learn. Here we expand our coverage of "classic" machine learning with two more fundamental techniques: **regression** for predicting continuous values, and **clustering** for discovering groups in data without labeled targets.
 
+{width: "80%"}
+![Architecture diagram for the Regression and Clustering example](FIG_regression_and_clustering.jpg)
+
 The requirements for this chapter are:
 
 ```bash

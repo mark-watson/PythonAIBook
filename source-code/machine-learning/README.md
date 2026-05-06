@@ -14,3 +14,7 @@ uv run classification.py
 - **classification.py** — K-Nearest Neighbors classifier using scikit-learn
 - **labeled_cancer_data.csv** — Training data (554 samples)
 - **labeled_test_data.csv** — Test data (15 samples)
+
+## Architecture
+
+![KNN classification pipeline architecture](FIG_machine_learning.jpg)

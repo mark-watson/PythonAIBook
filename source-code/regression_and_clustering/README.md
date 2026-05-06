@@ -13,3 +13,7 @@ uv run clustering.py
 
 - **regression.py** — Linear and polynomial regression on the California Housing dataset
 - **clustering.py** — K-Means clustering on the Iris dataset with silhouette score evaluation
+
+## Architecture
+
+![Regression and clustering pipeline architecture](FIG_regression_and_clustering.jpg)

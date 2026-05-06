@@ -25,3 +25,7 @@ uv run sqlite_knowledge.py
 - **dbpedia_cities.py** — Query DBPedia for cities with population data
 - **sqlite_lib.py** — Reusable SQLite helper functions
 - **sqlite_knowledge.py** — Knowledge base with entity/relationship tables and JOIN queries
+
+## Architecture
+
+![Knowledge representation architecture: SQLite, DBpedia SPARQL, and Wikidata SPARQL approaches](FIG_knowledge_representation.jpg)

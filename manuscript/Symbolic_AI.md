@@ -12,6 +12,9 @@ The material in this chapter is optional for the modern AI practitioner but I ho
 
 The examples for this chapter are in the directory **source-code/symbolic-AI**.
 
+{width: "80%"}
+![Architecture diagram for the Symbolic AI example](FIG_symbolic_ai.jpg)
+
 
 ## Comparison of Symbolic AI and Deep Learning
 

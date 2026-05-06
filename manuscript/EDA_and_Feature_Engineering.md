@@ -4,6 +4,9 @@ Before training any machine learning model, you need to understand your data. **
 
 These steps often make the difference between a mediocre model and a good one. As the saying goes: "garbage in, garbage out."
 
+{width: "80%"}
+![Architecture diagram for the Data Analysis and Feature Engineering example](FIG_data_analysis_and_feature_engineering.jpg)
+
 The requirements for this chapter are:
 
 ```bash

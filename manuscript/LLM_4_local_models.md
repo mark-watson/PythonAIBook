@@ -8,6 +8,9 @@ If you want to go deeper into Ollama, including tool use, agents, RAG, and advan
 
 The examples for this chapter are in the directory **source-code/llm_local_models**.
 
+{width: "80%"}
+![Architecture diagram for the LLM Local Models example](FIG_llm_local_models.jpg)
+
 
 ## Installing Ollama
 

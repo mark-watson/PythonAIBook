@@ -40,3 +40,7 @@ uv pip install soar-sml
 ```
 
 - **bw.py** — Blocks world example using the Soar cognitive architecture from Python.
+
+## Architecture
+
+![Symbolic AI architecture: Prolog, Soar, MiniZinc, and Frames modules](FIG_symbolic_ai.jpg)

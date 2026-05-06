@@ -6,6 +6,9 @@ In this chapter we work through practical examples using the Google Gemini API a
 
 The examples for this chapter are in the directory **source-code/llm_public_apis**.
 
+{width: "80%"}
+![Architecture diagram for the LLM Public APIs example](FIG_llm_public_apis.jpg)
+
 ## Setup and Authentication
 
 ### Google Gemini

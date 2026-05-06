@@ -17,6 +17,9 @@ Relational databases, on the other hand, use a tabular data model to represent k
 
 Combining these two technologies, knowledge can be represented as a graph of interconnected entities, where each entity is stored in a relational database table and connected to other entities through relationships represented by edges in the graph. This allows for efficient querying and manipulation of knowledge, as well as the ability to integrate and reason over large amounts of information.
 
+{width: "80%"}
+![Architecture diagram for the Knowledge Representation example](FIG_knowledge_representation.jpg)
+
 ## Querying Wikidata with SPARQL and Python
 
 [Wikidata](https://www.wikidata.org/) is a free, open knowledge base maintained by the Wikimedia Foundation. It contains structured data about millions of entities — people, places, organizations, scientific concepts, and more — all accessible through a public SPARQL endpoint. Unlike DBPedia, which extracts structured data from Wikipedia infoboxes, Wikidata is a curated knowledge base where the data is entered and maintained directly.

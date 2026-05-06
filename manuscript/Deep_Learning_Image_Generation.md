@@ -6,6 +6,9 @@ This final part of this book consists of overviews of three important topics tha
 
 I have never used deep learning image generation at work but I have fun experimenting with both code and model examples, as well as turn-key web apps like DALL·E. In this chapter we look at two approaches to generating images from text prompts using PyTorch.
 
+{width: "80%"}
+![Architecture diagram for the Deep Learning Image Generation example](FIG_deep_learning_image_generation.jpg)
+
 The requirements for this chapter are:
 
 ```bash

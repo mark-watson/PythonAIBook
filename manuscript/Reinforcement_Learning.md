@@ -2,6 +2,8 @@
 
 Reinforcement Learning has been used in various applications such as robotics, game playing, recommendation systems, and more. Reinforcement Learning (RL) is a broad topic and we will only cover basic aspects of RL.
 
+{width: "80%"}
+![Architecture diagram for the Reinforcement Learning example](FIG_reinforcement_learning.jpg)
 
 The requirements for this chapter are:
 
