@@ -4,6 +4,7 @@ Part1_machine_learning.md
 Machine_Learning.md
 Regression_and_Clustering.md
 EDA_and_Feature_Engineering.md
+AnomalyDetection.md
 Part2_deep_learning.md
 Deep_Learning_The_Basics.md
 Deep_Learning_Natural_Language_Processing.md
