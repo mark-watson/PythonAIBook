@@ -4,7 +4,7 @@ This final part of this book consists of overviews of three important topics tha
 
 # Overview of Image Generation
 
-I have never used deep learning image generation at work but I have fun experimenting with both code and model examples, as well as turn-key web apps like DALL·E. In this chapter we look at two approaches to generating images from text prompts using PyTorch.
+I have never used deep learning image generation at work but I have fun experimenting with both code and model examples, as well as turn-key web apps like DALL·E. In this chapter we look at two approaches to generating images from text prompts: running a model locally with PyTorch, and calling Google's Imagen 4 cloud API.
 
 {width: "80%"}
 ![Architecture diagram for the Deep Learning Image Generation example](FIG_deep_learning_image_generation.jpg)
@@ -12,7 +12,7 @@ I have never used deep learning image generation at work but I have fun experime
 The requirements for this chapter are:
 
 ```bash
-uv pip install torch diffusers transformers accelerate
+uv add torch diffusers transformers accelerate google-genai Pillow
 ```
 
 The examples for this chapter are in the directory **source-code/deep_learning_image_generation**.
@@ -73,6 +73,63 @@ Stable Diffusion works by a process called **denoising diffusion**:
 
 The text prompt is converted to an embedding vector using a text encoder (CLIP), which guides the denoising process at each step. This is why the same prompt can generate different images with different random seeds.
 
+## Image Generation Using Google's Imagen API
+
+While running models locally gives you full control and privacy, cloud-based image generation APIs offer higher quality results with virtually no setup. Google's **Imagen 4** model is accessible through the Gemini API using the **google-genai** SDK.
+
+The entire example is remarkably concise:
+
+```python
+import io
+import os
+
+from google import genai
+from google.genai import types
+from PIL import Image
+
+client = genai.Client(
+    api_key=os.getenv("GOOGLE_API_KEY")
+)
+
+prompt = (
+    "a serene mountain landscape at sunset,"
+    " oil painting style"
+)
+print(f"Generating image for prompt: '{prompt}'")
+
+response = client.models.generate_images(
+    model="imagen-4.0-fast-generate-001",
+    prompt=prompt,
+    config=types.GenerateImagesConfig(
+        number_of_images=1,
+    ),
+)
+
+for generated_image in response.generated_images:
+    image = Image.open(
+        io.BytesIO(generated_image.image.image_bytes)
+    )
+    image.save("gemini_generated_landscape.png")
+    print("Image saved to: gemini_generated_landscape.png")
+```
+
+Compared to the local Stable Diffusion approach, the Gemini API example requires no GPU, no multi-gigabyte model downloads, and no hardware-specific configuration. You just need a `GOOGLE_API_KEY` (available free from [Google AI Studio](https://aistudio.google.com/)).
+
+The `generate_images` method returns image data as raw bytes, which we decode using PIL's `Image.open` with an `io.BytesIO` wrapper. The Imagen 4 model family includes three variants: **Fast** (optimized for speed), **Standard** (balanced), and **Ultra** (maximum fidelity up to 2K resolution). We use the Fast variant here since it produces good results with low latency.
+
+Here is sample output:
+
+```bash
+$ python gemini_image_generation.py
+Generating image for prompt: 'a serene mountain landscape at sunset, oil painting style'
+Image saved to: gemini_generated_landscape.png
+```
+
+Here is a sample generated image using Imagen 4:
+
+{width: "50%"}
+![Gemini Imagen 4 generated landscape](FIG_emini_generated_landscape.png)
+
 ## Mini-DALL·E: A Lightweight Alternative
 
 For a lighter-weight alternative, Brett Kuprel's [Mini-Dalle model](https://github.com/kuprel/min-dalle) is a reduced size port of DALL·E Mini to PyTorch. It requires less GPU memory and can run on more modest hardware:
@@ -127,4 +184,5 @@ For more advanced image generation with PyTorch, explore:
 - The [Hugging Face diffusers documentation](https://huggingface.co/docs/diffusers/) for Stable Diffusion variants, ControlNet, and image-to-image generation.
 - [Stable Diffusion XL (SDXL)](https://huggingface.co/stabilityai/stable-diffusion-xl-base-1.0) for higher quality image generation.
 - The [PyTorch image generation tutorial](https://pytorch.org/tutorials/beginner/dcgan_faces_tutorial.html) for understanding GANs from scratch.
+- The [Google Imagen documentation](https://ai.google.dev/gemini-api/docs/imagen) for cloud-based image generation with the Gemini API.
 
