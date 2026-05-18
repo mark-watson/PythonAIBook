@@ -2,6 +2,12 @@
 
 This directory contains example code for the **LLMs with Local Models** chapter.
 
+
+## Architecture
+
+![Ollama local LLM server architecture with six usage patterns](FIG_llm_local_models.jpg)
+
+
 ## Prerequisites
 
 Install [Ollama](https://ollama.com):
@@ -26,6 +32,7 @@ ollama pull deepseek-r1:7b    # for reasoning example
 - **ollama_memory.py** — Multi-turn conversation with history
 - **ollama_caching.py** — Prompt caching benchmark (cold vs warm start)
 - **ollama_openai_compat.py** — Using the OpenAI SDK with local Ollama
+- **image_to_text_description.py** — Generating detailed image descriptions using a vision model
 
 ## Running
 
@@ -38,8 +45,6 @@ uv run ollama_reasoning.py
 uv run ollama_memory.py
 uv run ollama_caching.py
 uv run ollama_openai_compat.py
+uv run image_to_text_description.py
 ```
 
-## Architecture
-
-![Ollama local LLM server architecture with six usage patterns](FIG_llm_local_models.jpg)
