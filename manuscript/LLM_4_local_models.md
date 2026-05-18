@@ -298,6 +298,11 @@ Prompt caching is especially valuable for applications like document Q&A, where 
 
 Ollama also supports vision models, allowing you to pass an image along with your text prompt so the model can analyze the visual content. You just need to ensure you're using a vision-capable model (like `llava` or `qwen3.5`) and include the image path in your message.
 
+Here is the sample image we will use for this example:
+
+{width: "50%"}
+![Sample ticket image used as input for the vision model](FIG_ticket.png)
+
 Here is an example of asking a vision model to describe an image:
 
 ```python
@@ -323,7 +328,31 @@ response = ollama.chat(
 print(response.message.content)
 ```
 
-This simple capability makes it easy to add image understanding to your local applications without needing complex computer vision pipelines.
+Here is abbreviated output from running this example:
+
+```bash
+$ uv run image_to_text_description.py
+This image is an event ticket from **Northern Arizona
+University (NAU)** for a performance called **"Fanfares
+and Fireworks."**
+
+**Event Details**
+- **Event Name**: *Fanfares and Fireworks*
+- **Event Date**: Friday, September 26, 2025
+- **Time**: 7:30 PM (AZ)
+- **Venue**: Ardrey Memorial Auditorium
+- **Performance**: Flagstaff Symphony Orchestra
+
+**Ticket Information**
+- **Ticket Type**: *Early Bird Tickets* / *New Subscriber C3*
+- **Ticket Price**: $53.00 (Service Fee: $0.00)
+- **Section**: Main Level, Row M, Seat 31
+
+A QR code is displayed on the right side of the ticket
+for scanning at the venue.
+```
+
+Even this small 0.8B-parameter vision model extracts detailed structured information from the ticket image — event details, pricing, seating, and layout elements. This simple capability makes it easy to add image understanding to your local applications without needing complex computer vision pipelines.
 
 
 ## OpenAI-Compatible API
