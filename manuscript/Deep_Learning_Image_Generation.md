@@ -173,7 +173,7 @@ Here is a sample generated image:
 ![Generated image](generated_landscape.png)
 
 
-The three Python model files in the GitHub repository comprise about 600 lines of code making this a fairly short complete Attention Network/Transformer example. If you are interested in the implementation please read the original paper from Open AI [Zero-Shot Text-to-Image Generation](https://arxiv.org/abs/2102.12092) before reading the [code for the models](https://github.com/kuprel/min-dalle/tree/main/min_dalle/models).
+If you are interested in the implementation please read the original paper from Open AI [Zero-Shot Text-to-Image Generation](https://arxiv.org/abs/2102.12092) before reading the [code for the models](https://github.com/kuprel/min-dalle/tree/main/min_dalle/models).
 
 ## Recommended Reading for Image Generation
 
