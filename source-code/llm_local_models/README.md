@@ -5,7 +5,7 @@ This directory contains example code for the **LLMs with Local Models** chapter.
 
 ## Architecture
 
-![Ollama local LLM server architecture with six usage patterns](FIG_llm_local_models.jpg)
+![Ollama local LLM server architecture with seven usage patterns](FIG_llm_local_models.jpg)
 
 
 ## Prerequisites

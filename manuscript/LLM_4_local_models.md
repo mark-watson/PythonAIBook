@@ -294,6 +294,38 @@ The key settings for prompt caching:
 Prompt caching is especially valuable for applications like document Q&A, where you load a long document once and then answer many questions about it.
 
 
+## Image to Text Description (Vision Models)
+
+Ollama also supports vision models, allowing you to pass an image along with your text prompt so the model can analyze the visual content. You just need to ensure you're using a vision-capable model (like `llava` or `qwen3.5`) and include the image path in your message.
+
+Here is an example of asking a vision model to describe an image:
+
+```python
+# image_to_text_description.py - Generating detailed image descriptions using a vision model
+
+import ollama
+
+# Specify the path to the image file to be analyzed
+image_path = 'ticket.png'
+
+# Send the image to the vision-capable model for a detailed description
+response = ollama.chat(
+    model='qwen3.5:0.8b', # Ensure you use a vision-capable model
+    messages=[{
+        'role': 'user',
+        'content': 'Describe this image in detail',
+        'images': [image_path]
+    }],
+    think=False # Suppresses the <think> reasoning block
+)
+
+# Print the model's descriptive analysis of the image
+print(response.message.content)
+```
+
+This simple capability makes it easy to add image understanding to your local applications without needing complex computer vision pipelines.
+
+
 ## OpenAI-Compatible API
 
 Ollama exposes an OpenAI-compatible API endpoint, which means you can use the standard **openai** Python library to talk to local models. This is useful if you want to write code that can switch between cloud and local models by changing only the base URL:
