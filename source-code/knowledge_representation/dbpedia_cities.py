@@ -9,7 +9,7 @@
 
 from SPARQLWrapper import SPARQLWrapper, JSON
 
-queryString = """
+QUERY_STRING = """
 SELECT ?city_uri ?dbpedia_label ?population ?country_label
 WHERE {
     ?city_uri
@@ -31,13 +31,32 @@ ORDER BY DESC(?population)
 LIMIT 10
 """
 
-sparql = SPARQLWrapper("http://dbpedia.org/sparql")
-sparql.setQuery(queryString)
-sparql.setReturnFormat(JSON)
-results = sparql.queryAndConvert()
 
-for r in results["results"]["bindings"]:
-    city = r['dbpedia_label']['value']
-    pop = int(r['population']['value'])
-    country = r.get('country_label', {}).get('value', 'unknown')
-    print(f"  {city} ({country}): population {pop:,}")
+def fetch_cities() -> list[dict[str, str]]:
+    sparql = SPARQLWrapper("https://dbpedia.org/sparql")
+    sparql.addCustomHttpHeader("User-Agent", "PythonAIBook/1.0")
+    sparql.setQuery(QUERY_STRING)
+    sparql.setReturnFormat(JSON)
+    results = sparql.queryAndConvert()
+
+    bindings = results.get("results", {}).get("bindings", [])
+    cities = []
+    for r in bindings:
+        cities.append({
+            "city": r.get("dbpedia_label", {}).get("value", "unknown"),
+            "population": int(r.get("population", {}).get("value", 0)),
+            "country": r.get("country_label", {}).get("value", "unknown"),
+        })
+    return cities
+
+
+if __name__ == "__main__":
+    try:
+        cities = fetch_cities()
+        if not cities:
+            print("No results returned from DBpedia.")
+        else:
+            for c in cities:
+                print(f"  {c['city']} ({c['country']}): population {c['population']:,}")
+    except Exception as e:
+        print(f"Error querying DBpedia: {e}")

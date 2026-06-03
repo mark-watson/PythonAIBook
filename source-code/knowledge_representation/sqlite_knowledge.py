@@ -12,12 +12,13 @@
 import sqlite3
 
 
-def build_knowledge_base():
+def build_knowledge_base() -> sqlite3.Connection:
     """Build a relational knowledge base about scientists and their work."""
     conn = sqlite3.connect(":memory:")
+    conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA foreign_keys = ON")
     cur = conn.cursor()
 
-    # Entity tables: each table represents a type of entity
     cur.execute("""
         CREATE TABLE scientists (
             id INTEGER PRIMARY KEY,
@@ -44,7 +45,6 @@ def build_knowledge_base():
         )
     """)
 
-    # Relationship tables: capture how entities are connected
     cur.execute("""
         CREATE TABLE scientist_field (
             scientist_id INTEGER REFERENCES scientists(id),
@@ -61,46 +61,80 @@ def build_knowledge_base():
         )
     """)
 
-    # Populate with knowledge
-    cur.executemany("INSERT INTO scientists VALUES (?, ?, ?, ?)", [
-        (1, "Albert Einstein", 1879, "German"),
-        (2, "Marie Curie", 1867, "Polish"),
-        (3, "Richard Feynman", 1918, "American"),
-    ])
+    cur.execute(
+        "INSERT INTO scientists (name, birth_year, nationality) VALUES (?, ?, ?)",
+        ("Albert Einstein", 1879, "German"),
+    )
+    einstein_id = cur.lastrowid
 
-    cur.executemany("INSERT INTO fields VALUES (?, ?, ?)", [
-        (1, "Physics", "Study of matter, energy, and their interactions"),
-        (2, "Chemistry", "Study of the composition and properties of matter"),
-        (3, "Quantum Mechanics", "Physics of atomic and subatomic systems"),
-    ])
+    cur.execute(
+        "INSERT INTO scientists (name, birth_year, nationality) VALUES (?, ?, ?)",
+        ("Marie Curie", 1867, "Polish"),
+    )
+    curie_id = cur.lastrowid
 
-    cur.executemany("INSERT INTO discoveries VALUES (?, ?, ?, ?)", [
-        (1, "Special Relativity", 1905, "Time and space are relative"),
-        (2, "Radioactivity", 1898, "Discovery of radium and polonium"),
-        (3, "Quantum Electrodynamics", 1948, "Quantum theory of light and matter"),
-    ])
+    cur.execute(
+        "INSERT INTO scientists (name, birth_year, nationality) VALUES (?, ?, ?)",
+        ("Richard Feynman", 1918, "American"),
+    )
+    feynman_id = cur.lastrowid
+
+    cur.execute(
+        "INSERT INTO fields (name, description) VALUES (?, ?)",
+        ("Physics", "Study of matter, energy, and their interactions"),
+    )
+    physics_id = cur.lastrowid
+
+    cur.execute(
+        "INSERT INTO fields (name, description) VALUES (?, ?)",
+        ("Chemistry", "Study of the composition and properties of matter"),
+    )
+    chemistry_id = cur.lastrowid
+
+    cur.execute(
+        "INSERT INTO fields (name, description) VALUES (?, ?)",
+        ("Quantum Mechanics", "Physics of atomic and subatomic systems"),
+    )
+    qm_id = cur.lastrowid
+
+    cur.execute(
+        "INSERT INTO discoveries (name, year, description) VALUES (?, ?, ?)",
+        ("Special Relativity", 1905, "Time and space are relative"),
+    )
+    sr_id = cur.lastrowid
+
+    cur.execute(
+        "INSERT INTO discoveries (name, year, description) VALUES (?, ?, ?)",
+        ("Radioactivity", 1898, "Discovery of radium and polonium"),
+    )
+    rad_id = cur.lastrowid
+
+    cur.execute(
+        "INSERT INTO discoveries (name, year, description) VALUES (?, ?, ?)",
+        ("Quantum Electrodynamics", 1948, "Quantum theory of light and matter"),
+    )
+    qed_id = cur.lastrowid
 
     cur.executemany("INSERT INTO scientist_field VALUES (?, ?)", [
-        (1, 1), (1, 3),  # Einstein: Physics, Quantum Mechanics
-        (2, 1), (2, 2),  # Curie: Physics, Chemistry
-        (3, 1), (3, 3),  # Feynman: Physics, Quantum Mechanics
+        (einstein_id, physics_id), (einstein_id, qm_id),
+        (curie_id, physics_id), (curie_id, chemistry_id),
+        (feynman_id, physics_id), (feynman_id, qm_id),
     ])
 
     cur.executemany("INSERT INTO scientist_discovery VALUES (?, ?)", [
-        (1, 1),  # Einstein -> Special Relativity
-        (2, 2),  # Curie -> Radioactivity
-        (3, 3),  # Feynman -> QED
+        (einstein_id, sr_id),
+        (curie_id, rad_id),
+        (feynman_id, qed_id),
     ])
 
     conn.commit()
     return conn
 
 
-def query_knowledge_base(conn):
+def query_knowledge_base(conn: sqlite3.Connection) -> None:
     """Demonstrate knowledge queries against the relational schema."""
     cur = conn.cursor()
 
-    # Query 1: Who works in Quantum Mechanics?
     print("Scientists in Quantum Mechanics:")
     cur.execute("""
         SELECT s.name, s.nationality
@@ -110,21 +144,19 @@ def query_knowledge_base(conn):
         WHERE f.name = 'Quantum Mechanics'
     """)
     for row in cur.fetchall():
-        print(f"  {row[0]} ({row[1]})")
+        print(f"  {row['name']} ({row['nationality']})")
 
-    # Query 2: What did each scientist discover?
     print("\nDiscoveries by scientist:")
     cur.execute("""
-        SELECT s.name, d.name, d.year, d.description
+        SELECT s.name AS scientist, d.name AS discovery, d.year, d.description
         FROM scientists s
         JOIN scientist_discovery sd ON s.id = sd.scientist_id
         JOIN discoveries d ON sd.discovery_id = d.id
         ORDER BY d.year
     """)
     for row in cur.fetchall():
-        print(f"  {row[0]}: {row[1]} ({row[2]}) — {row[3]}")
+        print(f"  {row['scientist']}: {row['discovery']} ({row['year']}) — {row['description']}")
 
-    # Query 3: Which fields overlap between scientists?
     print("\nScientists who share a field:")
     cur.execute("""
         SELECT s1.name, s2.name, f.name
@@ -139,6 +171,7 @@ def query_knowledge_base(conn):
         print(f"  {row[0]} & {row[1]}: {row[2]}")
 
 
-conn = build_knowledge_base()
-query_knowledge_base(conn)
-conn.close()
+if __name__ == "__main__":
+    conn = build_knowledge_base()
+    query_knowledge_base(conn)
+    conn.close()

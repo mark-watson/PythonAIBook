@@ -1,25 +1,31 @@
 # sqlite_lib.py - Reusable SQLite helper functions
 #
 # A thin wrapper around Python's built-in sqlite3 module providing
-# simple create, connect, and query functions.
+# simple connect and query functions.
 
-from sqlite3 import connect
+import sqlite3
+from typing import Any
 
-def create_db(db_file_path):
-    """Create a database and return the connection."""
-    conn = connect(db_file_path)
-    return conn
 
-def connection(db_file_path):
+def connection(db_file_path: str) -> sqlite3.Connection:
     """Create and return a database connection."""
-    return connect(db_file_path)
+    return sqlite3.connect(db_file_path)
 
-def query(conn, sql, variable_bindings=None):
-    """Execute a SQL query, commit, and return all results."""
+
+def query(
+    conn: sqlite3.Connection, sql: str, variable_bindings: tuple[Any, ...] | None = None
+) -> list[sqlite3.Row]:
+    """Execute a SQL query, commit if it modifies data, and return all results."""
     cur = conn.cursor()
-    if variable_bindings:
-        cur.execute(sql, variable_bindings)
+    try:
+        if variable_bindings:
+            cur.execute(sql, variable_bindings)
+        else:
+            cur.execute(sql)
+    except sqlite3.Error as e:
+        conn.rollback()
+        raise
     else:
-        cur.execute(sql)
-    conn.commit()
-    return cur.fetchall()
+        if sql.strip().upper().startswith(("INSERT", "UPDATE", "DELETE", "CREATE")):
+            conn.commit()
+        return cur.fetchall()

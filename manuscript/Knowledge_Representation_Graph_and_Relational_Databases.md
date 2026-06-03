@@ -37,64 +37,72 @@ Let's query Wikidata for information about a specific person. Wikidata uses nume
 ```python
 # wikidata_person.py - Query Wikidata for information about a person
 
+import sys
 from SPARQLWrapper import SPARQLWrapper, JSON
-from pprint import pprint
 
-sparql = SPARQLWrapper("https://query.wikidata.org/sparql")
-sparql.addCustomHttpHeader("User-Agent", "PythonAIBook/1.0")
-
-queryString = """
-SELECT ?personLabel ?birthPlaceLabel ?birthDate ?occupationLabel
-WHERE {
-    ?person wdt:P31 wd:Q5 .            # instance of human
-    ?person rdfs:label "Albert Einstein"@en .
-    OPTIONAL { ?person wdt:P19 ?birthPlace . }
-    OPTIONAL { ?person wdt:P569 ?birthDate . }
-    OPTIONAL { ?person wdt:P106 ?occupation . }
-    SERVICE wikibase:label { bd:serviceParam wikibase:language "en" . }
-}
-LIMIT 10
+QUERY_TEMPLATE = """
+SELECT ?personLabel ?birthPlaceLabel ?birthDate
+       (GROUP_CONCAT(DISTINCT ?occupationLabel; SEPARATOR=", ") AS ?occupations)
+WHERE {{
+    ?person wdt:P31 wd:Q5 .
+    ?person rdfs:label "{name}"@en .
+    OPTIONAL {{ ?person wdt:P19 ?birthPlace . }}
+    OPTIONAL {{ ?person wdt:P569 ?birthDate . }}
+    OPTIONAL {{ ?person wdt:P106 ?occupation . }}
+    SERVICE wikibase:label {{ bd:serviceParam wikibase:language "en" . }}
+}}
+GROUP BY ?personLabel ?birthPlaceLabel ?birthDate
+LIMIT 5
 """
 
-sparql.setQuery(queryString)
-sparql.setReturnFormat(JSON)
-results = sparql.queryAndConvert()
 
-for r in results["results"]["bindings"]:
-    print(f"  Name: {r['personLabel']['value']}")
-    if 'birthPlaceLabel' in r:
-        print(f"  Born: {r['birthPlaceLabel']['value']}")
-    if 'birthDate' in r:
-        print(f"  Date: {r['birthDate']['value'][:10]}")
-    if 'occupationLabel' in r:
-        print(f"  Occupation: {r['occupationLabel']['value']}")
-    print()
+def fetch_person(name: str) -> list[dict[str, str]]:
+    sparql = SPARQLWrapper("https://query.wikidata.org/sparql")
+    sparql.addCustomHttpHeader("User-Agent", "PythonAIBook/1.0")
+    sparql.setQuery(QUERY_TEMPLATE.format(name=name))
+    sparql.setReturnFormat(JSON)
+    results = sparql.queryAndConvert()
+
+    bindings = results.get("results", {}).get("bindings", [])
+    people = []
+    for r in bindings:
+        people.append({
+            "name": r.get("personLabel", {}).get("value", "unknown"),
+            "birth_place": r.get("birthPlaceLabel", {}).get("value", ""),
+            "birth_date": r.get("birthDate", {}).get("value", "")[:10],
+            "occupations": r.get("occupations", {}).get("value", ""),
+        })
+    return people
+
+
+if __name__ == "__main__":
+    person_name = " ".join(sys.argv[1:]) if len(sys.argv) > 1 else "Albert Einstein"
+    try:
+        people = fetch_person(person_name)
+        if not people:
+            print(f"No results found for '{person_name}'.")
+        else:
+            for p in people:
+                print(f"  Name: {p['name']}")
+                if p["birth_place"]:
+                    print(f"  Born: {p['birth_place']}")
+                if p["birth_date"]:
+                    print(f"  Date: {p['birth_date']}")
+                if p["occupations"]:
+                    print(f"  Occupations: {p['occupations']}")
+                print()
+    except Exception as e:
+        print(f"Error querying Wikidata: {e}")
 ```
 
-The output shows Wikidata returning multiple results — one per occupation — for the same person:
+The output returns a single clean row per person, with all occupations aggregated into one field:
 
 ```
 $ uv run wikidata_person.py
   Name: Albert Einstein
   Born: Ulm
   Date: 1879-03-14
-  Occupation: scientist
-
-  Name: Albert Einstein
-  Born: Ulm
-  Date: 1879-03-14
-  Occupation: physicist
-
-  Name: Albert Einstein
-  Born: Ulm
-  Date: 1879-03-14
-  Occupation: mathematician
-
-  Name: Albert Einstein
-  Born: Ulm
-  Date: 1879-03-14
-  Occupation: inventor
-  ...
+  Occupations: scientist, physicist, mathematician, inventor
 ```
 
 Key things to notice about Wikidata's SPARQL:
@@ -106,15 +114,14 @@ Key things to notice about Wikidata's SPARQL:
 
 ### Querying Cities and Their Properties from DBPedia
 
-DBPedia mirrors much of Wikipedia's structured content as RDF triples. It uses different ontology conventions than Wikidata but is equally useful for knowledge representation tasks. Here we query DBPedia's public SPARQL endpoint for cities and their populations:
+DBPedia mirrors much of Wikipedia's structured content as RDF triples. It uses different ontology conventions than Wikidata but is equally useful for knowledge representation tasks. Here we query DBPedia's public SPARQL endpoint (using HTTPS for reliability) for cities and their populations:
 
 ```python
 # dbpedia_cities.py - Query DBPedia for city data
 
 from SPARQLWrapper import SPARQLWrapper, JSON
-from pprint import pprint
 
-queryString = """
+QUERY_STRING = """
 SELECT ?city_uri ?dbpedia_label ?population ?country_label
 WHERE {
     ?city_uri
@@ -136,16 +143,35 @@ ORDER BY DESC(?population)
 LIMIT 10
 """
 
-sparql = SPARQLWrapper("http://dbpedia.org/sparql")
-sparql.setQuery(queryString)
-sparql.setReturnFormat(JSON)
-results = sparql.queryAndConvert()
 
-for r in results["results"]["bindings"]:
-    city = r['dbpedia_label']['value']
-    pop = int(r['population']['value'])
-    country = r.get('country_label', {}).get('value', 'unknown')
-    print(f"  {city} ({country}): population {pop:,}")
+def fetch_cities() -> list[dict[str, str]]:
+    sparql = SPARQLWrapper("https://dbpedia.org/sparql")
+    sparql.addCustomHttpHeader("User-Agent", "PythonAIBook/1.0")
+    sparql.setQuery(QUERY_STRING)
+    sparql.setReturnFormat(JSON)
+    results = sparql.queryAndConvert()
+
+    bindings = results.get("results", {}).get("bindings", [])
+    cities = []
+    for r in bindings:
+        cities.append({
+            "city": r.get("dbpedia_label", {}).get("value", "unknown"),
+            "population": int(r.get("population", {}).get("value", 0)),
+            "country": r.get("country_label", {}).get("value", "unknown"),
+        })
+    return cities
+
+
+if __name__ == "__main__":
+    try:
+        cities = fetch_cities()
+        if not cities:
+            print("No results returned from DBpedia.")
+        else:
+            for c in cities:
+                print(f"  {c['city']} ({c['country']}): population {c['population']:,}")
+    except Exception as e:
+        print(f"Error querying DBpedia: {e}")
 ```
 
 The output (results may vary as DBPedia data is updated):
@@ -164,7 +190,7 @@ $ uv run dbpedia_cities.py
   Huntsville, Alabama (unknown): population 249,102
 ```
 
-When I use RDF data from public SPARQL endpoints like DBPedia or Wikidata in applications, I start by using the web-based SPARQL clients for these services, find useful entities, manually look to see what properties are defined for those entities, and then write custom SPARQL queries to fetch the data I need. The web-based query editors at [query.wikidata.org](https://query.wikidata.org/) and [dbpedia.org/sparql](http://dbpedia.org/sparql) are invaluable for this exploratory process.
+When I use RDF data from public SPARQL endpoints like DBPedia or Wikidata in applications, I start by using the web-based SPARQL clients for these services, find useful entities, manually look to see what properties are defined for those entities, and then write custom SPARQL queries to fetch the data I need. The web-based query editors at [query.wikidata.org](https://query.wikidata.org/) and [dbpedia.org/sparql](https://dbpedia.org/sparql) are invaluable for this exploratory process.
 
 We will use more SPARQL queries in the next chapter.
 
@@ -180,26 +206,32 @@ We start with a simple reusable library for SQLite using the standard library **
 ```python
 # sqlite_lib.py - Reusable SQLite helper functions
 
-from sqlite3 import connect, version
+import sqlite3
+from typing import Any
 
-def create_db(db_file_path):
-    """Create a database and return the connection."""
-    conn = connect(db_file_path)
-    return conn
 
-def connection(db_file_path):
+def connection(db_file_path: str) -> sqlite3.Connection:
     """Create and return a database connection."""
-    return connect(db_file_path)
+    return sqlite3.connect(db_file_path)
 
-def query(conn, sql, variable_bindings=None):
-    """Execute a SQL query and return all results."""
+
+def query(
+    conn: sqlite3.Connection, sql: str, variable_bindings: tuple[Any, ...] | None = None
+) -> list[sqlite3.Row]:
+    """Execute a SQL query, commit if it modifies data, and return all results."""
     cur = conn.cursor()
-    if variable_bindings:
-        cur.execute(sql, variable_bindings)
+    try:
+        if variable_bindings:
+            cur.execute(sql, variable_bindings)
+        else:
+            cur.execute(sql)
+    except sqlite3.Error as e:
+        conn.rollback()
+        raise
     else:
-        cur.execute(sql)
-    conn.commit()
-    return cur.fetchall()
+        if sql.strip().upper().startswith(("INSERT", "UPDATE", "DELETE", "CREATE")):
+            conn.commit()
+        return cur.fetchall()
 ```
 
 ### Modeling a Knowledge Graph in SQLite
@@ -211,12 +243,14 @@ Relational databases become knowledge representation tools when we design tables
 
 import sqlite3
 
-def build_knowledge_base():
+
+def build_knowledge_base() -> sqlite3.Connection:
     """Build a relational knowledge base about scientists and their work."""
     conn = sqlite3.connect(":memory:")
+    conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA foreign_keys = ON")
     cur = conn.cursor()
 
-    # Entity tables: each table represents a type of entity
     cur.execute("""
         CREATE TABLE scientists (
             id INTEGER PRIMARY KEY,
@@ -243,7 +277,6 @@ def build_knowledge_base():
         )
     """)
 
-    # Relationship tables: capture how entities are connected
     cur.execute("""
         CREATE TABLE scientist_field (
             scientist_id INTEGER REFERENCES scientists(id),
@@ -260,46 +293,80 @@ def build_knowledge_base():
         )
     """)
 
-    # Populate with knowledge
-    cur.executemany("INSERT INTO scientists VALUES (?, ?, ?, ?)", [
-        (1, "Albert Einstein", 1879, "German"),
-        (2, "Marie Curie", 1867, "Polish"),
-        (3, "Richard Feynman", 1918, "American"),
-    ])
+    cur.execute(
+        "INSERT INTO scientists (name, birth_year, nationality) VALUES (?, ?, ?)",
+        ("Albert Einstein", 1879, "German"),
+    )
+    einstein_id = cur.lastrowid
 
-    cur.executemany("INSERT INTO fields VALUES (?, ?, ?)", [
-        (1, "Physics", "Study of matter, energy, and their interactions"),
-        (2, "Chemistry", "Study of the composition and properties of matter"),
-        (3, "Quantum Mechanics", "Physics of atomic and subatomic systems"),
-    ])
+    cur.execute(
+        "INSERT INTO scientists (name, birth_year, nationality) VALUES (?, ?, ?)",
+        ("Marie Curie", 1867, "Polish"),
+    )
+    curie_id = cur.lastrowid
 
-    cur.executemany("INSERT INTO discoveries VALUES (?, ?, ?, ?)", [
-        (1, "Special Relativity", 1905, "Time and space are relative"),
-        (2, "Radioactivity", 1898, "Discovery of radium and polonium"),
-        (3, "Quantum Electrodynamics", 1948, "Quantum theory of light and matter"),
-    ])
+    cur.execute(
+        "INSERT INTO scientists (name, birth_year, nationality) VALUES (?, ?, ?)",
+        ("Richard Feynman", 1918, "American"),
+    )
+    feynman_id = cur.lastrowid
+
+    cur.execute(
+        "INSERT INTO fields (name, description) VALUES (?, ?)",
+        ("Physics", "Study of matter, energy, and their interactions"),
+    )
+    physics_id = cur.lastrowid
+
+    cur.execute(
+        "INSERT INTO fields (name, description) VALUES (?, ?)",
+        ("Chemistry", "Study of the composition and properties of matter"),
+    )
+    chemistry_id = cur.lastrowid
+
+    cur.execute(
+        "INSERT INTO fields (name, description) VALUES (?, ?)",
+        ("Quantum Mechanics", "Physics of atomic and subatomic systems"),
+    )
+    qm_id = cur.lastrowid
+
+    cur.execute(
+        "INSERT INTO discoveries (name, year, description) VALUES (?, ?, ?)",
+        ("Special Relativity", 1905, "Time and space are relative"),
+    )
+    sr_id = cur.lastrowid
+
+    cur.execute(
+        "INSERT INTO discoveries (name, year, description) VALUES (?, ?, ?)",
+        ("Radioactivity", 1898, "Discovery of radium and polonium"),
+    )
+    rad_id = cur.lastrowid
+
+    cur.execute(
+        "INSERT INTO discoveries (name, year, description) VALUES (?, ?, ?)",
+        ("Quantum Electrodynamics", 1948, "Quantum theory of light and matter"),
+    )
+    qed_id = cur.lastrowid
 
     cur.executemany("INSERT INTO scientist_field VALUES (?, ?)", [
-        (1, 1), (1, 3),  # Einstein: Physics, Quantum Mechanics
-        (2, 1), (2, 2),  # Curie: Physics, Chemistry
-        (3, 1), (3, 3),  # Feynman: Physics, Quantum Mechanics
+        (einstein_id, physics_id), (einstein_id, qm_id),
+        (curie_id, physics_id), (curie_id, chemistry_id),
+        (feynman_id, physics_id), (feynman_id, qm_id),
     ])
 
     cur.executemany("INSERT INTO scientist_discovery VALUES (?, ?)", [
-        (1, 1),  # Einstein -> Special Relativity
-        (2, 2),  # Curie -> Radioactivity
-        (3, 3),  # Feynman -> QED
+        (einstein_id, sr_id),
+        (curie_id, rad_id),
+        (feynman_id, qed_id),
     ])
 
     conn.commit()
     return conn
 
 
-def query_knowledge_base(conn):
+def query_knowledge_base(conn: sqlite3.Connection) -> None:
     """Demonstrate knowledge queries against the relational schema."""
     cur = conn.cursor()
 
-    # Query 1: Who works in Quantum Mechanics?
     print("Scientists in Quantum Mechanics:")
     cur.execute("""
         SELECT s.name, s.nationality
@@ -309,21 +376,21 @@ def query_knowledge_base(conn):
         WHERE f.name = 'Quantum Mechanics'
     """)
     for row in cur.fetchall():
-        print(f"  {row[0]} ({row[1]})")
+        print(f"  {row['name']} ({row['nationality']})")
 
-    # Query 2: What did each scientist discover?
     print("\nDiscoveries by scientist:")
     cur.execute("""
-        SELECT s.name, d.name, d.year, d.description
+        SELECT s.name AS scientist, d.name AS discovery,
+               d.year, d.description
         FROM scientists s
         JOIN scientist_discovery sd ON s.id = sd.scientist_id
         JOIN discoveries d ON sd.discovery_id = d.id
         ORDER BY d.year
     """)
     for row in cur.fetchall():
-        print(f"  {row[0]}: {row[1]} ({row[2]}) — {row[3]}")
+        print(f"  {row['scientist']}: {row['discovery']} "
+              f"({row['year']}) — {row['description']}")
 
-    # Query 3: Which fields overlap between scientists?
     print("\nScientists who share a field:")
     cur.execute("""
         SELECT s1.name, s2.name, f.name
@@ -338,9 +405,10 @@ def query_knowledge_base(conn):
         print(f"  {row[0]} & {row[1]}: {row[2]}")
 
 
-conn = build_knowledge_base()
-query_knowledge_base(conn)
-conn.close()
+if __name__ == "__main__":
+    conn = build_knowledge_base()
+    query_knowledge_base(conn)
+    conn.close()
 ```
 
 The output shows how SQL JOIN queries traverse the relationships between entities, much like following edges in a graph:
