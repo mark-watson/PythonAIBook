@@ -10,6 +10,15 @@ from chess_bot import get_best_move, evaluate, nodes_visited
 def print_pretty_board(board):
     """Prints the board with clean borders, ANSI colors, and game status on the side."""
     print("\033[1;36m  +-----------------+  Game Info & Status\033[0m")
+    
+    # Unicode chess piece characters mapping
+    unicode_pieces = {
+        WHITE | PAWN: '♙', WHITE | KNIGHT: '♘', WHITE | BISHOP: '♗',
+        WHITE | ROOK: '♖', WHITE | QUEEN: '♕', WHITE | KING: '♔',
+        BLACK | PAWN: '♟', BLACK | KNIGHT: '♞', BLACK | BISHOP: '♝',
+        BLACK | ROOK: '♜', BLACK | QUEEN: '♛', BLACK | KING: '♚'
+    }
+
     for rank in range(7, -1, -1):
         row_str = f"\033[1;36m{rank + 1} |\033[0m "
         for file in range(8):
@@ -20,17 +29,13 @@ def print_pretty_board(board):
                 row_str += "\033[90m. \033[0m"
             else:
                 color = piece & COLOR_MASK
-                ptype = piece & TYPE_MASK
-                char = {
-                    PAWN: 'P', KNIGHT: 'N', BISHOP: 'B',
-                    ROOK: 'R', QUEEN: 'Q', KING: 'K'
-                }[ptype]
+                char = unicode_pieces.get(piece, '?')
                 if color == WHITE:
                     # Bright bold white for White pieces
                     row_str += f"\033[1;37m{char} \033[0m"
                 else:
                     # Magenta for Black pieces
-                    row_str += f"\033[1;35m{char.lower()} \033[0m"
+                    row_str += f"\033[1;35m{char} \033[0m"
         row_str += "\033[1;36m|\033[0m"
         
         # Side information panel
