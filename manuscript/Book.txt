@@ -20,3 +20,4 @@ Symbolic_AI.md
 Part5_knowledge_representation.md
 Knowledge_Representation_Graph_and_Relational_Databases.md
 Knowledge_Representation_Semantic_Web_and_Linked_Data.md
+openknowledge_format.md

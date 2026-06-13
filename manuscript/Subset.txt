@@ -1,1 +1,1 @@
-Knowledge_Representation_Graph_and_Relational_Databases.md
+openknowledge_format.md
