@@ -174,4 +174,25 @@ The model achieves 93% accuracy on the test set — matching the performance of 
 
 You can compare this PyTorch example to our similar classification example using the same data where we used the **Scikit-learn** library. The deep learning approach requires more code but gives us full control over the model architecture, training process, and the ability to scale to much larger and more complex problems.
 
+## Optional Practice Problems
 
+To help solidify your understanding of deep learning basics and PyTorch, try completing the following exercises. You will need to modify and run the example script [cancer_model.py](file:///Users/markwatson/GITHUB/PythonAIBook/source-code/deep_learning_basics/cancer_model.py).
+
+### Problem 1 (Easy): Experimenting with Optimizers and Learning Rates
+- **Goal**: Understand how optimizer choice and learning rate affect training speed and model convergence.
+- **Task**: Modify [cancer_model.py](file:///Users/markwatson/GITHUB/PythonAIBook/source-code/deep_learning_basics/cancer_model.py) to use the Adam optimizer (`torch.optim.Adam`) instead of Stochastic Gradient Descent (`torch.optim.SGD`). Experiment with three different learning rates (e.g., `0.1`, `0.01`, and `0.001`). Note down how quickly the loss decreases during training and how the final test set accuracy is affected. Which combination reaches convergence first?
+
+### Problem 2 (Medium): Implementing Validation Tracking and Overfitting Analysis
+- **Goal**: Learn how to monitor validation performance during training to detect overfitting.
+- **Task**: Split the training data further into training and validation sets (using a 80/20 split). Modify the [train_model](file:///Users/markwatson/GITHUB/PythonAIBook/source-code/deep_learning_basics/cancer_model.py#L86) function to evaluate the model on the validation set at the end of each epoch and track both the average training loss and validation loss. Print a table (or use `matplotlib` to plot) showing the two loss curves across 150 epochs. At what epoch does the validation loss start to diverge or stop decreasing?
+
+### Problem 3 (Medium): Adjusting Network Architecture and Regularization
+- **Goal**: Understand the role of network capacity (hidden layers/neurons) and regularization (dropout).
+- **Task**: Modify the architecture in the [CancerNet](file:///Users/markwatson/GITHUB/PythonAIBook/source-code/deep_learning_basics/cancer_model.py#L62) class. Try two variations:
+  1. A much smaller network with a single hidden layer and no dropout: `9 → 5 → 1`.
+  2. A larger network with more capacity: `9 → 32 → 32 → 1` with varying dropout rates (`0.0`, `0.2`, and `0.5`).
+  Analyze the classification report for both cases. How does the presence of dropout in the larger network affect the performance gap between the training set loss and the test set accuracy?
+
+### Problem 4 (Hard): Implementing K-Fold Cross-Validation
+- **Goal**: Practice using robust evaluation techniques for small datasets.
+- **Task**: Since the cancer dataset is relatively small, a single train/test split can have high variance. Instead of a single split, implement 5-Fold Cross-Validation using `sklearn.model_selection.KFold` in [cancer_model.py](file:///Users/markwatson/GITHUB/PythonAIBook/source-code/deep_learning_basics/cancer_model.py). In each fold, initialize a new instance of [CancerNet](file:///Users/markwatson/GITHUB/PythonAIBook/source-code/deep_learning_basics/cancer_model.py#L62), train it, and evaluate it on the holdout fold. Compute and print the average accuracy, precision, recall, and F1-score across all 5 folds.

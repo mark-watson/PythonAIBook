@@ -421,3 +421,24 @@ On Linux and Windows, a dedicated NVIDIA GPU with sufficient VRAM provides the b
 Running LLMs locally with Ollama gives you a private, cost-free, offline-capable alternative to cloud APIs. The setup is straightforward — install Ollama, pull a model, and start making API calls from Python. Features like streaming, conversation memory, prompt caching, and reasoning models make local models practical for many real applications.
 
 The main tradeoff is capability: the largest models that run locally (7-14B parameters on typical hardware) are less capable than frontier cloud models with hundreds of billions of parameters. For many tasks — code assistance, text summarization, data extraction, conversational interfaces — local models perform well enough, and the privacy and cost benefits make them the better choice.
+
+## Optional Practice Problems
+
+Here are some exercises to help you apply the concepts from this chapter and extend the existing code examples.
+
+### 1. Interactive Streaming Chat Loop (Easy)
+- **Objective**: Extend [ollama_streaming.py](file:///Users/markwatson/GITHUB/PythonAIBook/source-code/llm_local_models/ollama_streaming.py) to create a command-line chat interface. Instead of a single hardcoded query, prompt the user for input in a loop, stream the model's responses to the console in real-time, and exit when the user types `exit` or `quit`.
+- **Key Concepts**: Input loops, real-time output streaming with `flush=True`, basic text generation.
+
+### 2. Context Window and History Management (Medium)
+- **Objective**: Modify the [LocalAssistant](file:///Users/markwatson/GITHUB/PythonAIBook/source-code/llm_local_models/ollama_memory.py#L17) class in [ollama_memory.py](file:///Users/markwatson/GITHUB/PythonAIBook/source-code/llm_local_models/ollama_memory.py) to handle context limits. Implement a maximum history size (e.g., $N$ messages). When the conversation history exceeds this limit, the assistant should discard the oldest user/assistant exchanges. However, make sure that the original system prompt is always preserved at the beginning of the message history.
+- **Key Concepts**: System prompt preservation, sliding window list management, message history truncation.
+
+### 3. Extracting Structured JSON from Vision Models (Medium)
+- **Objective**: Modify [image_to_text_description.py](file:///Users/markwatson/GITHUB/PythonAIBook/source-code/llm_local_models/image_to_text_description.py) to ask the local vision model to extract structured data from `ticket.png` as a raw JSON block. Instruct the model to return keys like `event_name`, `date`, `time`, `venue`, and `price`. In your Python code, parse the model's output using Python's built-in `json` module, print the resulting dictionary, and handle any parsing errors.
+- **Key Concepts**: Vision model prompting, structured output format directives, output parsing with JSON.
+
+### 4. Multi-Model Answer Verification (Hard)
+- **Objective**: Create a Python script that implements a multi-model validation pipeline. First, use [reason_about](file:///Users/markwatson/GITHUB/PythonAIBook/source-code/llm_local_models/ollama_reasoning.py#L18) from [ollama_reasoning.py](file:///Users/markwatson/GITHUB/PythonAIBook/source-code/llm_local_models/ollama_reasoning.py) with `deepseek-r1:7b` to solve a logic puzzle (such as a word riddle or math problem). Then, extract the `<think>` reasoning trace and final answer. Finally, query a smaller general-purpose model like `llama3.2:3b` using the Ollama API, passing it both the original question and the reasoning trace, and ask it to verify whether the final answer is logically correct based on the reasoning trace.
+- **Key Concepts**: Multi-model collaboration, chain-of-thought verification, automated self-correction/grading.
+

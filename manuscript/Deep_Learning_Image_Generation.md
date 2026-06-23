@@ -186,3 +186,43 @@ For more advanced image generation with PyTorch, explore:
 - The [PyTorch image generation tutorial](https://pytorch.org/tutorials/beginner/dcgan_faces_tutorial.html) for understanding GANs from scratch.
 - The [Google Imagen documentation](https://ai.google.dev/gemini-api/docs/imagen) for cloud-based image generation with the Gemini API.
 
+
+## Optional Practice Problems
+
+To help reinforce and expand your understanding of deep learning image generation, try completing the following exercises. You can modify the scripts in the `source-code/deep_learning_image_generation` directory.
+
+### 1. Easy: Parameter Tuning and Prompt Styling
+**Objective:** Explore how style keywords and model hyperparameters affect generated images.
+- **Tasks:**
+  1. Open [image_generation.py](file:///Users/markwatson/GITHUB/PythonAIBook/source-code/deep_learning_image_generation/image_generation.py). Modify the text prompt to compare three different artistic styles for the same subject (e.g., "a futuristic city skyline" in *photorealistic*, *pixel art*, and *watercolor* styles).
+  2. For the local Stable Diffusion model, experiment with the `num_inference_steps` parameter. Run the script with values of `5`, `15`, `30`, and `50`. Measure the execution time for each run and visually inspect the output. What is the minimum number of steps required to produce a recognizable, high-quality image?
+
+### 2. Medium: Batch Generation and Reproducibility
+**Objective:** Control randomness and generate multiple image variations in a single run.
+- **Tasks:**
+  1. Modify [gemini_image_generation.py](file:///Users/markwatson/GITHUB/PythonAIBook/source-code/deep_learning_image_generation/gemini_image_generation.py) to request `3` images instead of `1` in the `GenerateImagesConfig` object. Update the loop to save all three images as separate files (e.g., `gemini_generated_landscape_1.png`, etc.).
+  2. Extend [image_generation.py](file:///Users/markwatson/GITHUB/PythonAIBook/source-code/deep_learning_image_generation/image_generation.py) to make generation reproducible. Instantiate a PyTorch random number generator with a specific seed and pass it to the pipeline:
+     ```python
+     generator = torch.Generator(device=pipe.device).manual_seed(42)
+     image = pipe(prompt, num_inference_steps=25, generator=generator).images[0]
+     ```
+     Verify that running the script multiple times with the same seed produces the exact same image, whereas changing the seed (e.g., to `43`) produces a distinct composition.
+
+### 3. Hard: Image-to-Image Translation (Img2Img)
+**Objective:** Use a local image as the starting point for a new generation.
+- **Tasks:**
+  1. Create a new script `image_to_image.py` in the source directory.
+  2. Instead of starting from random noise, load an existing image (like `generated_landscape.png`) and use a text prompt to transform it. You will need to import `AutoPipelineForImage2Image` (or `StableDiffusionImg2ImgPipeline`) from `diffusers`.
+     ```python
+     from diffusers import AutoPipelineForImage2Image
+     from diffusers.utils import load_image
+
+     # Load pipeline
+     pipe = AutoPipelineForImage2Image.from_pretrained(
+         "segmind/tiny-sd", torch_dtype=torch.float16
+     )
+     # Send to GPU / MPS / CPU as in the original script
+     ```
+  3. Load your input image, resize it if necessary, and run the pipeline with a prompt like "a serene mountain landscape in winter with heavy snow, oil painting style".
+  4. Experiment with the `strength` parameter (which ranges from `0.0` to `1.0`). Observe how a strength of `0.2` keeps the image almost identical to the original, while a strength of `0.8` allows the model to completely reimagine the landscape.
+

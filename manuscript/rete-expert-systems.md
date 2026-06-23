@@ -241,3 +241,52 @@ While expert systems are powerful, they are not a silver bullet in the modern ag
 4. **Graph Databases and Semantic Web (SPARQL/RDF)**: If your domain model requires querying vast, richly interconnected networks of relationship data rather than running active production loops, graph databases are much cleaner and more performant than loading millions of facts into a Rete engine.
 
 The Rete Algorithm scales poorly (order of N^2 where N is working memory size) for large working memories. The Rete Algorithm is optimized for large numbers of rules. In the modern age of LLMs, you can use coding agents help write and maintain large rule sets.
+
+---
+
+## Optional Practice Problems
+
+To solidify your understanding of the Rete algorithm, forward-chaining rule engines, and rule-based system design patterns, try implementing the following practice exercises. All files mentioned are located in the [rete-algorithm](file:///Users/markwatson/GITHUB/PythonAIBook/source-code/rete-algorithm) directory.
+
+### Problem 1 (Easy): Diagnosis and Treatment for the Common Cold
+**Objective**: Learn how to register new rules, define new conditions using comparison operators, and use Negated Condition Elements (NCEs) as guards.
+
+In [example_medical.py](file:///Users/markwatson/GITHUB/PythonAIBook/source-code/rete-algorithm/example_medical.py), the diagnosis system identifies cases of `flu` and generic `fever`. Extend this system to handle the **Common Cold** by doing the following:
+1. Define a rule `diagnose_cold` that fires when a `Patient` has a temperature between `37.0`°C and `38.0`°C (inclusive, using `Ge(37.0)` and `Le(38.0)`) and has the symptom `"congestion"` or `"sore throat"`.
+2. Use an NCE guard `~Pat(Diagnosis, patient=Var("n"), condition=Eq("cold"))` to prevent asserting duplicate diagnoses.
+3. Define a rule `treat_cold` that fires when a patient has a `cold` diagnosis but no existing `Treatment` fact asserted. It should assert a `Treatment` action `"prescribe rest and hydration"`.
+4. Add a test patient, e.g., `Patient(name="Dave", temperature=37.5, symptoms=("congestion", "headache"))`, run the engine, and verify that the rules fire and output the correct diagnosis and treatment.
+
+### Problem 2 (Medium): Smart Home Safety Override and Engine Halting
+**Objective**: Understand how to implement safety overrides, use rule priority (salience), and trigger immediate engine halting.
+
+In [example_smart_home.py](file:///Users/markwatson/GITHUB/PythonAIBook/source-code/rete-algorithm/example_smart_home.py), automation rules turn lights and heating on or off. However, in an emergency (like smoke or carbon monoxide detection), home automation must be overridden by a safety protocol.
+1. Define a new fact type:
+   ```python
+   @dataclass(frozen=True)
+   class SafetyAlert(Fact):
+       hazard_type: str  # e.g., "smoke", "carbon_monoxide"
+   ```
+2. Write a high-priority rule (`salience=100`) that triggers if a `SensorReading` of type `"smoke"` or `"gas"` has a value of `"detected"`. This rule should assert a corresponding `SafetyAlert` fact.
+3. Write a safety override rule (`salience=90`) that triggers when a `SafetyAlert` fact is present. This rule must:
+   - Modify any active `DeviceStatus` of type `"hvac"` to `"off"` (to prevent circulating smoke/gas).
+   - Modify any active `DeviceStatus` of type `"light"` to `"on"` (to illuminate escape routes), regardless of whether the house mode is set to `"away"`.
+   - Call `ctx.halt()` to stop the engine's recognize-act cycle immediately, preventing further rule execution.
+4. Modify the execution block to assert a smoke sensor reading: `SensorReading(sensor_id="smoke_1", room="hallway", type="smoke", value="detected")`. Run the engine and verify that the safety override takes precedence, adjusts all devices to safety states, and halts the engine before other low-priority rules execute.
+
+### Problem 3 (Hard): Cash-Constrained Portfolio Rebalancing (Multi-Phase Execution)
+**Objective**: Coordinate multi-phase workflows with dependencies, enforce resource constraints, and perform state modifications in the rule actions (RHS).
+
+In [example_portfolio_rebalance.py](file:///Users/markwatson/GITHUB/PythonAIBook/source-code/rete-algorithm/example_portfolio_rebalance.py), the engine recommends trades as `RebalanceTrade` facts but does not execute them. In real-world trading, you cannot purchase new assets without sufficient cash. Implement a cash-constrained trade execution model:
+1. Define rules to coordinate a two-phase rebalancing process: **Phase 1 (Sells)** followed by **Phase 2 (Buys)**.
+2. Write an execution rule `execute_sell_trade` that matches a `RebalanceTrade` with `action="sell"`. The rule should:
+   - Modify the sold asset's `AssetAllocation` to subtract the trade amount.
+   - Modify the `CASH` asset's `AssetAllocation` to add the cash generated from the sale.
+   - Retract the `RebalanceTrade` fact.
+3. Write an execution rule `execute_buy_trade` that matches a `RebalanceTrade` with `action="buy"`. To ensure cash is fully accounted for first, this rule must have a negated condition element preventing it from firing if any sell recommendations are still pending:
+   - `~Pat(RebalanceTrade, action=Eq("sell"))`
+4. The `execute_buy_trade` rule must retrieve the current balance of the `CASH` allocation.
+   - If cash is sufficient, it should execute the full buy (modify the asset allocation, subtract cash, and retract the trade).
+   - If cash is insufficient, it should scale down the buy to the remaining cash, perform the partial execution, update the cash to zero, and retract the trade (or cancel it with a warning).
+5. Set up a test portfolio where a large holding drift (e.g., excess `US_EQUITIES`) must be sold first to generate the cash required to execute a pending buy (e.g., in `BONDS`). Run the engine and print the step-by-step transaction logs and the final asset allocations to confirm that cash limits were strictly respected.
+

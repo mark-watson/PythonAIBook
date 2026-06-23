@@ -435,3 +435,47 @@ The key insight is that the **relationship tables** (scientist_field, scientist_
 We will combine the use of SQLite, RDF, SPARQL, and deep learning Natural Language Processing (NLP) libraries later in the book.
 
 If you want to deepen your understanding of the standards behind the SPARQL queries we used in this chapter, the next chapter provides optional reference material on RDF data formats, RDFS sub-property hierarchies, the SPARQL query language in detail, and OWL reasoning. That background will help you write more sophisticated queries against Wikidata, DBPedia, and any other SPARQL endpoint.
+
+## Optional Practice Problems
+
+To help solidify your understanding of knowledge representation using graph and relational systems, try implementing the following practice problems. They build directly on the code examples provided in this chapter.
+
+### 1. Extended Wikidata Querying (Easy)
+Modify the [wikidata_person.py](file:///Users/markwatson/GITHUB/PythonAIBook/source-code/knowledge_representation/wikidata_person.py) script to fetch additional metadata for a queried individual.
+- **Goal**: Add the person's **date of death** (`wdt:P570`) and **awards received** (`wdt:P166`).
+- **Details**:
+  - Update the SPARQL query template to retrieve the date of death and awards as optional values.
+  - Since a person can receive multiple awards, use `GROUP_CONCAT` in your SPARQL query (similar to how occupations are handled in the existing query) to join the awards into a comma-separated string: `(GROUP_CONCAT(DISTINCT ?awardLabel; SEPARATOR=", ") AS ?awards)`.
+  - Update the [fetch_person](file:///Users/markwatson/GITHUB/PythonAIBook/source-code/knowledge_representation/wikidata_person.py#L30) function to parse these new fields.
+  - Format the console output to print the date of death and the list of awards if they are present.
+  - Test your script with "Marie Curie" or "Stephen Hawking".
+
+### 2. Relational Knowledge Base Expansion (Medium)
+Extend the SQLite knowledge representation in [sqlite_knowledge.py](file:///Users/markwatson/GITHUB/PythonAIBook/source-code/knowledge_representation/sqlite_knowledge.py) to model the academic and research institutions associated with the scientists.
+- **Goal**: Track where scientists performed their research.
+- **Details**:
+  - Create a new `institutions` table: `id INTEGER PRIMARY KEY`, `name TEXT NOT NULL`, `location TEXT`.
+  - Create a many-to-many relationship table `scientist_institution` to link scientists to institutions. Include fields for `scientist_id` (foreign key to `scientists`), `institution_id` (foreign key to `institutions`), and optionally `start_year` and `end_year` to track their tenure.
+  - Add sample data for the existing scientists. For example:
+    - Albert Einstein at the *Institute for Advanced Study* (Princeton, USA).
+    - Marie Curie at the *University of Paris* (Paris, France).
+    - Richard Feynman at the *California Institute of Technology* (Pasadena, USA).
+  - Modify the [query_knowledge_base](file:///Users/markwatson/GITHUB/PythonAIBook/source-code/knowledge_representation/sqlite_knowledge.py#L134) function to display a list of scientists along with their institutions and locations.
+
+### 3. DBpedia Query Customization and Pagination (Medium)
+Expand the query capability in [dbpedia_cities.py](file:///Users/markwatson/GITHUB/PythonAIBook/source-code/knowledge_representation/dbpedia_cities.py) to allow more flexible searching.
+- **Goal**: Allow users to query cities in a specific country and paginate the results.
+- **Details**:
+  - Modify the [fetch_cities](file:///Users/markwatson/GITHUB/PythonAIBook/source-code/knowledge_representation/dbpedia_cities.py#L35) function to accept optional parameters for a country filter, a `limit` parameter, and an `offset` parameter.
+  - In the SPARQL query, dynamically inject a country filter (e.g., using `FILTER(CONTAINS(LCASE(?country_label), LCASE("{country}")))` if a country is provided).
+  - Use SPARQL `LIMIT` and `OFFSET` clauses dynamically based on the passed parameters to support pagination.
+  - Update the CLI entry point to accept command-line arguments for country, limit, and offset, demonstrating how users can page through large result sets.
+
+### 4. Hybrid Knowledge Loader: API to SQL (Hard)
+Write a new Python script that bridges SPARQL query APIs and local relational stores by dynamically loading Wikidata details into a persistent SQLite database.
+- **Goal**: Populate SQLite tables dynamically from public SPARQL query results.
+- **Details**:
+  - Create a new script `wikidata_to_sqlite.py` in [source-code/knowledge_representation](file:///Users/markwatson/GITHUB/PythonAIBook/source-code/knowledge_representation) that connects to a local, persistent SQLite file (e.g., `knowledge.db`) using the schema structure from [sqlite_knowledge.py](file:///Users/markwatson/GITHUB/PythonAIBook/source-code/knowledge_representation/sqlite_knowledge.py).
+  - Accept a scientist's name from the command line, query Wikidata using [fetch_person](file:///Users/markwatson/GITHUB/PythonAIBook/source-code/knowledge_representation/wikidata_person.py#L30) (or an extended version of it), and retrieve their birth year, nationality, occupations, and discoveries.
+  - Implement duplicate checking: use SQL queries to verify if the scientist already exists in the `scientists` table to avoid duplicates.
+  - Programmatically insert any new fields or discoveries into the `fields` and `discoveries` tables, retrieve their generated database IDs, and construct the relationship links in `scientist_field` and `scientist_discovery`.

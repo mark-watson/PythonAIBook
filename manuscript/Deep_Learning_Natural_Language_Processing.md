@@ -218,3 +218,40 @@ tensor([[0.1793]])
 In this chapter we have seen examples of how effective deep learning is for NLP using PyTorch and the Hugging Face transformers ecosystem. All three examples — summarization, zero-shot classification, and sentence similarity — run locally on your laptop without requiring API keys or cloud services.
 
 I worked on other methods of NLP over a 25-year period and I ask you, dear reader, to take my word on this: deep learning has revolutionized NLP and for almost all practical NLP applications, deep learning libraries and pre-trained models from organizations like Hugging Face should be the first thing that you consider using.
+
+## Optional Practice Problems
+
+Here are optional practice problems designed to help you apply the concepts from this chapter. They build directly on the existing code examples in `source-code/deep_learning_nlp`.
+
+### 1. Zero-Shot Classifier with Confidence Thresholding (Easy)
+Extend the script [zero_shot_classification.py](file:///Users/markwatson/GITHUB/PythonAIBook/source-code/deep_learning_nlp/zero_shot_classification.py) to handle realistic customer service routing.
+- **Task:** Update the candidate labels to classify incoming messages into product categories: `"software"`, `"hardware"`, `"billing"`, and `"shipping"`.
+- **Requirements:**
+  1. Test your classifier on at least three different messages representing these classes (e.g., "The latest update crashes on launch", "I was charged twice on my credit card", "When will my package arrive?").
+  2. Implement a threshold check. If the top classification score is below `0.6`, print a warning message: `"Low confidence classification. Routing to a human representative."` Otherwise, print the winning category and its score.
+
+### 2. Semantic FAQ Search Engine (Medium)
+Build a simple, interactive FAQ matching engine by extending [sentence_similarity.py](file:///Users/markwatson/GITHUB/PythonAIBook/source-code/deep_learning_nlp/sentence_similarity.py).
+- **Task:** Write a Python function that accepts a user question, finds the closest matching question from a pre-defined FAQ database, and prints the corresponding answer.
+- **Data:** Use a dictionary mapping common questions to answers:
+  ```python
+  faq_database = {
+      "How do I return a defective product?": "Please request a return label via our website and send it back to our warehouse.",
+      "What payment methods do you accept?": "We accept credit cards (Visa, MasterCard, Amex) and PayPal.",
+      "Where is my package?": "You can find your order tracking number in your shipping confirmation email."
+  }
+  ```
+- **Requirements:**
+  1. Embed the user's search query and compute its cosine similarity against the embedded FAQ questions.
+  2. Retrieve the question with the highest similarity.
+  3. If the highest similarity score is above `0.5`, print the matching question and its answer.
+  4. If it is below `0.5`, print: `"Sorry, we couldn't find a direct answer. Would you like to rephrase?"`
+
+### 3. Long Document Summarization Pipeline (Hard)
+The `facebook/bart-large-cnn` model has a strict context limit of 1,024 tokens. If you feed it a large text document, it will fail or truncate the input.
+- **Task:** Build a modular summarization pipeline in [summarization.py](file:///Users/markwatson/GITHUB/PythonAIBook/source-code/deep_learning_nlp/summarization.py) that can handle arbitrarily long text by chunking.
+- **Requirements:**
+  1. Find or write a long text block of 1,500 to 2,000 words (e.g., a news article or short story).
+  2. Write a function that splits this text into clean chunks of at most 800 tokens each (ensuring each chunk is clean and doesn't cut mid-sentence).
+  3. Loop over the chunks, summarize each chunk, and collect the summaries.
+  4. Finally, concatenate the individual summaries and pass the combined text back through the BART model to generate a single, cohesive executive summary.

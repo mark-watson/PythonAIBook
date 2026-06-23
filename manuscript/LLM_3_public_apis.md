@@ -363,3 +363,38 @@ Using LLMs through public APIs is the fastest path from idea to working applicat
 The main tradeoffs of the API approach are cost (per-token pricing), privacy (data leaves your machine), and dependence on the provider's availability. For applications where these tradeoffs are acceptable, public APIs give you access to the most capable models available.
 
 In the next chapter we cover the alternative approach: running open-weights models locally on your own hardware, which offers privacy, no per-token cost, and offline operation at the expense of model capability and the need for suitable hardware.
+
+## Optional Practice Problems
+
+To help solidify the concepts covered in this chapter, try implementing the following exercises. You can create these scripts in your local workspace to extend the existing code examples.
+
+### 1. Easy: Dynamic Tagline Generator
+Modify the `gemini_temperature.py` example to create a command-line script that:
+* Prompts the user to enter a business type (e.g., "coffee shop", "dog walking service", "indie game studio").
+* Prompts the user to enter a target audience (e.g., "college students", "busy professionals", "hardcore gamers").
+* Generates three different taglines using three distinct temperature values (e.g., `0.0` for deterministic/professional, `0.7` for balanced, and `1.5` for highly creative/unconventional).
+* Displays the temperature alongside the generated tagline so you can compare the direct effects of the temperature parameter on creativity.
+
+### 2. Medium: CLI Chatbot with System Instructions
+Using the `gemini_conversation.py` script as a starting point, build a fully interactive command-line chatbot:
+* When the script starts, prompt the user to input a "persona" or system instructions (e.g., "You are a helpful assistant who answers exclusively in pirate speak" or "You are an encouraging coding mentor").
+* Configure the client or prompt structure to enforce this persona. (Hint: In the Gemini API, you can pass system instructions via `types.GenerateContentConfig(system_instruction="...")`).
+* Enter a loop that repeatedly prompts the user for input (`input("You: ")`).
+* Exit the loop gracefully if the user types `exit` or `quit`.
+* Print the assistant's responses and append each turn to the conversation history to maintain context.
+
+### 3. Medium: Structured Multimodal Data Extractor
+Combine the concepts from `gemini_image.py` and `gemini_structured.py` to extract structured information from a document image:
+* Find or capture an image containing unstructured text (e.g., a photo of a restaurant receipt, a business card, or a book cover).
+* Load the image using `Pillow` and write a script that sends the image along with a prompt requesting the model to extract key details.
+* Instruct the model to return a structured JSON response (e.g., for a book cover, extract `"title"`, `"author"`, `"publisher"`, and `"estimated_publication_year"`).
+* Parse the JSON response in Python and display the extracted keys and values in a formatted terminal printout.
+
+### 4. Hard: High-Availability Structured Parser with Retry and Fallback
+Create a robust text processing pipeline that extracts structural sentiment analysis from product reviews:
+* Write a script that takes a list of raw user reviews (e.g., `"The battery life is amazing, but the screen is a bit dim."`).
+* Define a target schema for the output containing: `sentiment` (must be one of `Positive`, `Negative`, or `Neutral`), `sentiment_score` (a float between `0.0` and `1.0`), and a list of `pros` and `cons`.
+* Implement a function to call the Gemini API using `gemini-3-flash-preview` to perform this extraction, ensuring temperature is set to `0.0`.
+* Integrate the exponential backoff retry logic described in the **Error Handling** section of this chapter. If a call fails, retry up to 3 times with progressive delays.
+* **Add a Fallback Provider**: If the Gemini API call still fails after 3 retries (due to rate limits, quota limits, or API outage), catch the exception, print a warning, and fall back to the OpenAI API using `gpt-5.4-nano` to process that specific review.
+

@@ -434,3 +434,32 @@ The Open Knowledge Format represents a pragmatic bridge between two paradigms: t
 * **Project 1: Automatic OKF Generators.** Write a Python pipeline script that inspects a PostgreSQL or BigQuery schema, extracts the column names and comments, and automatically generates or updates the frontmatter and schema tables in `bundle/tables/<table_name>.md`.
 * **Project 2: Vector Search for OKF Bundles.** Replace the simple substring-matching index in `KnowledgeBundle.search()` with a vector database. Write a script to generate text embeddings for each concept using an Ollama embedding model (like `nomic-embed-text`) and perform semantic retrieval instead of keyword search.
 * **Project 3: Git Hook Validator.** Build a pre-commit Git hook that validates OKF bundles. The hook should check that every markdown file contains valid YAML frontmatter, contains the required `type` field, and verify that any links to other concepts (`[text](../path/to/concept.md)`) represent actual files existing in the bundle.
+
+## Optional Practice Problems
+
+Here are some optional practice problems to help you master the concepts covered in this chapter:
+
+### 1. Warm-Up: Robust Frontmatter Parser (Easy)
+The custom parser `_parse_simple_yaml` in `okf_explorer.py` is lightweight and requires no external libraries, but it cannot handle nested YAML dictionaries or multiline values.
+* **Task**: Enhance the parser in one of the following ways:
+  1. Integrate the standard library `tomllib` or implement a more robust parser using regular expressions to support multi-line values (like descriptions spanning multiple lines).
+  2. Implement automatic type coercion. For example, if a key is `timestamp`, parse the value into a Python `datetime` object. If a key is `sla`, strip whitespace and standardize its casing.
+  3. Write a small test suite in Python to verify your parser correctly handles edge cases, such as values that contain colons (e.g. `sla: available by 03:00 UTC`).
+
+### 2. OKF Link Integrity Checker (Medium)
+In an OKF bundle, documentation files link to each other using relative markdown links (e.g., `[sales_events](../tables/sales_events.md)`). If a file name is changed or deleted, these references break.
+* **Task**: Write a validation utility in `okf_explorer.py` that checks the link integrity of the entire bundle:
+  1. Extend `KnowledgeBundle` to parse the markdown body of each concept and locate all Markdown-style links: `[link text](relative_path)`.
+  2. Resolve the `relative_path` relative to the current concept's filesystem location.
+  3. Check if the file at the resolved path exists on disk.
+  4. Collect all broken links and output them as a structured report (showing the source file, line number, and broken path).
+
+### 3. Graph-Augmented RAG Retrieval (Hard)
+The standard `OKFAgent._build_context` retrieves the top-scoring concepts independently based on keywords. However, data concepts are highly relational: a metric like `daily_revenue` references `tables/sales_events` in its definition, which in turn points to `playbooks/revenue_drop_investigation`.
+* **Task**: Enhance the retrieval agent to support graph-based context traversal:
+  1. Build a dependency graph where each node is a `Concept` and directed edges represent references (parsed from Markdown links or specified in frontmatter metadata).
+  2. When a user asks a question, retrieve the initial `top_k` concepts using keyword search.
+  3. Automatically traverse the graph to retrieve all directly connected neighbors (1-hop relation) of these concepts.
+  4. Combine the initial concepts and their neighbors, de-duplicate them, and construct the prompt context.
+  5. Test this implementation by asking: *"What playbook should I run if the main metric depending on sales_events fails?"* Verify that the agent successfully pulls the `revenue_drop_investigation` playbook even if the playbook itself doesn't contain the keyword "sales_events".
+

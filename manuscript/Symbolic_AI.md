@@ -728,3 +728,49 @@ Solution(alabama=2, alaska=1, arizona=3, arkansas=4, california=4, colorado=4, c
 ## Good Old Fashioned Symbolic AI Wrap-up
 
 As a practical matter almost all of my work in the last ten years used either deep learning or was comprised of a combination of semantic web and linked data with deep learning projects. While the material in this chapter is optional for the modern AI practitioner, I still find using MiniZinc for constraint programming and Prolog to be useful. I included the material for the Soar cognitive architecture because I both find it interesting and I believe the any future development of "real AI" (or AGI) will involve hybrid approaches and there are many good ideas in the Soar implementation.
+
+## Optional Practice Problems
+
+Here is a set of optional practice problems designed to help you explore and apply the symbolic AI concepts covered in this chapter:
+
+### Problem 1 (Easy): Add Slots and Inheritance to the Frame System
+In early AI systems, a **Frame** represented an entity with specific slots (attributes) and values (e.g., color, size, parent). The current implementation in [frame.py](file:///Users/markwatson/GITHUB/PythonAIBook/source-code/symbolic-AI/frame.py) stores child frames, strings, and numbers in a flat list without distinguishing their semantic roles.
+
+Extend the [Frame](file:///Users/markwatson/GITHUB/PythonAIBook/source-code/symbolic-AI/frame.py#L8) class to support:
+1. **Attributes/Slots**: A dictionary of key-value pairs representing slots (e.g., `frame.set_slot("type", "mammal")`).
+2. **Inheritance**: Modify slot retrieval so that if a slot is queried (e.g., via `frame.get_slot("legs")`) but does not exist in the current frame, the lookup recursively searches its parent/super-frame (or subframe nesting structure) before returning `None`.
+3. **Pretty Printing**: Update `__str__` to output the slots of each frame with indentation.
+
+*Hint*: You can track parent relationships by passing a `parent` frame to the constructor or setting it when nesting.
+
+### Problem 2 (Medium): Modeling Kinship and Ancestry in Prolog
+The current Prolog example in [family.pl](file:///Users/markwatson/GITHUB/PythonAIBook/source-code/symbolic-AI/family.pl) and [family.py](file:///Users/markwatson/GITHUB/PythonAIBook/source-code/symbolic-AI/family.py) defines simple parent and grandparent rules.
+
+Extend [family.pl](file:///Users/markwatson/GITHUB/PythonAIBook/source-code/symbolic-AI/family.pl) by adding:
+1. A rule `sibling(X, Y)` that identifies if `X` and `Y` share a parent. Ensure that a person is not a sibling of themselves (`X \= Y`).
+2. A rule `uncle(X, Y)` and `aunt(X, Y)` identifying if `X` is a sibling of `Y`'s parent.
+3. A recursive rule `ancestor(X, Y)` that successfully traces transitive lineages of any depth (e.g., `X` is a parent of `Y`, or `X` is a parent of an ancestor of `Y`).
+
+Then, modify [family.py](file:///Users/markwatson/GITHUB/PythonAIBook/source-code/symbolic-AI/family.py) to assert a three-generation family tree, query the Prolog server for the ancestors and siblings of a specific family member, and print the results in Python.
+
+### Problem 3 (Medium): Solving Cryptarithmetic Puzzles in MiniZinc
+In constraint programming, a classic puzzle is Cryptarithmetic, where letters represent unique digits from `0` to `9` (with no leading zeros). The sum of words must equal the target word:
+$$\text{SEND} + \text{MORE} = \text{MONEY}$$
+
+Write a MiniZinc model (`send_more_money.mzn`) and a Python driver script to solve this puzzle:
+1. Define variables for `S, E, N, D, M, O, R, Y` as integers in `0..9`.
+2. Add a constraint ensuring all letters represent different values (use `alldifferent([S, E, N, D, M, O, R, Y])`).
+3. Add constraints to prevent leading zeros: `S != 0` and `M != 0`.
+4. Add the arithmetic constraint:
+   $$1000 \times S + 100 \times E + 10 \times N + D + 1000 \times M + 100 \times O + 10 \times R + E = 10000 \times M + 1000 \times O + 100 \times N + 10 \times E + Y$$
+5. Solve and print the resulting equation in Python, formatted as `9567 + 1085 = 10652`.
+
+*Note*: You can use [test_mzn.py](file:///Users/markwatson/GITHUB/PythonAIBook/source-code/symbolic-AI/test_mzn.py) as a template for loading the model and retrieving solved variable values.
+
+### Problem 4 (Hard): Scale the Soar Blocks World to Four Blocks
+The current blocks world configuration in [bw.soar](file:///Users/markwatson/GITHUB/PythonAIBook/source-code/symbolic-AI/bw.soar) and [bw.py](file:///Users/markwatson/GITHUB/PythonAIBook/source-code/symbolic-AI/bw.py) builds a tower of three blocks (`A` on `B` on `C`).
+
+Modify the model to scale this to four blocks (`A`, `B`, `C`, and `D`), stacking them in the order `A` on `B` on `C` on `D` on the `TABLE`:
+1. Edit [bw.soar](file:///Users/markwatson/GITHUB/PythonAIBook/source-code/symbolic-AI/bw.soar#L42-L55) to include a fourth block `<block-D>` named `D` on the table in the initial state.
+2. Update the goal detection rule `blocks-world*detect*goal` in [bw.soar](file:///Users/markwatson/GITHUB/PythonAIBook/source-code/symbolic-AI/bw.soar#L227-L241) to require a four-block tower (`A` on `B`, `B` on `C`, `C` on `D`, and `D` on `TABLE`).
+3. Run the updated agent from [bw.py](file:///Users/markwatson/GITHUB/PythonAIBook/source-code/symbolic-AI/bw.py). Because blocks are moved at random, a four-block tower may require more moves. Increase the cycle limit parameter in `soar_agent.RunSelf(50)` from `50` to `500` to ensure the agent has enough decision cycles to find the goal state.

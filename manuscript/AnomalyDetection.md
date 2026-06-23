@@ -256,3 +256,55 @@ In this chapter we implemented two complementary approaches to anomaly detection
 - The **Isolation Forest** requires no labels and scales well to high-dimensional data. It is the recommended starting point for any new anomaly detection project where labeled anomalies are unavailable.
 
 Both approaches are widely used in practice, and understanding their tradeoffs — supervised tuning vs. unsupervised convenience, interpretability vs. scalability — is essential for any practitioner working with anomaly detection problems.
+
+
+## Optional Practice Problems
+
+Here are some optional practice problems to help you deepen your understanding of anomaly detection and extend the code implemented in this chapter.
+
+### Problem 1 (Easy): Independent Gaussian Log-Likelihood
+The current implementation of the [GaussianAnomalyDetector](file:///Users/markwatson/GITHUB/PythonAIBook/source-code/anomaly_detection/anomaly_detection.py#L32) computes the arithmetic mean of the individual feature probabilities to determine the overall probability of a sample:
+```python
+return per_feature.mean(axis=1)
+```
+If we assume that the features are conditionally independent given the class, the joint probability of a sample is the product of its feature probabilities:
+$$p(\mathbf{x}) = \prod_{i=1}^{n} p(x_i)$$
+Because multiplying small probabilities leads to numerical underflow, we typically compute the sum of log-probabilities instead:
+$$\log p(\mathbf{x}) = \sum_{i=1}^{n} \log p(x_i)$$
+
+**Task:**
+1. Modify the `_probability` method of [GaussianAnomalyDetector](file:///Users/markwatson/GITHUB/PythonAIBook/source-code/anomaly_detection/anomaly_detection.py#L32) to compute the joint log-probability of each sample. (Hint: compute the natural logarithm of individual feature probability densities, sum them across axis 1, and return this log-probability).
+2. Update the `_tune_epsilon` and `predict` methods accordingly. Note that since log-probabilities are negative numbers, `epsilon` will also be negative, and a sample is an anomaly when its log-probability is *lower* (more negative) than `epsilon`. You will need to adjust the range of candidate thresholds swept in `_tune_epsilon`.
+3. Tune `epsilon` on the cross-validation set and evaluate the new log-likelihood detector on the test set.
+4. Compare the resulting Precision, Recall, and F1 scores with those of the original arithmetic-mean implementation.
+
+### Problem 2 (Medium): Semi-Supervised Hyperparameter Tuning for Isolation Forest
+Currently, our [IsolationForestDetector](file:///Users/markwatson/GITHUB/PythonAIBook/source-code/anomaly_detection/anomaly_detection.py#L117) wrapper is fully unsupervised and uses a hardcoded `contamination=0.35` hyperparameter:
+```python
+iforest = IsolationForestDetector(contamination=0.35)
+```
+In real-world settings, we often have a small labeled dataset (e.g., our cross-validation set) that we can use to tune hyperparameters, even if the model itself is trained in an unsupervised manner on the training set.
+
+**Task:**
+1. Extend the `fit` method of [IsolationForestDetector](file:///Users/markwatson/GITHUB/PythonAIBook/source-code/anomaly_detection/anomaly_detection.py#L117) to accept optional validation data `X_cv` and `y_cv`.
+2. Implement a grid search within `fit` that sweeps over a range of hyperparameters when validation data is provided:
+   - `contamination`: from `0.05` to `0.50` in steps of `0.05`
+   - `n_estimators`: `[50, 100, 200, 300]`
+3. For each combination, fit the `IsolationForest` model on `X_train`, predict on `X_cv`, and calculate the validation F1 score.
+4. Store the best-performing hyperparameters and fit the final model using them.
+5. Integrate this tuning step in [wisconsin_anomaly.py](file:///Users/markwatson/GITHUB/PythonAIBook/source-code/anomaly_detection/wisconsin_anomaly.py), evaluate the optimized model on the test set, and compare the results to the default model. How much did tuning improve the Precision and F1 score?
+
+### Problem 3 (Hard): Density-based Detection with Local Outlier Factor (LOF) and PCA
+While Isolation Forest isolates anomalies using random partitioning, distance- or density-based methods like **Local Outlier Factor (LOF)** identify anomalies by comparing the local density of a point to that of its neighbors. In high-dimensional spaces, these density metrics can degrade due to the "curse of dimensionality."
+
+**Task:**
+1. Implement a new class `LOFDetector` in [anomaly_detection.py](file:///Users/markwatson/GITHUB/PythonAIBook/source-code/anomaly_detection/anomaly_detection.py) wrapping scikit-learn's `LocalOutlierFactor`. Set `novelty=True` in the constructor so you can call `fit` on training data and `predict`/`score` on test data.
+2. Write a Python script that applies Principal Component Analysis (PCA) to reduce the 9-dimensional cancer dataset to 2 dimensions.
+3. Train all three detectors ([GaussianAnomalyDetector](file:///Users/markwatson/GITHUB/PythonAIBook/source-code/anomaly_detection/anomaly_detection.py#L32), [IsolationForestDetector](file:///Users/markwatson/GITHUB/PythonAIBook/source-code/anomaly_detection/anomaly_detection.py#L117), and your new `LOFDetector`) on:
+   - The original 9-dimensional space.
+   - The 2-dimensional PCA space.
+4. Evaluate and compare the Precision, Recall, and F1 scores for all configurations on the test set.
+5. Using `matplotlib`, plot the 2D PCA-reduced test set. Create subplots showing:
+   - The true class labels (normal vs. anomaly).
+   - The predictions of each detector (correctly identified normal points, true positives, false positives, and false negatives).
+   - Analyze which patterns each detector struggled with or excelled at resolving.

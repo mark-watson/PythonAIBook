@@ -412,3 +412,29 @@ In this chapter we covered:
 If this chapter sparked your interest, I encourage you to work through the Coursera specialization by Martha and Adam White and the Sutton/Barto book. For Python-focused RL, the [Stable-Baselines3](https://stable-baselines3.readthedocs.io/) library provides reliable implementations of DQN, A2C, PPO, and other algorithms ready to use with Gymnasium environments.
 
 I tagged this chapter as optional material because I believe most readers will get more immediate value from mastering deep learning and pre-trained models. But if you find yourself working on sequential decision-making problems — robotics, game AI, resource allocation, dynamic pricing — the RL toolkit becomes indispensable.
+
+## Optional Practice Problems
+
+### Problem 1: Parameter Sensitivity in Forest Management (Easy)
+
+In the Forest Management example in [mdp_demo.py](file:///Users/markwatson/GITHUB/PythonAIBook/source-code/reinforcement_learning/mdp_demo.py), the optimal policy with a discount factor of $\gamma = 0.9$ and a fire probability of $p = 0.1$ is to always Wait.
+1. Modify the script to perform a parameter sweep over different discount factors $\gamma \in \{0.1, 0.5, 0.9, 0.99\}$ and fire probabilities $p \in \{0.01, 0.05, 0.1, 0.3, 0.5\}$.
+2. Record the resulting optimal policy for each combination.
+3. Explain intuitively how a low discount factor (valuing short-term gains) or a high risk of fire (destroying progress) changes the agent's behavior from "Wait" to "Cut".
+
+### Problem 2: Implementing a Stochastic Grid World (Medium)
+
+The 3x3 grid world in [mdp_demo.py](file:///Users/markwatson/GITHUB/PythonAIBook/source-code/reinforcement_learning/mdp_demo.py) is completely deterministic: when the agent takes an action, it transitions to the target cell with a probability of 1.0.
+1. Modify the transition matrix creation in [mdp_demo.py](file:///Users/markwatson/GITHUB/PythonAIBook/source-code/reinforcement_learning/mdp_demo.py) to model a slippery grid. If the agent chooses a movement action (e.g., move Right), it should succeed with a probability of 0.8. With a probability of 0.1, it slips to the left (perpendicularly), and with a probability of 0.1, it slips to the right. (Note: Bumping into a wall still results in staying in the same cell).
+2. Run both Value Iteration and Policy Iteration on this stochastic environment.
+3. Compare the resulting value function and optimal policy with the deterministic version. How does transition noise affect the expected cumulative rewards of the non-goal states?
+
+### Problem 3: Scaling Q-Learning to the 8x8 Frozen Lake (Hard)
+
+The tabular Q-learning code in [frozen_lake_qlearning.py](file:///Users/markwatson/GITHUB/PythonAIBook/source-code/reinforcement_learning/frozen_lake_qlearning.py) is configured for the 4x4 `FrozenLake-v1` map.
+1. Modify the script to use the larger 8x8 grid: `gym.make("FrozenLake-v1", map_name="8x8", is_slippery=True)`.
+2. Train the agent using the original parameters. You will likely observe that the success rate remains extremely low (often close to 0) because the reward is sparse (only 1.0 at the goal) and the state space is four times larger.
+3. Implement one or both of the following enhancements to solve the 8x8 grid:
+   - **Hyperparameter Sweep**: Write a search script to find optimal values for the learning rate $\alpha$, the decay rate of $\epsilon$, and the number of training episodes (hint: you may need 50,000+ episodes).
+   - **Reward Shaping**: Implement a custom wrapper or modify the step loop to provide intermediate feedback. For example, give a small positive reward proportional to the decrease in Manhattan distance to the goal, or apply a step penalty (e.g., -0.01) for non-goal steps to discourage circular paths.
+4. Report your final success rate and compare it against the baseline.

@@ -155,3 +155,41 @@ weighted avg       0.94      0.93      0.93        15
 
 I have already admitted my personal biases in favor of deep learning over simpler machine learning and I proved that by using perhaps only 1% of the functionality of Scikit-learn in this chapter.
 
+## Optional Practice Problems
+
+To help solidify your understanding of "classic" machine learning with scikit-learn, try implementing the following practice problems by extending the existing code examples.
+
+### 1. Easy: Hyperparameter Tuning for K-NN
+**Objective:** Understand how the choice of $k$ (number of neighbors) affects model performance.
+
+**Task:**
+1. Open [classification.py](file:///Users/markwatson/GITHUB/PythonAIBook/source-code/machine-learning/classification.py).
+2. Modify the script to loop over different values of `n_neighbors` (for example, odd numbers from 1 to 15: `[1, 3, 5, 7, 9, 11, 13, 15]`).
+3. For each value of $k$:
+   - Initialize and fit the `KNeighborsClassifier`.
+   - Calculate and print the classification accuracy on the test set.
+4. Identify which value of $k$ provides the best performance and explain why choosing an even vs. odd value for $k$ matters in binary classification.
+
+### 2. Medium: Comparing Classifiers
+**Objective:** Compare the K-Nearest Neighbors classifier against other classic machine learning algorithms covered in this chapter.
+
+**Task:**
+1. Create a new script in [/Users/markwatson/GITHUB/PythonAIBook/source-code/machine-learning/](file:///Users/markwatson/GITHUB/PythonAIBook/source-code/machine-learning/) (e.g., `compare_classifiers.py`) that loads the data using [load_data.py](file:///Users/markwatson/GITHUB/PythonAIBook/source-code/machine-learning/load_data.py).
+2. Import at least two other classifiers from scikit-learn, such as:
+   - Logistic Regression (`sklearn.linear_model.LogisticRegression`)
+   - Decision Tree (`sklearn.tree.DecisionTreeClassifier`)
+   - Random Forest (`sklearn.ensemble.RandomForestClassifier`)
+3. Train each classifier on the scaled training data and evaluate them on the test dataset.
+4. Print the confusion matrix and classification report for each.
+5. Write a brief summary comparing the precision, recall, and F1-score of the alternative classifiers with the K-NN baseline.
+
+### 3. Hard: Implementing Cross-Validation
+**Objective:** Use cross-validation to get a more robust estimate of model performance, rather than relying on a single, fixed train/test split.
+
+**Task:**
+1. Create a script (e.g., `cross_validation.py`) that reads both [labeled_cancer_data.csv](file:///Users/markwatson/GITHUB/PythonAIBook/source-code/machine-learning/labeled_cancer_data.csv) and [labeled_test_data.csv](file:///Users/markwatson/GITHUB/PythonAIBook/source-code/machine-learning/labeled_test_data.csv) using Pandas.
+2. Concatenate these two datasets into a single dataset.
+3. Separate the features and target labels from the combined dataset.
+4. Use `sklearn.model_selection.cross_val_score` or `sklearn.model_selection.KFold` to perform 5-fold cross-validation using the `KNeighborsClassifier`.
+5. Apply feature scaling correctly within each fold using a pipeline (`sklearn.pipeline.Pipeline`) containing `StandardScaler` and `KNeighborsClassifier` to avoid data leakage.
+6. Calculate and print the mean and standard deviation of the accuracy across all 5 folds.
