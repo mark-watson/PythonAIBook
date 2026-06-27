@@ -1,8 +1,8 @@
 # LLMs with Public APIs
 
-The fastest way to use large language models is through cloud APIs. Google, OpenAI, and Anthropic all offer APIs that give you access to their most capable models with just a few lines of Python code. You don't need a GPU, you don't need to download model weights, and you can start building applications in minutes.
+The fastest way to use large language models is through cloud APIs. Google, OpenAI, and Anthropic,  all offer APIs that give you access to their most capable proprietary models with just a few lines of Python code. Fireworks.ai is an inference provider in the USA that offers fast inferencing for many open weight models. You don't need a GPU, you don't need to download model weights, and you can start building applications in minutes.
 
-In this chapter we work through practical examples using the Google Gemini API and the OpenAI API. Both provide Python client libraries that handle authentication, request formatting, and response parsing. The patterns you learn here apply to other API providers as well — the core concepts of sending prompts, receiving completions, and managing conversations are the same across providers.
+In this chapter we work through practical examples using the Google Gemini API, the OpenAI API, and the Fireworks.ai API. Each provides Python client libraries (or compatibility layers) that handle authentication, request formatting, and response parsing. The patterns you learn here apply to other API providers as well — the core concepts of sending prompts, receiving completions, and managing conversations are the same across providers.
 
 The examples for this chapter are in the directory **source-code/llm_public_apis**.
 
@@ -88,6 +88,41 @@ for item in reversed(output_items):
 
 Both APIs follow the same pattern: create a client, send a prompt, and extract the generated text from the response.
 
+### Fireworks.ai
+
+Fireworks.ai provides fast, cost-effective access to open-weight models through an OpenAI-compatible API. This means you can use the **openai** Python SDK you already installed — just point it at Fireworks' endpoint. DeepSeek V4 Flash, the default model we use here, delivers strong performance at a fraction of the cost of proprietary models.
+
+Get a free API key from [fireworks.ai](https://fireworks.ai/api-keys) and set it as an environment variable:
+
+```bash
+export FIREWORKS_API_KEY="your-api-key-here"
+```
+
+The simplest Fireworks example looks nearly identical to OpenAI's chat completions pattern:
+
+```python
+# fireworks_text.py - Basic text generation with Fireworks.ai
+
+import os
+from openai import OpenAI
+
+client = OpenAI(
+    base_url="https://api.fireworks.ai/inference/v1",
+    api_key=os.getenv("FIREWORKS_API_KEY"),
+)
+
+response = client.chat.completions.create(
+    model="accounts/fireworks/models/deepseek-v4-flash",
+    messages=[
+        {"role": "user", "content": "Briefly explain what a transformer model is in AI."}
+    ],
+)
+
+print(response.choices[0].message.content)
+```
+
+The output is a concise explanation of transformer models. The key difference from the standard OpenAI setup is the **base_url** parameter, which redirects the SDK to Fireworks' servers. The **messages** format uses the familiar Chat Completions API structure with role-based message objects.
+
 
 ## Text Generation
 
@@ -127,6 +162,38 @@ print(f"Temperature 1.5: {response_high.text}")
 
 For most practical applications — code generation, data extraction, question answering — use a low temperature (0.0 to 0.3). For creative writing and brainstorming, higher temperatures (0.7 to 1.5) produce more interesting results.
 
+The Fireworks API works the same way. Since Fireworks uses the OpenAI Chat Completions format, temperature is passed as a top-level parameter:
+
+```python
+# fireworks_temperature.py - Effect of temperature on text generation
+
+import os
+from openai import OpenAI
+
+client = OpenAI(
+    base_url="https://api.fireworks.ai/inference/v1",
+    api_key=os.getenv("FIREWORKS_API_KEY"),
+)
+
+prompt = "Write a one-sentence tagline for a coffee shop."
+
+response_low = client.chat.completions.create(
+    model="accounts/fireworks/models/deepseek-v4-flash",
+    messages=[{"role": "user", "content": prompt}],
+    temperature=0.0,
+)
+print(f"Temperature 0.0: {response_low.choices[0].message.content}")
+
+response_high = client.chat.completions.create(
+    model="accounts/fireworks/models/deepseek-v4-flash",
+    messages=[{"role": "user", "content": prompt}],
+    temperature=1.5,
+)
+print(f"Temperature 1.5: {response_high.choices[0].message.content}")
+```
+
+You'll see the same pattern as Gemini: temperature 0.0 produces a safe, predictable tagline, while 1.5 yields something more surprising and original.
+
 
 ## Thinking Models
 
@@ -162,6 +229,42 @@ print(response.text)
 ```
 
 The thinking budget is specified in tokens. A budget of 0 disables thinking entirely (useful for simple tasks where speed matters). Higher budgets allow the model to reason through more complex problems but increase latency and cost.
+
+Fireworks' DeepSeek models also support thinking mode. When enabled, the model performs internal chain-of-thought reasoning before producing its final answer, and the reasoning tokens are returned separately:
+
+```python
+# fireworks_thinking.py - Extended reasoning with DeepSeek thinking mode
+
+import os
+from openai import OpenAI
+
+client = OpenAI(
+    base_url="https://api.fireworks.ai/inference/v1",
+    api_key=os.getenv("FIREWORKS_API_KEY"),
+)
+
+prompt = """
+A farmer has a fox, a chicken, and a bag of grain. He needs to cross
+a river in a boat that can only carry him and one item at a time.
+If left alone, the fox will eat the chicken, and the chicken will eat
+the grain. How does the farmer get everything across safely?
+"""
+
+response = client.chat.completions.create(
+    model="accounts/fireworks/models/deepseek-v4-flash",
+    messages=[{"role": "user", "content": prompt}],
+    extra_body={"thinking": {"type": "enabled"}},
+)
+
+message = response.choices[0].message
+if hasattr(message, "thinking") and message.thinking:
+    print("--- Thinking ---")
+    print(message.thinking)
+    print("--- Answer ---")
+print(message.content)
+```
+
+The **extra_body** parameter passes the thinking configuration directly to the Fireworks API. DeepSeek's approach differs from Gemini's thinking budget — instead of controlling how many tokens to spend on reasoning, you simply enable or disable thinking mode. The reasoning trace is available via `message.thinking`, which is useful for debugging and understanding the model's logic.
 
 
 ## Multi-Turn Conversations
@@ -201,6 +304,39 @@ print(chat("What are the top 3 tourist attractions there?"))
 ```
 
 Notice that the second and third messages use pronouns ("its", "there") that only make sense given the conversation history. The model resolves these references correctly because it sees the full conversation with each request.
+
+The same pattern works with Fireworks using the Chat Completions message list format. Instead of building Gemini Content/Part objects, you append plain dicts to the messages array:
+
+```python
+# fireworks_conversation.py - Multi-turn conversation with Fireworks
+
+import os
+from openai import OpenAI
+
+client = OpenAI(
+    base_url="https://api.fireworks.ai/inference/v1",
+    api_key=os.getenv("FIREWORKS_API_KEY"),
+)
+
+messages = []
+
+def chat(user_message):
+    """Send a message and get a response, maintaining conversation history."""
+    messages.append({"role": "user", "content": user_message})
+    response = client.chat.completions.create(
+        model="accounts/fireworks/models/deepseek-v4-flash",
+        messages=messages,
+    )
+    reply = response.choices[0].message.content
+    messages.append({"role": "assistant", "content": reply})
+    return reply
+
+print(chat("What is the capital of France?"))
+print(chat("What is its population?"))
+print(chat("What are the top 3 tourist attractions there?"))
+```
+
+The Fireworks implementation is notably simpler than the Gemini version — the Chat Completions format uses standard dicts for messages rather than typed objects, which makes message history management straightforward.
 
 
 ## Multimodal Input: Analyzing Images
@@ -305,6 +441,41 @@ print(json.dumps(result, indent=2))
 ```
 
 Using temperature 0.0 is important for structured output — you want the model to be deterministic and precise rather than creative. Some APIs also support specifying a JSON schema directly in the request, which guarantees the output conforms to a specific structure.
+
+The Fireworks version uses the same prompting strategy. The code differs only in how the client is configured and how the response text is accessed:
+
+```python
+# fireworks_structured.py - Getting structured JSON output from Fireworks
+
+import os
+import json
+from openai import OpenAI
+
+client = OpenAI(
+    base_url="https://api.fireworks.ai/inference/v1",
+    api_key=os.getenv("FIREWORKS_API_KEY"),
+)
+
+prompt = """Extract the following information from the text below and return
+it as a JSON object with keys: "name", "company", "role", "years_experience".
+
+Text: "Jane Smith has been working as a Senior Data Scientist at Acme Corp
+for the past 7 years. She specializes in NLP and recommendation systems."
+"""
+
+response = client.chat.completions.create(
+    model="accounts/fireworks/models/deepseek-v4-flash",
+    messages=[{"role": "user", "content": prompt}],
+    temperature=0.0,
+)
+
+raw = response.choices[0].message.content.strip()
+raw = raw.removeprefix("```json").removesuffix("```").strip()
+result = json.loads(raw)
+print(json.dumps(result, indent=2))
+```
+
+The output is identical to the Gemini version — a clean JSON object with the extracted fields. The JSON cleanup logic (stripping markdown code fences) is the same because all LLMs tend to wrap code blocks in backticks.
 
 
 ## Practical Considerations
