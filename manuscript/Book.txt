@@ -15,6 +15,7 @@ Part3_llms.md
 LLM_1_transformers.md
 LLM_3_public_apis.md
 LLM_4_local_models.md
+Text_Adventure_Game.md
 Part4_symbolic_ai.md
 Symbolic_AI.md
 rete-expert-systems.md
