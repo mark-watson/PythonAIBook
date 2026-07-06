@@ -1,8 +1,16 @@
-# Categorical Deep Learning: From Axioms to Implementation
+# Categorical Deep Learning: From Axioms to Implementation using Category Theory
 
-Earlier in this book we built neural networks with PyTorch and let its autograd system handle backpropagation for us. That is the right approach for production work. In this chapter I want to take you in the opposite direction: we will build a complete deep learning framework from scratch using only the Python standard library, and we will see that the structure of backpropagation, dropout, Bayesian uncertainty, ensemble consistency, and knowledge distillation all fall out naturally from the language of category theory.
+Earlier in this book we built neural networks with PyTorch and let its autograd system handle backpropagation for us. That is the right approach for production work. In this chapter I want to take you in the opposite direction: we will build a complete deep learning framework from scratch using only the Python standard library, and we will see that the structure of backpropagation, dropout, Bayesian uncertainty, ensemble consistency, and knowledge distillation all fall out naturally from the language of **category theory**.
 
 The inspiration for this chapter is the survey paper by Jia, Peng, Yang and Chen (2025), "Category-Theoretical and Topos-Theoretical Frameworks in Machine Learning: A Survey" (Axioms 14(3):204). The paper organizes categorical machine learning into five perspectives, and we will implement all five in a single Python file with no external dependencies. If you have never studied category theory, do not worry: I will introduce each concept just before we use it, and the code is the real teacher here.
+
+In the context of the Para category, a morphism is a parameterized, bidirectional mapping structure known as a lens.
+A neural network layer is not a simple map from A→B. It is a morphism defined as a triple (**P**,**F**,**F\***):
+- P: The parameter space (weights and biases).
+- F: The forward pass mapping parameters and inputs to outputs.
+- F∗: The pullback (backward pass) mapping upstream gradients back to parameter and input gradients.
+
+Calling a layer a "morphism in the Para category" means the layer is a single, self-contained mathematical unit that inherently contains both its forward execution and its exact backpropagation mechanism.
 
 Why bother with category theory when PyTorch and TensorFlow already work and have been tuned for high efficiency on GPUs and TPUs? Because the categorical viewpoint reveals *why* neural networks are structured the way they are. When you see that a neural network layer is a morphism in the Para category, that backpropagation is the composition of pullback morphisms, and that a sigmoid output is a subobject classifier in a topos, you gain a deeper understanding that transfers to new architectures and new problems. I have found that this perspective makes me a better engineer even when I never write a custom framework in production.
 
@@ -14,24 +22,24 @@ This example uses only the Python standard library (`math` and `random`), so the
 uv run deep_learning_category_theory.py
 ```
 
-{width: "80%"}
+{width: “100%”}
 ![Architecture diagram for the Categorical Deep Learning example](FIG_categorical_deep_learning.jpg)
 
 ## The Para Category and Lens Composition
 
 Traditional backpropagation is often taught as a sequence of calculus rules applied by hand. Categorical deep learning views it more profoundly: layers are morphisms in the **Para category**, which is specifically designed to handle parametric maps between states.
 
-In the Para construction, a morphism $f : A \to B$ is a triple $(P, F, F^*)$, where:
+In the Para construction, a morphism `f : A → B` is a triple `(P, F, F*)`, where:
 
-- **$P$** is the parameter space (the weights and biases for one layer).
-- **$F: P \times A \to B$** is the forward pass, mapping parameters and input to output.
-- **$F^*: P \times A \times \nabla B \to \nabla P \times \nabla A$** is the pullback (backward pass), which computes how infinitesimal changes in the output $\nabla B$ propagate back into parameter space $\nabla P$ and input space $\nabla A$.
+- **P** is the parameter space (the weights and biases for one layer).
+- **`F: P × A → B`** is the forward pass, mapping parameters and input to output.
+- **`F*: P × A × ∇B → ∇P × ∇A`** is the pullback (backward pass), which computes how infinitesimal changes in the output `∇B` propagate back into parameter space `∇P` and input space `∇A`.
 
 The key insight is that a neural network layer is not just a function. It is a *bidirectional* structure: a forward map paired with a backward map. Category theorists call this a **lens**. The forward half produces output and stashes away enough context to run the backward half later. The backward half receives a gradient from upstream and produces gradients for both the parameters and the input.
 
 ### Implementing a Para Morphism
 
-In our implementation, `LayerParams` represents an object in the parameter space, and the function `forward_para` realizes a morphism in $\text{Para}(\mathbb{Euc})$:
+In our implementation, `LayerParams` represents an object in the parameter space, and the function `forward_para` realizes a morphism in `Para(Euc)`:
 
 ```python
 def forward_para(
@@ -55,17 +63,25 @@ def forward_para(
     return acts, pullback
 ```
 
-The function returns two things: the post-activation output vector and a **pullback closure**. The closure captures `W`, `inputs`, and `zs` (the pre-activations) so that when it is called later with an upstream gradient, it can compute the weight gradient $\nabla W = \delta \otimes x^\top$, the bias gradient $\nabla b = \delta$, and the input gradient $\nabla x = W^\top \cdot \delta$ that gets passed to the previous layer. This closure is the "put-back" half of the categorical lens.
+The function returns two things: the post-activation output vector and a **pullback closure**. The closure captures `W`, `inputs`, and `zs` (the pre-activations) so that when it is called later with an upstream gradient, it can compute the weight gradient `∇W = δ ⊗ xᵀ`, the bias gradient `∇b = δ`, and the input gradient `∇x = Wᵀ · δ` that gets passed to the previous layer. This closure is the "put-back" half of the categorical lens.
 
 ### Compositional Backpropagation
 
-One of the key results of the categorical framework is that neural networks are simply the composition of Para morphisms. If we have layers $f_1, f_2, \dots, f_n$, the cumulative forward effect is:
+One of the key results of the categorical framework is that neural networks are simply the composition of Para morphisms. If we have layers `f₁, f₂, …, fₙ`, the cumulative forward effect is:
 
-$$F_{net} = f_n \circ f_{n-1} \circ \dots \circ f_1$$
+
+
+`Fnet = fₙ ∘ f(n-1) ∘ … ∘ f₁`
+
+
 
 The backward pass composes the pullback morphisms in reverse order:
 
-$$f_1^* \circ f_2^* \circ \dots \circ f_n^* : \nabla \hat{Y} \to (\nabla P_1, \dots, \nabla P_n, \nabla X)$$
+
+
+`f₁* ∘ f₂* ∘ … ∘ fₙ* : ∇Ŷ → (∇P₁, …, ∇Pₙ, ∇X)`
+
+
 
 This is implemented in `model_backward`, which iterates over the list of pullback closures in reverse, threading the gradient through each layer:
 
@@ -81,7 +97,7 @@ def model_backward(pullbacks: list[PullbackFn], dl_dy_hat: float) -> list[LayerG
     return list(reversed(grads_acc))
 ```
 
-The SGD update step $\theta \leftarrow \theta - \eta \nabla \theta$ is an **endomorphism** $u_\eta : \text{Model} \to \text{Model}$ on the parameter object. Training is just iterated application of this endomorphism over the dataset.
+The SGD update step `θ ← θ − η∇θ` is an **endomorphism** `u_η : Model → Model` on the parameter object. Training is just iterated application of this endomorphism over the dataset.
 
 ### Demo: Learning XOR
 
@@ -122,7 +138,7 @@ The network learns XOR perfectly. What is notable is that we wrote the entire ba
 
 Machine learning is inherently stochastic. Dropout randomly zeroes neurons, Bayesian weights are sampled from distributions, and training data is shuffled. We model this with **Markov categories**, where morphisms represent stochastic kernels that map objects to probability distributions over other objects.
 
-A Markov category is a symmetric monoidal category where every object $X$ carries a comonoid structure: a copy map $X \to X \otimes X$ (duplication) and a delete map $X \to I$ (marginalization). Morphisms are stochastic kernels. In practice, we represent a stochastic morphism as a function that *samples* an output each time it is called.
+A Markov category is a symmetric monoidal category where every object `X` carries a comonoid structure: a copy map `X → X ⊗ X` (duplication) and a delete map `X → I` (marginalization). Morphisms are stochastic kernels. In practice, we represent a stochastic morphism as a function that *samples* an output each time it is called.
 
 ### Dropout as a Stochastic Lens
 
@@ -147,7 +163,7 @@ The `scale` factor implements inverted dropout, which keeps the expected activat
 
 ### Bayesian Uncertainty via Monte Carlo Sampling
 
-In a **Bayesian neural network**, weights are treated as random variables $W \sim p(W)$. A single layer becomes a stochastic morphism: instead of using fixed weights, it samples from a distribution at every forward pass. We implement this with `bayesian_forward`, which samples weights from a Gaussian $W \sim N(\mu, \sigma^2)$ each time it is called.
+In a **Bayesian neural network**, weights are treated as random variables `W ∼ p(W)`. A single layer becomes a stochastic morphism: instead of using fixed weights, it samples from a distribution at every forward pass. We implement this with `bayesian_forward`, which samples weights from a Gaussian `W ∼ N(μ, σ²)` each time it is called.
 
 By running **Monte Carlo sampling** (multiple stochastic forward passes), we can compute the empirical mean and standard deviation of the predictions. The standard deviation quantifies *epistemic uncertainty*, which is the model's uncertainty about its own parameterization:
 
@@ -183,7 +199,7 @@ Neural networks often require invariance to certain transformations. A set-value
 
 ### Permutation Invariance via Summation
 
-A function is invariant to the action of a group $G$ if it produces the same output for any permutation of its inputs. In categorical terms, summation $\sum x_i$ acts as a **colimit (coproduct)** over the diagram representing a symmetric group action. Because addition is commutative and associative, sum-pooling is naturally a morphism that factors through the colimit of the input space.
+A function is invariant to the action of a group *G* if it produces the same output for any permutation of its inputs. In categorical terms, summation `∑ xᵢ` acts as a **colimit (coproduct)** over the diagram representing a symmetric group action. Because addition is commutative and associative, sum-pooling is naturally a morphism that factors through the colimit of the input space.
 
 ```python
 def permutation_invariant_pool(xs: list[float]) -> float:
@@ -219,11 +235,11 @@ The three clusters correspond to three spatially separated groups of points, and
 
 ## The Topos Framework: Subobject Classifiers and Sheaves
 
-The most abstract view treats neural networks within a **topos**: a category with rich internal logic (Heyting algebras) and structural tools for handling local-to-global transitions. A topos has finite limits and colimits, and crucially it possesses a **subobject classifier** $\Omega$ with a "true" morphism $\top : 1 \to \Omega$.
+The most abstract view treats neural networks within a **topos**: a category with rich internal logic (Heyting algebras) and structural tools for handling local-to-global transitions. A topos has finite limits and colimits, and crucially it possesses a **subobject classifier** `Ω` with a "true" morphism `⊤ : 1 → Ω`.
 
 ### The Subobject Classifier
 
-Every subobject (subset) $S \subseteq X$ in a topos is classified by a unique morphism $\chi_S : X \to \Omega$ such that $S = \chi_S^{-1}(\top)$. In binary classification, the continuous output of a sigmoid (a probability in $[0,1]$) *is* the characteristic morphism $\chi : X \to \Omega$. A prediction of $p=1.0$ corresponds to truth, $p=0.0$ to falsity, and $p=0.5$ is the decision boundary where an input transitions from being "in" to "out" of the classified subobject.
+Every subobject (subset) `S ⊆ X` in a topos is classified by a unique morphism `χ_S : X → Ω` such that `S = χ_S⁻¹(⊤)`. In binary classification, the continuous output of a sigmoid (a probability in `[0,1]`) *is* the characteristic morphism `χ : X → Ω`. A prediction of `p=1.0` corresponds to truth, `p=0.0` to falsity, and `p=0.5` is the decision boundary where an input transitions from being "in" to "out" of the classified subobject.
 
 ```python
 def subobject_classify(m: Model, xs: list[float]) -> tuple[float, int]:
@@ -242,14 +258,14 @@ Applied to our trained XOR model:
     χ([1.0, 1.0]) = 0.0139  → class 0
 ```
 
-The sigmoid output is not just a probability. Categorically, it is the characteristic morphism of the classifier's subobject $S \subseteq \text{InputSpace}$, and the decision boundary at $p=0.5$ is $\chi^{-1}(0.5)$.
+The sigmoid output is not just a probability. Categorically, it is the characteristic morphism of the classifier's subobject `S ⊆ InputSpace`, and the decision boundary at `p=0.5` is `χ⁻¹(0.5)`.
 
 ### Sheaf Gluing and Local-to-Global Consistency
 
 A **sheaf** is a structure that assigns a set (a "section") to every open set in a topological space, such that local sections can be "glued" together if they agree on their overlaps. In an ensemble of models:
 
 - Each model acts as an expert over a specific input context (an open set).
-- The **sheaf condition** requires that for any two overlapping contexts, the expert predictions must agree within some tolerance $\epsilon$.
+- The **sheaf condition** requires that for any two overlapping contexts, the expert predictions must agree within some tolerance `ε`.
 - If experts are consistent, we can perform **sheaf gluing** to produce a single global prediction. If they disagree (high variance), we fail to form a global section, which signals high epistemic uncertainty or model conflict.
 
 ```python
@@ -275,7 +291,7 @@ When experts A and B agree within tolerance, their sections glue to a global pre
 
 ### Internal Logic: The Heyting Algebra
 
-The subobject classifier $\Omega$ in a topos carries a **Heyting algebra** structure, which is the internal logic of the topos. In the category of sets this collapses to classical Boolean logic, but on the continuous interval $[0,1]$ it gives us fuzzy logical operators:
+The subobject classifier `Ω` in a topos carries a **Heyting algebra** structure, which is the internal logic of the topos. In the category of sets this collapses to classical Boolean logic, but on the continuous interval `[0,1]` it gives us fuzzy logical operators:
 
 ```python
 def heyting_and(p: float, q: float) -> float:
@@ -300,13 +316,13 @@ def heyting_implies(p: float, q: float) -> float:
     p ⇒ q  = ¬p ∨ q        = 0.3
 ```
 
-These operators let us combine classifier outputs in a principled way. Conjunction takes the minimum (both must be confident), disjunction takes the maximum (either suffices), and implication follows the intuitionistic definition $p \Rightarrow q = \neg p \lor q$.
+These operators let us combine classifier outputs in a principled way. Conjunction takes the minimum (both must be confident), disjunction takes the maximum (either suffices), and implication follows the intuitionistic definition `p ⇒ q = ¬p ∨ q`.
 
 ## Natural Transformations and Knowledge Distillation
 
-A **natural transformation** $\eta : F \Rightarrow G$ is a coherent family of morphisms $\eta_X : F(X) \to G(X)$ between two functors $F$ and $G$, such that the mapping commutes with all arrows in the source category. This provides a rigorous foundation for **knowledge distillation**.
+A **natural transformation** `η : F ⇒ G` is a coherent family of morphisms `η_X : F(X) → G(X)` between two functors *F* and *G*, such that the mapping commutes with all arrows in the source category. This provides a rigorous foundation for **knowledge distillation**.
 
-If we have a complex "Teacher" network $F$ and a simpler "Student" network $G$, the distillation process can be seen as a natural transformation $\eta_X$ that maps the high-dimensional feature space of $F$ onto the lower-dimensional representation of $G$. The adapter preserves the structural relationships (the commutation condition) between how the two networks transform their inputs.
+If we have a complex "Teacher" network *F* and a simpler "Student" network *G*, the distillation process can be seen as a natural transformation `η_X` that maps the high-dimensional feature space of *F* onto the lower-dimensional representation of *G*. The adapter preserves the structural relationships (the commutation condition) between how the two networks transform their inputs.
 
 We implement the natural transformation as a linear adapter:
 
@@ -329,7 +345,7 @@ The demo maps the teacher's 4-dimensional hidden representation to a 2-dimension
     Student rep   (2-dim):  ['0.5085', '0.4918']
 ```
 
-The adapter is the natural transformation $\eta_X$ that lets the student functor $G$ access the teacher functor $F$'s information. In a full distillation pipeline, you would train this adapter to minimize the divergence between the student's predictions and the teacher's, but the categorical structure ensures that this mapping is coherent across all inputs.
+The adapter is the natural transformation `η_X` that lets the student functor *G* access the teacher functor *F*'s information. In a full distillation pipeline, you would train this adapter to minimize the divergence between the student's predictions and the teacher's, but the categorical structure ensures that this mapping is coherent across all inputs.
 
 ## Categorical Deep Learning Wrap-up
 
@@ -345,15 +361,15 @@ Here is a summary of the categorical mappings we implemented:
 
 | ML Concept | Implementation | Categorical Interpretation |
 | :--- | :--- | :--- |
-| Backpropagation | `model_backward` | Composition of pullbacks $f^* \circ g^* \circ \dots$ |
+| Backpropagation | `model_backward` | Composition of pullbacks `f* ∘ g* ∘ …` |
 | Layer operation | `forward_para` | Para morphism (forward + pullback) |
 | Dropout | `make_dropout_lens` | Closed stochastic lens / optic |
 | Bayesian sampling | `bayesian_forward` | Morphism in the Markov category **Stoch** |
 | Pooling | `permutation_invariant_pool` | Colimit of a symmetric group action |
 | K-means | `k_means` | Iterative colimit computation |
 | Ensemble logic | `sheaf_glue` | Gluing lemma for sheaves |
-| Binary decision | Sigmoid output $\chi$ | Subobject classifier $\chi : X \to \Omega$ |
-| Distillation | `NatTransform` | Natural transformation $\eta : F \Rightarrow G$ |
+| Binary decision | Sigmoid output `χ` | Subobject classifier `χ : X → Ω` |
+| Distillation | `NatTransform` | Natural transformation `η : F ⇒ G` |
 
 I do not expect you to use this framework in production. PyTorch, JAX, and TensorFlow are far more practical for real applications. What I hope you take away is that the mathematical structure of deep learning is not arbitrary. Backpropagation, dropout, invariance, and ensemble consistency all have deep categorical roots, and understanding those roots makes you a more thoughtful practitioner.
 

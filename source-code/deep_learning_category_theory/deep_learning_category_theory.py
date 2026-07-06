@@ -1151,7 +1151,7 @@ if __name__ == "__main__":
     # ──────────────────────────────────────────────────────────────────────────
     #  DEMO I: Para category - compositional backprop on XOR
     # ──────────────────────────────────────────────────────────────────────────
-    print("━━━━  I. Para Category + Lens Composition  (XOR problem)  ━━━━")
+    print("---  I. Para Category + Lens Composition  (XOR problem)  ---")
     print("  Architecture: input(2) → hidden(4) → hidden(4) → output(1)")
     print("  Para morphisms composed sequentially; pullbacks in reverse.")
     print()
