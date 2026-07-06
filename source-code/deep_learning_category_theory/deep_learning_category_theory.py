@@ -52,11 +52,11 @@ from typing import Callable, Optional
 #
 # I.1  Para category
 #
-# In the Para construction a morphism  f : A → B  is a triple
+# In the Para construction a morphism  f : A -> B  is a triple
 #   (parameter-space P, forward fn, backward fn)
 # where
-#   forward  : P × A → B
-#   backward : P × A × ∇B → ∇P × ∇A    (the "residual" / lens put-back)
+#   forward  : P × A -> B
+#   backward : P × A × ∇B -> ∇P × ∇A    (the "residual" / lens put-back)
 #
 # Neural-network layers are exactly morphisms in Para(Euc), the category of
 # smooth parametric maps between Euclidean spaces (Gavranović 2022; §2.1 of
@@ -217,10 +217,10 @@ def matT_vec(M: list[list[float]], v: list[float]) -> list[float]:
 # ---------------------------------------------------------------------------
 #
 # forward_para : LayerParams × activation_fn × list[float]
-#              → (list[float], pullback_closure)
+#              -> (list[float], pullback_closure)
 #
 # The pullback closure is the "put-back" half of the lens:
-#   pullback : ∇output → (∇params, ∇input)
+#   pullback : ∇output -> (∇params, ∇input)
 #
 # This directly implements the Para category composition rule (survey §2.1):
 #   composition of two Para morphisms threads parameters and residuals.
@@ -241,7 +241,7 @@ def forward_para(
     -----------------------
     This function realises the arrow::
 
-        f : P × X → Y × Ctx
+        f : P × X -> Y × Ctx
 
     where
       • P     = LayerParams (W, b)
@@ -251,7 +251,7 @@ def forward_para(
 
     The returned pullback closure implements::
 
-        f* : ∇Y → ∇P × ∇X
+        f* : ∇Y -> ∇P × ∇X
 
     Parameters
     ----------
@@ -269,7 +269,7 @@ def forward_para(
     acts : list[float]
         Post-activation output of this layer.
     pullback : PullbackFn
-        Closure ``upstream_grad → (LayerGrads, input_grad)`` for backprop.
+        Closure ``upstream_grad -> (LayerGrads, input_grad)`` for backprop.
     """
     W = params.W
     b = params.b
@@ -278,7 +278,7 @@ def forward_para(
 
     # Pullback closure - the "put-back" of the categorical lens
     def pullback(upstream_grad: list[float]) -> tuple[LayerGrads, list[float]]:
-        """Backward morphism: ∇Y → ∇P × ∇X.
+        """Backward morphism: ∇Y -> ∇P × ∇X.
 
         δ = upstream ⊙ act'(z)   (local gradient, Hadamard product)
         ∇W = δ ⊗ xᵀ              (outer product)
@@ -298,9 +298,9 @@ def forward_para(
 # I.4  Sequential composition of Para morphisms (the network)
 # ---------------------------------------------------------------------------
 #
-# network_forward : Model × list[float] → (Prediction, list[PullbackFn], list[float])
+# network_forward : Model × list[float] -> (Prediction, list[PullbackFn], list[float])
 #
-# This implements the functor  F : Para → Para  that maps a sequence of layers
+# This implements the functor  F : Para -> Para  that maps a sequence of layers
 # to their composed forward-pass + stacked pullback closures (survey §2.2).
 
 def network_forward(
@@ -313,7 +313,7 @@ def network_forward(
     -----------------------
     Implements the sequential composition::
 
-        F = fₙ ⊚ … ⊚ f₁  :  (P₁ × … × Pₙ) × X → Ŷ × (Ctx₁ × … × Ctxₙ)
+        F = fₙ ⊚ … ⊚ f₁  :  (P₁ × … × Pₙ) × X -> Ŷ × (Ctx₁ × … × Ctxₙ)
 
     Parameters
     ----------
@@ -349,7 +349,7 @@ def network_forward(
 
 
 # ---------------------------------------------------------------------------
-# I.5  Loss - typed morphism: Prediction × Target → SquaredError
+# I.5  Loss - typed morphism: Prediction × Target -> SquaredError
 # ---------------------------------------------------------------------------
 #
 # Survey §2.3: loss is a natural transformation from the prediction functor
@@ -358,7 +358,7 @@ def network_forward(
 def mse_loss(pred: Prediction, tgt: TargetVal) -> float:
     """Mean-squared error loss for one sample: L = (ŷ − y)².
 
-    Categorical role: a morphism  Prediction × Target → ℝ  (a scalar).
+    Categorical role: a morphism  Prediction × Target -> ℝ  (a scalar).
     """
     d = pred.v - tgt.v
     return d * d
@@ -376,7 +376,7 @@ def mse_loss_grad(pred: Prediction, tgt: TargetVal) -> float:
 # I.6  Backward pass - pullback composition (covariant functor on ∇)
 # ---------------------------------------------------------------------------
 #
-# model_backward : list[PullbackFn] × float → list[LayerGrads]
+# model_backward : list[PullbackFn] × float -> list[LayerGrads]
 #
 # The survey (§2.2) notes that backpropagation is the composite of the
 # pullback morphisms in reverse order - a covariant functor on the gradient
@@ -389,7 +389,7 @@ def model_backward(pullbacks: list[PullbackFn], dl_dy_hat: float) -> list[LayerG
     -----------------------
     Implements::
 
-        f₁* ∘ f₂* ∘ … ∘ fₙ*  :  ∇Ŷ → (∇P₁, … , ∇Pₙ, ∇X)
+        f₁* ∘ f₂* ∘ … ∘ fₙ*  :  ∇Ŷ -> (∇P₁, … , ∇Pₙ, ∇X)
 
     where each fᵢ* is the pullback closure produced by ``forward_para``.
 
@@ -421,7 +421,7 @@ def model_backward(pullbacks: list[PullbackFn], dl_dy_hat: float) -> list[LayerG
 # ---------------------------------------------------------------------------
 #
 # Survey §2.1: the gradient-descent update  θ ← θ − η∇θ  is an endomorphism
-# u_η : Model → Model on the parameter object of Para.
+# u_η : Model -> Model on the parameter object of Para.
 
 def update_layer(params: LayerParams, grads: LayerGrads, eta: float) -> LayerParams:
     """Apply one SGD step to a single layer's parameters.
@@ -442,13 +442,13 @@ def update_layer(params: LayerParams, grads: LayerGrads, eta: float) -> LayerPar
 
 
 def model_update(m: Model, grads_list: list[LayerGrads], eta: float) -> Model:
-    """Apply one SGD step to the full model - the endomorphism u_η : Model → Model.
+    """Apply one SGD step to the full model - the endomorphism u_η : Model -> Model.
 
     Category-theory reading
     -----------------------
     This is the endomorphism on ModelState::
 
-        u_η : Model → Model,   u_η(θ) = θ − η · ∇θ
+        u_η : Model -> Model,   u_η(θ) = θ − η · ∇θ
 
     Training is iterated application of ``model_update``.
 
@@ -469,7 +469,7 @@ def train_step(
     y: TargetVal,
     eta: float,
 ) -> tuple[Model, float]:
-    """One complete training step (forward → loss → backward → update).
+    """One complete training step (forward -> loss -> backward -> update).
 
     Category-theory reading
     -----------------------
@@ -523,7 +523,7 @@ def make_network(arch: list[tuple[int, int]]) -> Model:
     ----------
     arch : list[tuple[int, int]]
         Each tuple is (fan_in, fan_out) for one layer.
-        Example: [(2, 4), (4, 4), (4, 1)] for input(2)→hidden(4)→hidden(4)→output(1).
+        Example: [(2, 4), (4, 4), (4, 1)] for input(2)->hidden(4)->hidden(4)->output(1).
 
     Returns
     -------
@@ -611,8 +611,8 @@ def predict(m: Model, xs: list[float]) -> float:
 #
 # A Markov category is a symmetric monoidal category where every object X
 # carries a commutative comonoid structure:
-#   copy  : X → X ⊗ X    (diagonal / duplication)
-#   delete: X → I         (marginalisation / discarding)
+#   copy  : X -> X ⊗ X    (diagonal / duplication)
+#   delete: X -> I         (marginalisation / discarding)
 #
 # Morphisms are "stochastic kernels" - they map objects to probability
 # distributions over objects.  In practice we represent a stochastic morphism
@@ -640,8 +640,8 @@ def stochastic_compose(
 # ---------------------------------------------------------------------------
 #
 # Dropout (Srivastava 2014) can be formalised as a stochastic lens (survey §3.2):
-#   forward  : X →_s X ⊗ Mask    where Mask ~ Bernoulli(p)^n
-#   backward : X ⊗ Mask → X      (apply the same mask to gradient)
+#   forward  : X ->_s X ⊗ Mask    where Mask ~ Bernoulli(p)^n
+#   backward : X ⊗ Mask -> X      (apply the same mask to gradient)
 #
 # The stochastic forward pass samples a mask once; the backward pass reuses it
 # (this is the "closed" lens / optic requirement that both passes share state).
@@ -665,7 +665,7 @@ def make_dropout_lens(
     Returns
     -------
     Callable
-        A stochastic Para morphism: inputs → (masked_output, pullback_fn).
+        A stochastic Para morphism: inputs -> (masked_output, pullback_fn).
     """
     def dropout_forward(
         inputs: list[float],
@@ -811,10 +811,10 @@ def bayesian_predict_mc(
 #               (survey §4 - functors that respect symmetry structure)
 # =============================================================================
 #
-# A layer  f : X → Y  is *equivariant* with respect to a group G if:
+# A layer  f : X -> Y  is *equivariant* with respect to a group G if:
 #   f(g · x) = g · f(x)    for all g ∈ G
 #
-# In categorical language: there exists a functor  F : BG → Vect  such that
+# In categorical language: there exists a functor  F : BG -> Vect  such that
 # f is a natural transformation between F and another G-representation.
 #
 # We demonstrate permutation-equivariance (the simplest case), which is the
@@ -944,13 +944,13 @@ def k_means(
 #
 # A topos E is a category that has:
 #   • finite limits and colimits
-#   • a subobject classifier Ω  with a "true" morphism  ⊤ : 1 → Ω
+#   • a subobject classifier Ω  with a "true" morphism  ⊤ : 1 -> Ω
 #
 # Every subobject (subset) S ⊆ X is classified by a unique morphism
-#   χ_S : X → Ω   such that S = χ_S⁻¹(⊤)
+#   χ_S : X -> Ω   such that S = χ_S⁻¹(⊤)
 #
 # In machine learning (survey §5.1), the output neuron of a binary classifier
-# IS the characteristic morphism χ : InputSpace → {0,1}.  Sigmoid squashes
+# IS the characteristic morphism χ : InputSpace -> {0,1}.  Sigmoid squashes
 # the activation into [0,1] ≅ Ω, and the decision boundary is χ⁻¹(0.5).
 #
 # Sheaf composition (survey §5.2): local predictions on overlapping contexts
@@ -962,10 +962,10 @@ def k_means(
 # IV.1  Subobject classifier - binary decision morphism
 # ---------------------------------------------------------------------------
 #
-# χ : InputSpace → Ω ≅ [0,1]   (the sigmoid output IS the characteristic map)
+# χ : InputSpace -> Ω ≅ [0,1]   (the sigmoid output IS the characteristic map)
 
 def subobject_classify(m: Model, xs: list[float]) -> tuple[float, int]:
-    """Apply the subobject classifier χ : X → Ω.
+    """Apply the subobject classifier χ : X -> Ω.
 
     The prediction probability is the value of the characteristic morphism χ.
     The class decision is χ⁻¹(0.5) - the decision boundary (survey §5.1).
@@ -1090,7 +1090,7 @@ class NatTransform:
 
     Represented as a linear adapter::
 
-        η_X : F(X) → G(X)   with   η_X(v) = sigmoid(W · v + b)
+        η_X : F(X) -> G(X)   with   η_X(v) = sigmoid(W · v + b)
 
     Attributes
     ----------
@@ -1129,7 +1129,7 @@ def make_nat_transform(source_size: int, target_size: int) -> NatTransform:
 def apply_nat_transform(nt: NatTransform, v: list[float]) -> list[float]:
     """Apply the natural transformation η_X to a vector v.
 
-    Computes: sigmoid(W · v + b), mapping teacher rep → student rep.
+    Computes: sigmoid(W · v + b), mapping teacher rep -> student rep.
     """
     return [sigmoid(z) for z in vec_add(matvec(nt.adapter_W, v), nt.adapter_b)]
 
@@ -1152,7 +1152,7 @@ if __name__ == "__main__":
     #  DEMO I: Para category - compositional backprop on XOR
     # ──────────────────────────────────────────────────────────────────────────
     print("---  I. Para Category + Lens Composition  (XOR problem)  ---")
-    print("  Architecture: input(2) → hidden(4) → hidden(4) → output(1)")
+    print("  Architecture: input(2) -> hidden(4) -> hidden(4) -> output(1)")
     print("  Para morphisms composed sequentially; pullbacks in reverse.")
     print()
 
@@ -1163,12 +1163,12 @@ if __name__ == "__main__":
         (InputVec(vals=(1.0, 1.0)), TargetVal(v=0.0)),
     ]
 
-    # Architecture: input(2) → hidden1(4) → hidden2(4) → output(1)
+    # Architecture: input(2) -> hidden1(4) -> hidden2(4) -> output(1)
     xor_model = make_network([(2, 4), (4, 4), (4, 1)])
 
     trained_xor = train(xor_model, xor_data, eta=0.5, epochs=6000, print_every=2000)
 
-    print("  → Predictions after 6000 epochs:")
+    print("  -> Predictions after 6000 epochs:")
     for inp, tgt in xor_data:
         xs = list(inp.vals)
         y_hat = predict(trained_xor, xs)
@@ -1177,10 +1177,10 @@ if __name__ == "__main__":
 
     print()
     print("  Category-theory reading:")
-    print("  • Each layer is a morphism in Para(Euc): f : P × X → Y")
+    print("  • Each layer is a morphism in Para(Euc): f : P × X -> Y")
     print("  • forward_para returns (output, pullback_closure) - the lens")
     print("  • Backprop = pullback composition  f* ∘ g* ∘ h*  in reverse")
-    print("  • SGD update = endomorphism u_η : Model → Model")
+    print("  • SGD update = endomorphism u_η : Model -> Model")
     print()
 
     # ──────────────────────────────────────────────────────────────────────────
@@ -1227,7 +1227,7 @@ if __name__ == "__main__":
     set2 = [3.0, 1.0, 2.0, 5.0]   # permutation of set1
     print(f"    Set 1 pool: {permutation_invariant_pool(set1)}  (order: {set1})")
     print(f"    Set 2 pool: {permutation_invariant_pool(set2)}  (order: {set2})")
-    print("    → Same result for both permutations ✓")
+    print("    -> Same result for both permutations ✓")
     print()
 
     print("  III-B  K-means as categorical colimit computation")
@@ -1253,12 +1253,12 @@ if __name__ == "__main__":
     print()
 
     # Use the trained XOR model as our binary classifier
-    print("  IV-A  Subobject Classifier χ : X → Ω")
+    print("  IV-A  Subobject Classifier χ : X -> Ω")
     print("        (sigmoid output = characteristic morphism)")
     for inp, _ in xor_data:
         xs = list(inp.vals)
         prob, cls = subobject_classify(trained_xor, xs)
-        print(f"    χ({xs}) = {prob:.4f}  → class {cls}")
+        print(f"    χ({xs}) = {prob:.4f}  -> class {cls}")
     print()
     print("    The sigmoid IS the characteristic morphism of the classifier's")
     print("    subobject S ⊆ InputSpace (survey §5.1).")
@@ -1301,7 +1301,7 @@ if __name__ == "__main__":
     print("━━━━  V. Natural Transformation - Knowledge Distillation Adapter  ━━━━")
     print()
     print("  A natural transformation η : F ⇒ G is a coherent family of")
-    print("  morphisms η_X : F(X) → G(X) that commutes with all arrows.")
+    print("  morphisms η_X : F(X) -> G(X) that commutes with all arrows.")
     print("  Here we use a linear adapter as η, mapping the 4-dim penultimate")
     print("  hidden layer of the teacher to a 2-dim student representation.")
     print()
