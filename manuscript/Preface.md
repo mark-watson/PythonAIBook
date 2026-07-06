@@ -19,7 +19,7 @@ I try to update my books a few times a year so when purchasing on Leanpub please
 
 ## Book Cover
 
-Dear reader, I have a lifelong interest in cultural anthropology and for the last 25 years living in Arizona I have visited about 400 ancient cultural sites. As human beings we have changed very little in the last 100,000 years: humans have always been clever at manipulating their environments for their safety and comfort with social ties the cohesion that makes the entire human experience possible. For my book cover I wanted the image to represent human evolution via the tools we build.
+Dear reader, I have a lifelong interest in cultural anthropology and for the last 25 years living in Arizona I have visited about 400 ancient cultural sites. As human beings we have changed very little in the last 100,000 years: humans have always been clever at manipulating their environments for their safety and comfort with social ties being the cohesion that makes the entire human experience possible. For my book cover I wanted the image to represent human progression via the tools we build.
 
 ## About the Author
 

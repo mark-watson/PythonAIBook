@@ -4,7 +4,7 @@ Chess is one of the oldest and most deeply studied problems in artificial intell
 
 Yet here is the surprising thing: the classical approach that Deep Blue used, like alpha-beta search over a hand-crafted evaluation function, is still how most chess engines work, and it is still remarkably effective. Stockfish, consistently the highest-rated engine in the world, is a classical search engine. The techniques are elegant, understandable, and implementable from scratch in a few hundred lines of code. That is what we do in this chapter.
 
-We build a complete chess engine and AI bot in pure Python with no external dependencies. The engine implements the full rules of chess — castling, en passant, promotions, check, checkmate, and stalemate — and the bot plays using iterative-deepening negamax search with alpha-beta pruning, a transposition table, and quiescence search. You can play against it, watch it play itself, or use it as a foundation for your own experiments.
+We build a complete chess engine and AI bot in pure Python with no external dependencies. The engine implements the full rules of chess such as castling, en passant, promotions, check, checkmate, and stalemate. The bot plays using iterative-deepening negamax search with alpha-beta pruning, a transposition table, and quiescence search. You can play against it, watch it play itself, or use it as a foundation for your own experiments.
 
 The examples for this chapter are in the directory **source-code/Chess_game**.
 
@@ -725,7 +725,7 @@ A more sophisticated engine would use a replacement scheme (like replacing the e
 
 A problem with fixed-depth search is the **horizon effect**. If the search stops at depth 3 in the middle of a capture sequence, the bot might think it has won a queen when in reality the opponent will recapture on the next move. The evaluation function sees the position after the capture but before the recapture, and incorrectly concludes that the bot is ahead.
 
-Quiescence search solves this by extending the search beyond the nominal depth for "noisy" moves — captures and promotions — until the position becomes "quiet" (no more captures available). The `quiescence_search` function evaluates the current position (the "stand-pat" score) and then searches all captures to see if any of them improve on that score:
+Quiescence search solves this by extending the search beyond the nominal depth for "noisy" moves, such as captures and promotions, until the position becomes "quiet" (no more captures available). The `quiescence_search` function evaluates the current position (the "stand-pat" score) and then searches all captures to see if any of them improve on that score:
 
 ```python
 # chess_bot.py — quiescence search (simplified)
@@ -763,7 +763,7 @@ The stand-pat score provides a lower bound: if doing nothing (standing pat) alre
 
 ## Move Ordering
 
-Alpha-beta pruning is most effective when the best moves are searched first. If the first move we try causes a beta cutoff, we skip all remaining moves — so ordering the cutoff move first saves the most work. Our engine uses several heuristics combined in the `move_value` function:
+Alpha-beta pruning is most effective when the best moves are searched first. If the first move we try causes a beta cutoff, we skip all remaining moves so ordering the cutoff move first saves the most work. Our engine uses several heuristics combined in the `move_value` function:
 
 ```python
 # chess_bot.py — move ordering heuristic
@@ -869,7 +869,7 @@ Iterative deepening has another benefit: it produces a result at every depth. If
 
 ## The Interactive CLI
 
-The `main.py` file ties everything together into an interactive game. It offers three modes — play as White, play as Black, or watch the bot play itself — and a configurable search depth:
+The `main.py` file ties everything together into an interactive game. It offers three modes: play as White, play as Black, or watch the bot play itself. This game program also supports a configurable search depth:
 
 ```python
 # main.py — game mode selection
@@ -883,19 +883,7 @@ choice = input("Enter choice (1-3): ").strip()
 
 The board display uses Unicode chess pieces and ANSI color codes for a clean terminal presentation. A sidebar shows the active turn, move count, 50-move rule status, check status, en passant square, castling rights, and the current evaluation score — all updated after every move:
 
-```
-  +-----------------+  Game Info & Status
-8 | ♜ ♞ ♝ ♛ ♚ ♝ ♞ ♞ |   Active Turn: White
-7 | ♟ ♟ ♟ ♟ ♟ ♟ ♟ ♟ |   Move Count:  1
-6 | . . . . . . . . |   50-Move Rule: 0/100
-5 | . . . . . . . . |   Check Status: No check
-4 | . . . . . . . . |   En Passant:  -
-3 | . . . ♘ . . . . |   Castling:    KQkq
-2 | ♙ ♙ ♙ ♙ ♙ ♙ ♙ ♙ |   Eval Score:  -0.50
-1 | ♖ . ♗ ♕ ♔ ♗ ♘ ♖ |
-  +-----------------+
-    a b c d e f g h
-```
+![Chess board after one move](chess_board.jpg)
 
 Moves are entered in UCI format: `e2e4` to move the e-pawn, `g1f3` to develop the knight, `e7e8q` to promote to a queen. The CLI also supports several utility commands:
 
@@ -979,7 +967,7 @@ If you modify the move generator, run perft immediately. It catches subtle bugs 
 
 ## Playing Against the Bot
 
-Here is a sample game in Bot vs Bot mode at depth 2. The bot opens symmetrically, developing knights before bishops as the piece-square tables encourage:
+Here is a sample game in Bot vs Bot mode at depth 2. The bot opens symmetrically, developing knights before bishops as the piece-square tables encourage (please note that the Unicode characters for the Chess pieces do not render correctly in the following text listing):
 
 ```
 Bot searching depth 2...
@@ -1024,15 +1012,15 @@ Select a game mode, choose a search depth (3 is a good balance of strength and s
 uv run test_engine.py
 ```
 
-The project requires Python 3.14 or later, as specified in `pyproject.toml`. No packages need to be installed — the entire engine and bot use only the Python standard library.
+The project requires Python 3.14 or later, as specified in `pyproject.toml`. No packages need to be installed: the entire engine and bot use only the Python standard library.
 
 ## Why This Matters
 
 Building a chess engine is a rite of passage for AI programmers. It teaches you about representation, search, and evaluation that are the three pillars of classical game AI in a concrete, testable way. The techniques in this chapter transfer directly to other adversarial games: Othello, checkers, Go (before AlphaGo), and any two-player zero-sum game with perfect information. The negamax algorithm with alpha-beta pruning is one of the most elegant and widely applicable ideas in computer science.
 
-More broadly, this chapter is an example of *symbolic AI* — intelligence encoded in explicit rules and heuristics rather than learned from data. The evaluation function encodes human chess knowledge (knights belong in the center, rooks belong on the seventh rank, the king should castle in the middlegame) in the piece-square tables. The search algorithm encodes the principle of looking ahead and assuming rational opposition. There are no neural networks here, no training data, no gradient descent. And yet this approach, refined over decades, produces engines that play at grandmaster strength.
+More broadly, this chapter is an example of *symbolic AI* where intelligence encoded in explicit rules and heuristics rather than learned from data. The evaluation function encodes human chess knowledge (knights belong in the center, rooks belong on the seventh rank, the king should castle in the middlegame) in the piece-square tables. The search algorithm encodes the principle of looking ahead and assuming rational opposition. There are no neural networks here, no training data, no gradient descent. And yet this approach, refined over decades, produces engines that play at grandmaster strength.
 
-The gap between this engine and Stockfish is one of engineering, not fundamental approach. Stockfish uses the same algorithms — negamax, alpha-beta, transposition tables, quiescence search — but adds faster bitboard-based move generation, more sophisticated evaluation features, and decades of tuning. The architecture is the same. If you understand this chapter, you understand the skeleton of the world's strongest chess engine.
+The gap between this engine and Stockfish is one of engineering, not fundamental approach. Stockfish uses the same algorithms (negamax, alpha-beta, transposition tables, quiescence search) but adds faster bitboard-based move generation, more sophisticated evaluation features, and decades of tuning. The architecture is the same. If you understand this chapter, you understand the skeleton of the world's strongest chess engine.
 
 ## Summary
 
