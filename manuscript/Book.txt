@@ -9,6 +9,7 @@ Part2_deep_learning.md
 Deep_Learning_The_Basics.md
 Deep_Learning_Natural_Language_Processing.md
 Deep_Learning_Image_Generation.md
+category_theory_deep_learning.md
 Reinforcement_Learning.md
 Recommendation_Systems.md
 Part3_llms.md

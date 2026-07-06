@@ -1,2 +1,1 @@
-Preface.md
-Chess.md
+category_theory_deep_learning.md
