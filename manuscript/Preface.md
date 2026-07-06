@@ -21,6 +21,8 @@ I try to update my books a few times a year so when purchasing on Leanpub please
 
 Dear reader, I have a lifelong interest in cultural anthropology and for the last 25 years living in Arizona I have visited about 400 ancient cultural sites. As human beings we have changed very little in the last 100,000 years: humans have always been clever at manipulating their environments for their safety and comfort with social ties being the cohesion that makes the entire human experience possible. For my book cover I wanted the image to represent human progression via the tools we build.
 
+The bottom of the cover image is derived from a picture I took at the Woo Ranch near Sedona Arizona.
+
 ## About the Author
 
 My career developing AI applications and tools began in 1982. Until the advent of breakthroughs in deep learning around 2010 most of my development work was in Common Lisp, Java, and C++. My language preference changed when I started spending most of my time creating deep learning models. Python has the most tooling, libraries, and frameworks for deep learning so as a practical matter I have adopted Python as a primary programming language. That said I still also heavily use Common Lisp, Haskell, Swift, and Scheme. I recommend not having an "always use one programming language" mindset.
