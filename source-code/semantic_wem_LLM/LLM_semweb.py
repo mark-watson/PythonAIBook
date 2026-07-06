@@ -42,17 +42,18 @@ MODEL_ID = "accounts/fireworks/models/deepseek-v4-flash"
 # DBpedia ontology (e.g. Pepsi tagged as Organisation but typed as dbo:Beverage)
 # still resolve.
 SPARQL_QUERY_TEMPLATE = """
-SELECT DISTINCT ?s ?comment WHERE {{
+SELECT DISTINCT ?s ?p ?comment WHERE {{
   ?s <http://www.w3.org/2000/01/rdf-schema#label> '{name}'@en .
+  FILTER(!CONTAINS(STR(?s), 'dbpedia.org/resource/Category:')) .
   ?s ?p ?comment .
   FILTER (lang(?comment) = 'en') .
   VALUES ?p {{
-    <http://dbpedia.org/ontology/description>
-    <http://www.w3.org/2000/01/rdf-schema#comment>
     <http://dbpedia.org/ontology/abstract>
+    <http://www.w3.org/2000/01/rdf-schema#comment>
+    <http://dbpedia.org/ontology/description>
   }}
   {dbpedia_type}
-}} LIMIT 15
+}} ORDER BY ?p LIMIT 15
 """
 
 # SPARQL query template for looking up a relationship/property of an entity.
@@ -189,7 +190,7 @@ Output: """
         response = client.chat.completions.create(
             model=MODEL_ID,
             messages=[{"role": "user", "content": one_shot_prompt.replace("{text}", text)}],
-            max_tokens=300,
+            max_tokens=3000,
             temperature=0,
         )
         raw = response.choices[0].message.content.strip()
@@ -229,6 +230,73 @@ def build_sparql_query(name: str, dbpedia_type_uri: str) -> str:
     )
 
 
+# Curated DBpedia ontology properties to fetch per entity type so the LLM
+# can synthesize a rich "tell me about" answer even though DBpedia's live
+# endpoint no longer serves the full dbo:abstract. Each entry maps a short
+# human-readable label to a DBpedia ontology property URI.
+ENRICHMENT_PROPERTIES = {
+    "ORG": {
+        "foundingDate": "http://dbpedia.org/ontology/foundingDate",
+        "foundingYear": "http://dbpedia.org/ontology/foundingYear",
+        "foundedBy": "http://dbpedia.org/ontology/foundedBy",
+        "founder": "http://dbpedia.org/ontology/founder",
+        "industry": "http://dbpedia.org/ontology/industry",
+        "type": "http://dbpedia.org/ontology/type",
+        "service": "http://dbpedia.org/ontology/service",
+        "product": "http://dbpedia.org/ontology/product",
+        "keyPerson": "http://dbpedia.org/ontology/keyPerson",
+        "numberOfEmployees": "http://dbpedia.org/ontology/numberOfEmployees",
+        "revenue": "http://dbpedia.org/ontology/revenue",
+        "netIncome": "http://dbpedia.org/ontology/netIncome",
+        "operatingIncome": "http://dbpedia.org/ontology/operatingIncome",
+        "locationCity": "http://dbpedia.org/ontology/locationCity",
+        "locationCountry": "http://dbpedia.org/ontology/locationCountry",
+        "subsidiary": "http://dbpedia.org/ontology/subsidiary",
+    },
+    "PERSON": {
+        "birthDate": "http://dbpedia.org/ontology/birthDate",
+        "birthPlace": "http://dbpedia.org/ontology/birthPlace",
+        "deathDate": "http://dbpedia.org/ontology/deathDate",
+        "deathPlace": "http://dbpedia.org/ontology/deathPlace",
+        "occupation": "http://dbpedia.org/ontology/occupation",
+        "nationality": "http://dbpedia.org/ontology/nationality",
+        "spouse": "http://dbpedia.org/ontology/spouse",
+        "almaMater": "http://dbpedia.org/ontology/almaMater",
+        "knownFor": "http://dbpedia.org/ontology/knownFor",
+        "employer": "http://dbpedia.org/ontology/employer",
+        "award": "http://dbpedia.org/ontology/award",
+    },
+    "GPE": {
+        "populationTotal": "http://dbpedia.org/ontology/populationTotal",
+        "areaTotal": "http://dbpedia.org/ontology/areaTotal",
+        "country": "http://dbpedia.org/ontology/country",
+        "capital": "http://dbpedia.org/ontology/capital",
+        "leaderName": "http://dbpedia.org/ontology/leaderName",
+        "type": "http://dbpedia.org/ontology/type",
+        "language": "http://dbpedia.org/ontology/language",
+        "currency": "http://dbpedia.org/ontology/currency",
+    },
+    "MISC": {},
+}
+
+# SPARQL template that fetches a curated set of property/value pairs for one
+# entity. URI-valued objects are resolved to their English rdfs:label so the
+# LLM gets human-readable facts (e.g. "industry: Information technology").
+SPARQL_ENRICHMENT_TEMPLATE = """
+SELECT DISTINCT ?propLabel ?obj ?objLabel WHERE {{
+  ?s <http://www.w3.org/2000/01/rdf-schema#label> '{name}'@en .
+  VALUES (?prop ?propLabel) {{
+    {values}
+  }}
+  ?s ?prop ?obj .
+  OPTIONAL {{
+    ?obj <http://www.w3.org/2000/01/rdf-schema#label> ?objLabel .
+    FILTER(lang(?objLabel) = 'en')
+  }}
+}} LIMIT 80
+"""
+
+
 # Mapping from LLM entity types to DBpedia ontology URIs.
 # MISC has no single DBpedia type, so we omit the type filter entirely by
 # passing an empty OPTIONAL pattern (the label match alone resolves it).
@@ -240,37 +308,92 @@ ENTITY_TYPE_TO_DBPEDIA_URI = {
 }
 
 
+def enrich_entity(name: str, entity_type: str) -> list[str]:
+    """Fetch curated property/value facts for an entity from DBpedia.
+
+    Returns a list of "propLabel: value" strings. URI objects are rendered
+    using their English rdfs:label when available, otherwise the last path
+    segment of the URI.
+    """
+    props = ENRICHMENT_PROPERTIES.get(entity_type, {})
+    if not props:
+        return []
+
+    values_block = "\n    ".join(
+        f"(<{uri}> \"{label}\")" for label, uri in props.items()
+    )
+    query = SPARQL_ENRICHMENT_TEMPLATE.format(name=name, values=values_block)
+    try:
+        results = query_dbpedia(query)
+    except Exception as e:
+        print(f"[Warning] Enrichment query failed for {name}: {e}")
+        return []
+
+    facts = []
+    seen = set()
+    for r in results:
+        label = r.get("propLabel", {}).get("value", "")
+        obj = r.get("obj", {}).get("value", "")
+        obj_label = r.get("objLabel", {}).get("value")
+        if obj_label:
+            value = obj_label
+        elif obj.startswith("http"):
+            value = obj.rsplit("/", 1)[-1].replace("_", " ")
+        else:
+            value = obj
+        if not value:
+            continue
+        key = (label, value)
+        if key in seen:
+            continue
+        seen.add(key)
+        facts.append(f"{label}: {value}")
+    return facts
+
+
 def get_entity_context(entities: dict) -> str:
     """Execute SPARQL queries for extracted entities and build context text.
 
-    Returns concatenated commentary about each entity found in DBpedia.
+    Returns a structured context string with one paragraph per entity, using
+    the full Wikipedia abstract (preferred) or a short description as fallback.
+    Category/Wikimedia resources are filtered out by the SPARQL template.
     """
     context_parts = []
 
     def process_entities(entity_type):
         if entity_type not in entities:
-            return ""
+            return
         dbpedia_uri = ENTITY_TYPE_TO_DBPEDIA_URI.get(entity_type)
         if dbpedia_uri is None:
-            return ""
+            return
 
         for name in entities[entity_type]:
             try:
                 query = build_sparql_query(name, dbpedia_uri)
                 results = query_dbpedia(query)
+                # The query is ORDER BY ?p with abstract first, so the first
+                # binding for the canonical resource is the full abstract.
+                best = None
                 for result in results:
                     if "comment" in result and "value" in result["comment"]:
-                        context_parts.append(result["comment"]["value"])
+                        value = result["comment"]["value"]
+                        if best is None or len(value) > len(best):
+                            best = value
+                facts = enrich_entity(name, entity_type)
+                if best and facts:
+                    context_parts.append(f"{name}: {best}\n" + "\n".join(facts))
+                elif best:
+                    context_parts.append(f"{name}: {best}")
+                elif facts:
+                    context_parts.append(f"{name}:\n" + "\n".join(facts))
             except Exception as e:
                 print(f"[Warning] SPARQL query failed for {name}: {e}")
-
-        return ""
 
     # Process in a stable order for deterministic output
     for entity_type in ["PERSON", "ORG", "GPE", "MISC"]:
         process_entities(entity_type)
 
-    return " ".join(context_parts)
+    return "\n\n".join(context_parts)
 
 
 def refine_query_with_llm(question: str, context: str) -> str:
@@ -305,7 +428,7 @@ Return ONLY a single refined question string, no explanation or formatting."""
         response = client.chat.completions.create(
             model=MODEL_ID,
             messages=[{"role": "user", "content": prompt}],
-            max_tokens=200,
+            max_tokens=3000,
         )
         return response.choices[0].message.content.strip()
     except Exception as e:
@@ -347,7 +470,7 @@ Each query should use ?s and ?comment as variables, querying for entity labels."
         response = client.chat.completions.create(
             model=MODEL_ID,
             messages=[{"role": "user", "content": prompt}],
-            max_tokens=800,
+            max_tokens=5000,
         )
 
         content = response.choices[0].message.content.strip()
@@ -405,51 +528,56 @@ def answer_question(question: str) -> tuple[str, str]:
     if not context.strip():
         return "I couldn't find relevant entities in the knowledge base.", ""
 
-    # Step 3: Use LLM to potentially refine the question or generate additional queries
-    refined_question = refine_query_with_llm(question, context)
-    print(f"[DEBUG] Refined question: {refined_question}")
-
-    # Step 4: Answer using the original approach (simplified - first query that has results)
-    for entity_type in ["PERSON", "ORG", "GPE", "MISC"]:
-        if entity_type not in entities:
-            continue
-
-        dbpedia_uri = ENTITY_TYPE_TO_DBPEDIA_URI.get(entity_type)
-        if dbpedia_uri is None:
-            continue
-
-        for name in entities[entity_type]:
-            try:
-                query = build_sparql_query(name, dbpedia_uri)
-                results = query_dbpedia(query)
-
-                if results:
-                    # Return the matching comment/description for this entity
-                    for result in results[:3]:  # Top 3 results
-                        if "comment" in result and "value" in result["comment"]:
-                            return result["comment"]["value"], context + "\n\n" + name
-
-            except Exception as e:
-                print(f"[Warning] Query failed for {name}: {e}")
-                continue
-
-    # Step 5: Fall back to LLM-based reasoning if no direct match found
+    # Step 3: Synthesize a natural-language answer using the LLM over the
+    # retrieved DBpedia context. This handles multi-entity questions (e.g.
+    # "tell me about IBM, Microsoft") and descriptive ("tell me about ...")
+    # questions far better than returning a single short comment.
     try:
         short_context = context[:3000] if len(context) > 3000 else context
         llm_prompt = (
             f'Given question: "{question}"\n\n'
             f"Knowledge from DBpedia about relevant entities:\n{short_context}\n\n"
-            "Please answer the question based on this knowledge. Be specific and cite entity names where possible."
+            "Please answer the question based on this knowledge. "
+            "Be specific, address every entity the user asked about, and "
+            "cite entity names where possible."
         )
         response = client.chat.completions.create(
             model=MODEL_ID,
             messages=[{"role": "user", "content": llm_prompt}],
-            max_tokens=500,
+            max_tokens=3500,
         )
         return response.choices[0].message.content.strip(), context
     except Exception as e:
-        print(f"[Error] LLM answering failed: {e}")
-        return "Unable to generate an answer.", context
+        print(f"[Warning] LLM synthesis failed: {e}")
+
+    # Step 4: Fallback - return the best comment per extracted entity directly
+    # if the LLM synthesis above failed.
+    fallback_parts = []
+    for entity_type in ["PERSON", "ORG", "GPE", "MISC"]:
+        if entity_type not in entities:
+            continue
+        dbpedia_uri = ENTITY_TYPE_TO_DBPEDIA_URI.get(entity_type)
+        if dbpedia_uri is None:
+            continue
+        for name in entities[entity_type]:
+            try:
+                query = build_sparql_query(name, dbpedia_uri)
+                results = query_dbpedia(query)
+                best = None
+                for result in results:
+                    if "comment" in result and "value" in result["comment"]:
+                        value = result["comment"]["value"]
+                        if best is None or len(value) > len(best):
+                            best = value
+                if best:
+                    fallback_parts.append(f"{name}: {best}")
+            except Exception as e:
+                print(f"[Warning] Query failed for {name}: {e}")
+                continue
+
+    if fallback_parts:
+        return "\n\n".join(fallback_parts), context
+    return "Unable to generate an answer.", context
 
 
 def main():
@@ -499,7 +627,7 @@ def chat_with_context(system_prompt: str = None):
             response = client.chat.completions.create(
                 model=MODEL_ID,
                 messages=messages,
-                max_tokens=500,
+                max_tokens=3500,
             )
 
             answer = response.choices[0].message.content.strip()
