@@ -9,12 +9,12 @@ Reference: Jia, Peng, Yang & Chen (2025).
 The paper organises categorical ML into four perspectives:
 
   I.   Gradient-based learning
-         • Para (parametric maps) — neural-net layers as morphisms
-         • Lenses / Optics        — bidirectional forward / backward pass
-         • Compositional backprop — functor on base category
+         • Para (parametric maps) - neural-net layers as morphisms
+         • Lenses / Optics        - bidirectional forward / backward pass
+         • Compositional backprop - functor on base category
 
   II.  Probability-based learning
-         • Markov categories      — stochastic morphisms
+         • Markov categories      - stochastic morphisms
          • Bayesian inference functor
          • Dropout as a stochastic lens
 
@@ -24,8 +24,8 @@ The paper organises categorical ML into four perspectives:
          • Persistent homology (sketch)
 
   IV.  Topos-based learning
-         • Subobject classifier   — binary decisions
-         • Sheaf-style composition — context propagation
+         • Subobject classifier   - binary decisions
+         • Sheaf-style composition - context propagation
 
   V.   Natural Transformations
          • Knowledge distillation adapter η : F ⇒ G
@@ -46,7 +46,7 @@ from dataclasses import dataclass, field
 from typing import Callable, Optional
 
 # =============================================================================
-# SECTION I — GRADIENT-BASED LEARNING
+# SECTION I - GRADIENT-BASED LEARNING
 #             "Para" category + lens composition + compositional backprop
 # =============================================================================
 #
@@ -64,12 +64,12 @@ from typing import Callable, Optional
 
 
 # ---------------------------------------------------------------------------
-# I.1  Typed wrappers — newtypes that encode semantic roles
+# I.1  Typed wrappers - newtypes that encode semantic roles
 # ---------------------------------------------------------------------------
 
 @dataclass(frozen=True)
 class InputVec:
-    """An element of the InputSpace — carries the raw feature vector.
+    """An element of the InputSpace - carries the raw feature vector.
 
     Categorical role: object in the InputSpace category.
     """
@@ -78,7 +78,7 @@ class InputVec:
 
 @dataclass(frozen=True)
 class TargetVal:
-    """A supervised label — the target scalar y.
+    """A supervised label - the target scalar y.
 
     Categorical role: element of the Target object.
     """
@@ -89,7 +89,7 @@ class TargetVal:
 class Prediction:
     """The network's scalar output ŷ after the forward pass.
 
-    Categorical role: element of the Prediction object — the codomain of the
+    Categorical role: element of the Prediction object - the codomain of the
     composed lens morphism.
     """
     v: float
@@ -125,7 +125,7 @@ class LayerParams:
 class LayerGrads:
     """Gradients with respect to one layer's parameters.
 
-    Shape mirrors LayerParams — both live in the same tangent space.
+    Shape mirrors LayerParams - both live in the same tangent space.
 
     Attributes
     ----------
@@ -140,7 +140,7 @@ class LayerGrads:
 
 @dataclass
 class Model:
-    """The full network — a product of N LayerParams objects.
+    """The full network - a product of N LayerParams objects.
 
     Categorical role: an object in the ModelState category (the product
     ParameterSpace₁ × … × ParameterSpaceₙ).
@@ -276,7 +276,7 @@ def forward_para(
     zs = vec_add(matvec(W, inputs), b)   # pre-activations
     acts = [act(z) for z in zs]           # post-activations
 
-    # Pullback closure — the "put-back" of the categorical lens
+    # Pullback closure - the "put-back" of the categorical lens
     def pullback(upstream_grad: list[float]) -> tuple[LayerGrads, list[float]]:
         """Backward morphism: ∇Y → ∇P × ∇X.
 
@@ -349,7 +349,7 @@ def network_forward(
 
 
 # ---------------------------------------------------------------------------
-# I.5  Loss — typed morphism: Prediction × Target → SquaredError
+# I.5  Loss - typed morphism: Prediction × Target → SquaredError
 # ---------------------------------------------------------------------------
 #
 # Survey §2.3: loss is a natural transformation from the prediction functor
@@ -373,13 +373,13 @@ def mse_loss_grad(pred: Prediction, tgt: TargetVal) -> float:
 
 
 # ---------------------------------------------------------------------------
-# I.6  Backward pass — pullback composition (covariant functor on ∇)
+# I.6  Backward pass - pullback composition (covariant functor on ∇)
 # ---------------------------------------------------------------------------
 #
 # model_backward : list[PullbackFn] × float → list[LayerGrads]
 #
 # The survey (§2.2) notes that backpropagation is the composite of the
-# pullback morphisms in reverse order — a covariant functor on the gradient
+# pullback morphisms in reverse order - a covariant functor on the gradient
 # category.
 
 def model_backward(pullbacks: list[PullbackFn], dl_dy_hat: float) -> list[LayerGrads]:
@@ -398,7 +398,7 @@ def model_backward(pullbacks: list[PullbackFn], dl_dy_hat: float) -> list[LayerG
     pullbacks : list[PullbackFn]
         Pullback closures in *forward* order (produced by network_forward).
     dl_dy_hat : float
-        dL/dŷ — the seed gradient from the loss function.
+        dL/dŷ - the seed gradient from the loss function.
 
     Returns
     -------
@@ -417,7 +417,7 @@ def model_backward(pullbacks: list[PullbackFn], dl_dy_hat: float) -> list[LayerG
 
 
 # ---------------------------------------------------------------------------
-# I.7  SGD update — endomorphism on ModelState
+# I.7  SGD update - endomorphism on ModelState
 # ---------------------------------------------------------------------------
 #
 # Survey §2.1: the gradient-descent update  θ ← θ − η∇θ  is an endomorphism
@@ -442,7 +442,7 @@ def update_layer(params: LayerParams, grads: LayerGrads, eta: float) -> LayerPar
 
 
 def model_update(m: Model, grads_list: list[LayerGrads], eta: float) -> Model:
-    """Apply one SGD step to the full model — the endomorphism u_η : Model → Model.
+    """Apply one SGD step to the full model - the endomorphism u_η : Model → Model.
 
     Category-theory reading
     -----------------------
@@ -460,7 +460,7 @@ def model_update(m: Model, grads_list: list[LayerGrads], eta: float) -> Model:
 
 
 # ---------------------------------------------------------------------------
-# I.8  One training step — the composed morphism
+# I.8  One training step - the composed morphism
 # ---------------------------------------------------------------------------
 
 def train_step(
@@ -605,8 +605,8 @@ def predict(m: Model, xs: list[float]) -> float:
 
 
 # =============================================================================
-# SECTION II — PROBABILITY-BASED LEARNING: MARKOV CATEGORIES
-#              (survey §3 — stochastic morphisms, dropout, Bayesian sketch)
+# SECTION II - PROBABILITY-BASED LEARNING: MARKOV CATEGORIES
+#              (survey §3 - stochastic morphisms, dropout, Bayesian sketch)
 # =============================================================================
 #
 # A Markov category is a symmetric monoidal category where every object X
@@ -614,13 +614,13 @@ def predict(m: Model, xs: list[float]) -> float:
 #   copy  : X → X ⊗ X    (diagonal / duplication)
 #   delete: X → I         (marginalisation / discarding)
 #
-# Morphisms are "stochastic kernels" — they map objects to probability
+# Morphisms are "stochastic kernels" - they map objects to probability
 # distributions over objects.  In practice we represent a stochastic morphism
 # as a function that, given an input, *samples* an output.
 #
 # Two instances we implement:
-#   A) Dropout   — a stochastic lens (forward stochasticity)
-#   B) Bayesian  — weight-space priors / posterior sampling sketch
+#   A) Dropout   - a stochastic lens (forward stochasticity)
+#   B) Bayesian  - weight-space priors / posterior sampling sketch
 
 
 # ---------------------------------------------------------------------------
@@ -672,7 +672,7 @@ def make_dropout_lens(
     ) -> tuple[list[float], Callable[[list[float]], list[float]]]:
         # Sample binary mask from Bernoulli(keep_prob)
         mask = [1.0 if random.random() < keep_prob else 0.0 for _ in inputs]
-        # Apply mask and scale (inverted dropout — keeps expectation constant)
+        # Apply mask and scale (inverted dropout - keeps expectation constant)
         scale = 1.0 / keep_prob
         masked = [x * m * scale for x, m in zip(inputs, mask)]
 
@@ -691,7 +691,7 @@ def make_dropout_lens(
 #
 # In Bayesian deep learning (survey §3.3), weights are random variables.
 # A Bayesian layer samples weights from a distribution W ~ N(μ, σ²) at each
-# forward pass — this is a stochastic morphism in the Markov category Stoch.
+# forward pass - this is a stochastic morphism in the Markov category Stoch.
 #
 # We implement a single-layer Bayesian linear model with Gaussian weights.
 
@@ -807,8 +807,8 @@ def bayesian_predict_mc(
 
 
 # =============================================================================
-# SECTION III — INVARIANCE / EQUIVARIANCE
-#               (survey §4 — functors that respect symmetry structure)
+# SECTION III - INVARIANCE / EQUIVARIANCE
+#               (survey §4 - functors that respect symmetry structure)
 # =============================================================================
 #
 # A layer  f : X → Y  is *equivariant* with respect to a group G if:
@@ -822,10 +822,10 @@ def bayesian_predict_mc(
 
 
 def permutation_invariant_pool(xs: list[float]) -> float:
-    """Sum-pool over a set — invariant to any permutation.
+    """Sum-pool over a set - invariant to any permutation.
 
     Categorical reading: this is the colimit (coproduct) over the set diagram
-    Σᵢ xᵢ — invariant to any permutation because addition is commutative.
+    Σᵢ xᵢ - invariant to any permutation because addition is commutative.
 
     This is the basis of the DeepSets architecture (Zaheer et al. 2017).
     """
@@ -836,7 +836,7 @@ def permutation_equivariant_map(
     f: Callable[[float], float],
     xs: list[float],
 ) -> list[float]:
-    """Apply f elementwise — equivariant to any permutation.
+    """Apply f elementwise - equivariant to any permutation.
 
     f ∘ π = π ∘ f for any permutation π, by construction.
     """
@@ -938,8 +938,8 @@ def k_means(
 
 
 # =============================================================================
-# SECTION IV — TOPOS-BASED LEARNING
-#              (survey §5 — subobject classifiers, sheaves, internal logic)
+# SECTION IV - TOPOS-BASED LEARNING
+#              (survey §5 - subobject classifiers, sheaves, internal logic)
 # =============================================================================
 #
 # A topos E is a category that has:
@@ -954,12 +954,12 @@ def k_means(
 # the activation into [0,1] ≅ Ω, and the decision boundary is χ⁻¹(0.5).
 #
 # Sheaf composition (survey §5.2): local predictions on overlapping contexts
-# are "glued" into a global consistent assignment — exactly the sheaf
+# are "glued" into a global consistent assignment - exactly the sheaf
 # condition.  We implement a simple ensemble that enforces global consistency.
 
 
 # ---------------------------------------------------------------------------
-# IV.1  Subobject classifier — binary decision morphism
+# IV.1  Subobject classifier - binary decision morphism
 # ---------------------------------------------------------------------------
 #
 # χ : InputSpace → Ω ≅ [0,1]   (the sigmoid output IS the characteristic map)
@@ -968,7 +968,7 @@ def subobject_classify(m: Model, xs: list[float]) -> tuple[float, int]:
     """Apply the subobject classifier χ : X → Ω.
 
     The prediction probability is the value of the characteristic morphism χ.
-    The class decision is χ⁻¹(0.5) — the decision boundary (survey §5.1).
+    The class decision is χ⁻¹(0.5) - the decision boundary (survey §5.1).
 
     Returns
     -------
@@ -983,7 +983,7 @@ def subobject_classify(m: Model, xs: list[float]) -> tuple[float, int]:
 
 
 # ---------------------------------------------------------------------------
-# IV.2  Sheaf composition — local-to-global consistency
+# IV.2  Sheaf composition - local-to-global consistency
 # ---------------------------------------------------------------------------
 #
 # A sheaf F on a space X assigns to each open set U ⊆ X a set of "sections"
@@ -996,7 +996,7 @@ def subobject_classify(m: Model, xs: list[float]) -> tuple[float, int]:
 
 @dataclass(frozen=True)
 class SheafSection:
-    """A local section F(U) of a sheaf — one expert's prediction on its context.
+    """A local section F(U) of a sheaf - one expert's prediction on its context.
 
     Attributes
     ----------
@@ -1047,7 +1047,7 @@ def sheaf_glue(sections: list[SheafSection], tol: float) -> Optional[float]:
 
 
 # ---------------------------------------------------------------------------
-# IV.3  Internal logic — the Heyting algebra of propositions
+# IV.3  Internal logic - the Heyting algebra of propositions
 # ---------------------------------------------------------------------------
 #
 # The subobject classifier Ω in a topos carries a Heyting algebra structure
@@ -1075,14 +1075,14 @@ def heyting_implies(p: float, q: float) -> float:
 
 
 # =============================================================================
-# SECTION V — FUNCTOR COMPOSITION DEMO
+# SECTION V - FUNCTOR COMPOSITION DEMO
 #             Natural transformation between two trained models
 # =============================================================================
 #
 # A natural transformation  η : F ⇒ G  between two functors witnesses that
 # G's predictions can be derived from F's predictions in a coherent, functorial
-# way.  We implement a simple "knowledge distillation" adapter — a linear map
-# from F-outputs to G-outputs — as a concrete natural transformation.
+# way.  We implement a simple "knowledge distillation" adapter - a linear map
+# from F-outputs to G-outputs - as a concrete natural transformation.
 
 @dataclass
 class NatTransform:
@@ -1135,7 +1135,7 @@ def apply_nat_transform(nt: NatTransform, v: list[float]) -> list[float]:
 
 
 # =============================================================================
-# DEMO — runs all five perspectives with concrete examples
+# DEMO - runs all five perspectives with concrete examples
 # =============================================================================
 
 if __name__ == "__main__":
@@ -1149,7 +1149,7 @@ if __name__ == "__main__":
     print()
 
     # ──────────────────────────────────────────────────────────────────────────
-    #  DEMO I: Para category — compositional backprop on XOR
+    #  DEMO I: Para category - compositional backprop on XOR
     # ──────────────────────────────────────────────────────────────────────────
     print("━━━━  I. Para Category + Lens Composition  (XOR problem)  ━━━━")
     print("  Architecture: input(2) → hidden(4) → hidden(4) → output(1)")
@@ -1178,15 +1178,15 @@ if __name__ == "__main__":
     print()
     print("  Category-theory reading:")
     print("  • Each layer is a morphism in Para(Euc): f : P × X → Y")
-    print("  • forward_para returns (output, pullback_closure) — the lens")
+    print("  • forward_para returns (output, pullback_closure) - the lens")
     print("  • Backprop = pullback composition  f* ∘ g* ∘ h*  in reverse")
     print("  • SGD update = endomorphism u_η : Model → Model")
     print()
 
     # ──────────────────────────────────────────────────────────────────────────
-    #  DEMO II: Markov Categories — Dropout + Bayesian uncertainty
+    #  DEMO II: Markov Categories - Dropout + Bayesian uncertainty
     # ──────────────────────────────────────────────────────────────────────────
-    print("━━━━  II. Markov Categories — Stochastic Morphisms  ━━━━")
+    print("━━━━  II. Markov Categories - Stochastic Morphisms  ━━━━")
     print()
 
     # II-A: Dropout as stochastic lens
@@ -1199,12 +1199,12 @@ if __name__ == "__main__":
     masked_grad = pb_fn([1.0, 1.0, 1.0, 1.0, 1.0])
     print(f"    Grad (back): {[f'{x:.3f}' for x in masked_grad]}")
     print()
-    print("    The same mask is reused in both passes — the 'closed'")
+    print("    The same mask is reused in both passes - the 'closed'")
     print("    stochastic lens condition (survey §3.2).")
     print()
 
     # II-B: Bayesian uncertainty
-    print("  II-B  Bayesian layer — Monte Carlo uncertainty estimation")
+    print("  II-B  Bayesian layer - Monte Carlo uncertainty estimation")
     bayes_layer = make_bayesian_layer(3, 1, sigma=0.3)
     bayes_input = [1.0, 0.5, -0.5]
     mu_est, sigma_est = bayesian_predict_mc(bayes_layer, bayes_input, n_samples=200)
@@ -1217,7 +1217,7 @@ if __name__ == "__main__":
     print()
 
     # ──────────────────────────────────────────────────────────────────────────
-    #  DEMO III: Invariance / Equivariance — DeepSets + K-means
+    #  DEMO III: Invariance / Equivariance - DeepSets + K-means
     # ──────────────────────────────────────────────────────────────────────────
     print("━━━━  III. Invariance & Equivariance  ━━━━")
     print()
@@ -1247,7 +1247,7 @@ if __name__ == "__main__":
     print()
 
     # ──────────────────────────────────────────────────────────────────────────
-    #  DEMO IV: Topos Framework — subobject classifier + sheaf gluing
+    #  DEMO IV: Topos Framework - subobject classifier + sheaf gluing
     # ──────────────────────────────────────────────────────────────────────────
     print("━━━━  IV. Topos Framework  ━━━━")
     print()
@@ -1265,17 +1265,17 @@ if __name__ == "__main__":
     print()
 
     # Sheaf gluing
-    print("  IV-B  Sheaf Gluing — local-to-global consistency")
+    print("  IV-B  Sheaf Gluing - local-to-global consistency")
     s1 = SheafSection(context="feature-subset-A", prediction=0.72)
     s2 = SheafSection(context="feature-subset-B", prediction=0.68)
     s3 = SheafSection(context="feature-subset-C", prediction=0.91)  # inconsistent
     glued_12 = sheaf_glue([s1, s2], tol=0.1)
     glued_13 = sheaf_glue([s1, s3], tol=0.1)
     print(f"    Expert A pred: {s1.prediction},  Expert B pred: {s2.prediction}")
-    glue_str = f"{glued_12:.4f}" if glued_12 is not None else "INCONSISTENT — cannot glue"
+    glue_str = f"{glued_12:.4f}" if glued_12 is not None else "INCONSISTENT - cannot glue"
     print(f"    Glue A+B (tol=0.1): {glue_str}")
     print(f"    Expert C pred: {s3.prediction} (conflict with A)")
-    glue_str2 = f"{glued_13:.4f}" if glued_13 is not None else "INCONSISTENT — cannot glue"
+    glue_str2 = f"{glued_13:.4f}" if glued_13 is not None else "INCONSISTENT - cannot glue"
     print(f"    Glue A+C (tol=0.1): {glue_str2}")
     print()
     print("    Consistent sections glue to a global prediction; inconsistent")
@@ -1283,7 +1283,7 @@ if __name__ == "__main__":
     print()
 
     # Heyting algebra
-    print("  IV-C  Internal Logic — Heyting Algebra on Ω = [0,1]")
+    print("  IV-C  Internal Logic - Heyting Algebra on Ω = [0,1]")
     p1, p2 = 0.8, 0.3
     print(f"    p='high confidence'={p1},  q='low confidence'={p2}")
     print(f"    p ∧ q  = min(p,q)       = {heyting_and(p1, p2)}")
@@ -1291,14 +1291,14 @@ if __name__ == "__main__":
     print(f"    ¬p     = 1-p            = {heyting_not(p1)}")
     print(f"    p ⇒ q  = ¬p ∨ q        = {heyting_implies(p1, p2)}")
     print()
-    print("    Ω carries Heyting algebra structure — the internal logic of")
+    print("    Ω carries Heyting algebra structure - the internal logic of")
     print("    the topos (Boolean collapse in Set, survey §5.1).")
     print()
 
     # ──────────────────────────────────────────────────────────────────────────
-    #  DEMO V: Natural Transformation — knowledge distillation adapter
+    #  DEMO V: Natural Transformation - knowledge distillation adapter
     # ──────────────────────────────────────────────────────────────────────────
-    print("━━━━  V. Natural Transformation — Knowledge Distillation Adapter  ━━━━")
+    print("━━━━  V. Natural Transformation - Knowledge Distillation Adapter  ━━━━")
     print()
     print("  A natural transformation η : F ⇒ G is a coherent family of")
     print("  morphisms η_X : F(X) → G(X) that commutes with all arrows.")

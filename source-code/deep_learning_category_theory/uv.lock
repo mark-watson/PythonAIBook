@@ -2,10 +2,6 @@ version = 1
 revision = 3
 requires-python = ">=3.14"
 
-[options]
-exclude-newer = "2026-05-17T20:25:21.804585Z"
-exclude-newer-span = "P4D"
-
 [[package]]
 name = "deep-learning-category-theory"
 version = "0.1.0"
