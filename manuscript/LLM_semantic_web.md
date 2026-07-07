@@ -1,8 +1,14 @@
 # Semantic Web Question Answering with SPARQL and Large Language Models
 
+The Resource Description Framework (RDF) is the data model that underpins the Semantic Web. In RDF, every fact is expressed as a **triple** of subject, predicate, and object, where the subject and object are nodes in a graph and the predicate is a typed, named edge. Because every entity and every relationship is identified by a globally unique URI, data published by different organizations can be merged into a single shared graph without ambiguity. This graph-based foundation is what distinguishes RDF from ordinary tables or JSON documents: relationships are first-class citizens, and any two datasets that share a URI can be joined seamlessly.
+
+One of the great advantages of RDF is that several large knowledge bases are published as public SPARQL endpoints, meaning anyone with an HTTP client can query them free of charge and without registration. **DBpedia** exposes `http://dbpedia.org/sparql`, and **Wikidata** exposes `https://query.wikidata.org/sparql`; both return results in the same standardized JSON format, so the same client code can talk to either endpoint. This means that a developer can, in a handful of lines of Python, ask structured questions about millions of people, places, organizations, and concepts curated by the Wikipedia and Wikimedia communities with no API keys, no licensing fees, and no local data storage required.
+
+Public SPARQL endpoints also compose naturally. Because DBpedia and Wikidata both speak SPARQL and both model their data as RDF, a program can query both endpoints for the same entities and merge the results into a single context for downstream processing. Each source contributes different strengths: DBpedia carries richer infobox-derived product lists and financial figures, while Wikidata provides more comprehensive subsidiary and leadership relationships—so combining them yields a fuller picture than either alone. The remainder of this chapter shows exactly how to build such a system, pairing these public endpoints with a large language model that turns structured triples into natural-language answers.
+
 ## A Live Example to Motivate the Reader
 
-Before we dig into the theory, let us see what the finished programs actually do. We have three scripts that all answer the same question but draw on different knowledge bases.
+Before we dig into the example code implementation, let us see what the finished programs actually do. We have three scripts that all answer the same question but draw on different knowledge bases.
 
 ### DBpedia
 
