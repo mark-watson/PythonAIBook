@@ -22,7 +22,7 @@ This example uses only the Python standard library (`math` and `random`), so the
 uv run deep_learning_category_theory.py
 ```
 
-{width: “100%”}
+{width: “95%”}
 ![Architecture diagram for the Categorical Deep Learning example](FIG_categorical_deep_learning.jpg)
 
 ## The Para Category and Lens Composition
