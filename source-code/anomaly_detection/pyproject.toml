@@ -1,10 +1,37 @@
 [project]
 name = "anomaly-detection"
 version = "0.1.0"
-requires-python = ">=3.14"
+requires-python = ">=3.13"
 dependencies = [
-    "matplotlib>=3.10.9",
-    "numpy>=2.4.4",
-    "pandas>=3.0.2",
-    "scikit-learn>=1.8.0",
+  "matplotlib>=3.9",
+  "numpy>=2.0",
+  "pandas>=2.2",
+  "scikit-learn>=1.5",
 ]
+
+[project.scripts]
+wisconsin-anomaly = "anomaly_detection.wisconsin:main"
+
+[dependency-groups]
+dev = [
+  "pyrefly",
+  "ruff",
+  "pytest",
+  "pytest-xdist",
+  "pytest-testmon",
+  "hypothesis",
+  "syrupy",
+  "beartype",
+  "typeguard",
+]
+
+[tool.pytest.ini_options]
+addopts = "--typeguard-packages=anomaly_detection"
+testpaths = ["tests"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/anomaly_detection"]

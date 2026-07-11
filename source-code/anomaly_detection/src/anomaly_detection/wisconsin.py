@@ -10,20 +10,29 @@ cross-validation / test sets, and evaluates two detectors:
   2. IsolationForestDetector  (scikit-learn)
 """
 
-import numpy as np
-import matplotlib
-matplotlib.use("Agg")          # non-interactive backend
-import matplotlib.pyplot as plt
+import os
+from pathlib import Path
 
-from anomaly_detection import (
+os.environ.setdefault("MPLBACKEND", "Agg")  # non-interactive backend
+
+import matplotlib.pyplot as plt  # noqa: E402
+import numpy as np  # noqa: E402
+
+from anomaly_detection.detectors import (  # noqa: E402
     GaussianAnomalyDetector,
     IsolationForestDetector,
     evaluate,
 )
 
-DATA_PATH = "cleaned_wisconsin_cancer_data.csv"
+# See detectors.py for the reason we use bare np.ndarray rather than NDArray[...].
+type FloatArray = np.ndarray
+type IntArray = np.ndarray
 
-FEATURE_NAMES = [
+DATA_PATH: Path = (
+    Path(__file__).resolve().parent.parent.parent / "cleaned_wisconsin_cancer_data.csv"
+)
+
+FEATURE_NAMES: list[str] = [
     "Clump Thickness",
     "Uniformity of Cell Size",
     "Uniformity of Cell Shape",
@@ -39,13 +48,21 @@ FEATURE_NAMES = [
 # ── data loading & preprocessing ─────────────────────────────
 
 
-def load_wisconsin_data():
+def load_wisconsin_data() -> tuple[
+    FloatArray,
+    FloatArray,
+    IntArray,
+    FloatArray,
+    IntArray,
+    FloatArray,
+    IntArray,
+]:
     """Load CSV, apply the same log-transform + min–max
     normalisation used in the Java version, and split
     into train / cross-validation / test."""
 
-    raw = np.genfromtxt(DATA_PATH, delimiter=",")
-    X_raw = raw[:, :9] * 0.1           # scale to [0, 1]
+    raw = np.genfromtxt(str(DATA_PATH), delimiter=",")
+    X_raw = raw[:, :9] * 0.1  # scale to [0, 1]
 
     # log-transform to approximate Gaussian shape
     X_log = np.log(X_raw + 1.2)
@@ -64,53 +81,67 @@ def load_wisconsin_data():
     n_cv = int(0.2 * len(X))
 
     train_idx = idx[:n_train]
-    cv_idx = idx[n_train:n_train + n_cv]
-    test_idx = idx[n_train + n_cv:]
+    cv_idx = idx[n_train : n_train + n_cv]
+    test_idx = idx[n_train + n_cv :]
 
     # Training set: keep mostly normal (benign) examples,
     # allow ~10% anomalies through (matches Java logic)
     normal_mask = y[train_idx] == 0
     anomaly_mask = y[train_idx] == 1
-    keep_anomaly = rng.random(anomaly_mask.sum()) < 0.1
-    keep_idx = np.concatenate([
-        train_idx[normal_mask],
-        train_idx[anomaly_mask][keep_anomaly],
-    ])
+    keep_anomaly = rng.random(int(anomaly_mask.sum())) < 0.1
+    keep_idx = np.concatenate(
+        [
+            train_idx[normal_mask],
+            train_idx[anomaly_mask][keep_anomaly],
+        ]
+    )
     X_train = X[keep_idx]
 
     return (
-        X_train,                    # train features (mostly normal)
-        X[cv_idx], y[cv_idx],       # cross-validation
-        X[test_idx], y[test_idx],   # test
-        X, y,                       # full set (for histograms)
+        X_train,  # train features (mostly normal)
+        X[cv_idx],
+        y[cv_idx],  # cross-validation
+        X[test_idx],
+        y[test_idx],  # test
+        X,
+        y,  # full set (for histograms)
     )
 
 
 # ── histogram visualisation ──────────────────────────────────
 
 
-def plot_feature_histograms(X, y, path="histograms.png"):
+def plot_feature_histograms(
+    X: FloatArray, y: IntArray, path: str = "histograms.png"
+) -> None:
     """Save a 3×3 grid of feature histograms, colour-coded
     by class (normal / anomaly)."""
     fig, axes = plt.subplots(3, 3, figsize=(12, 10))
     fig.suptitle(
         "Wisconsin Cancer Dataset — Feature Distributions",
-        fontsize=14, fontweight="bold",
+        fontsize=14,
+        fontweight="bold",
     )
 
     for i, ax in enumerate(axes.flat):
         ax.hist(
-            X[y == 0, i], bins=20, alpha=0.6,
-            label="Normal", color="#4C72B0",
+            X[y == 0, i],
+            bins=20,
+            alpha=0.6,
+            label="Normal",
+            color="#4C72B0",
         )
         ax.hist(
-            X[y == 1, i], bins=20, alpha=0.6,
-            label="Anomaly", color="#DD4E4E",
+            X[y == 1, i],
+            bins=20,
+            alpha=0.6,
+            label="Anomaly",
+            color="#DD4E4E",
         )
         ax.set_title(FEATURE_NAMES[i], fontsize=10)
         ax.legend(fontsize=8)
 
-    plt.tight_layout(rect=[0, 0, 1, 0.95])
+    plt.tight_layout(rect=(0, 0, 1, 0.95))
     plt.savefig(path, dpi=150)
     print(f"\nHistograms saved to {path}")
 
@@ -118,9 +149,8 @@ def plot_feature_histograms(X, y, path="histograms.png"):
 # ── main ─────────────────────────────────────────────────────
 
 
-def main():
-    (X_train, X_cv, y_cv,
-     X_test, y_test, X_all, y_all) = load_wisconsin_data()
+def main() -> None:
+    (X_train, X_cv, y_cv, X_test, y_test, X_all, y_all) = load_wisconsin_data()
 
     print(f"Training examples  : {len(X_train)}")
     print(f"Cross-val examples : {len(X_cv)}")
@@ -143,15 +173,16 @@ def main():
 
     # ── Quick demo predictions ───────────────────────────
     print("\n═══ Quick demo predictions ═══")
-    sample_malignant = np.array(
-        [[0.5, 1, 1, 0.8, 0.5, 0.5, 0.7, 1, 0.1]]
-    )
-    sample_benign = np.array(
+    sample_malignant: FloatArray = np.array([[0.5, 1, 1, 0.8, 0.5, 0.5, 0.7, 1, 0.1]])
+    sample_benign: FloatArray = np.array(
         [[0.5, 0.4, 0.5, 0.1, 0.8, 0.1, 0.3, 0.6, 0.1]]
     )
 
-    for name, det in [("Gaussian", gauss),
-                       ("IsolationForest", iforest)]:
+    detectors: list[tuple[str, GaussianAnomalyDetector | IsolationForestDetector]] = [
+        ("Gaussian", gauss),
+        ("IsolationForest", iforest),
+    ]
+    for name, det in detectors:
         m = det.predict(sample_malignant)[0]
         b = det.predict(sample_benign)[0]
         print(
