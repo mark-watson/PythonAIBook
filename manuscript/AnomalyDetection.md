@@ -9,13 +9,13 @@ The key insight is that we can build a model of what "normal" looks like and the
 
 By comparing both approaches on the same dataset, we will see the tradeoffs between supervised tuning and fully unsupervised detection.
 
-The requirements for this chapter are:
+The examples for this chapter are in the directory **source-code/anomaly_detection**. The project is a modern `uv`-managed Python package (with `pyrefly` strict typing, `ruff` formatting, `beartype`/`typeguard` runtime type enforcement, and Claude Code hooks). From the project directory, one command syncs the environment and installs all runtime and dev dependencies (numpy, matplotlib, scikit-learn, pandas, pytest, hypothesis, etc.):
 
 ```bash
-uv pip install scikit-learn numpy matplotlib
+uv sync
 ```
 
-The examples for this chapter are in the directory **source-code/anomaly_detection**.
+The `justfile` provides the developer workflow: `just check` runs format-check + lint + typecheck + tests, `just run` runs the Wisconsin example, and `just test` runs the unit and property-based tests. See the project `README.md` for the full setup guide.
 
 
 {width: "80%"}
@@ -79,7 +79,7 @@ If this aggregate probability falls below a threshold **epsilon** (ε), the obse
 
 ### Implementation
 
-The `GaussianAnomalyDetector` class in **anomaly_detection.py** implements this in about 50 lines of Python:
+The `GaussianAnomalyDetector` class in **src/anomaly_detection/detectors.py** implements this in about 50 lines of Python:
 
 ```python
 class GaussianAnomalyDetector:
@@ -181,10 +181,11 @@ Unlike the Gaussian detector, Isolation Forest is **fully unsupervised** — it 
 
 ## Running the Example
 
-Running the complete example:
+Running the complete example (either `just run` or the underlying `uv run` invocation):
 
 ```bash
-$ uv run wisconsin_anomaly.py
+$ just run
+uv run python -m anomaly_detection.wisconsin
 Training examples  : 264
 Cross-val examples : 129
 Test examples      : 131
@@ -263,7 +264,7 @@ Both approaches are widely used in practice, and understanding their tradeoffs �
 Here are some optional practice problems to help you deepen your understanding of anomaly detection and extend the code implemented in this chapter.
 
 ### Problem 1 (Easy): Independent Gaussian Log-Likelihood
-The current implementation of the [GaussianAnomalyDetector](file:///Users/markwatson/GITHUB/PythonAIBook/source-code/anomaly_detection/anomaly_detection.py#L32) computes the arithmetic mean of the individual feature probabilities to determine the overall probability of a sample:
+The current implementation of the [GaussianAnomalyDetector](file:///Users/markwatson/GITHUB/PythonAIBook/source-code/anomaly_detection/src/anomaly_detection/detectors.py#L42) computes the arithmetic mean of the individual feature probabilities to determine the overall probability of a sample:
 ```python
 return per_feature.mean(axis=1)
 ```
@@ -273,34 +274,34 @@ Because multiplying small probabilities leads to numerical underflow, we typical
 $$\log p(\mathbf{x}) = \sum_{i=1}^{n} \log p(x_i)$$
 
 **Task:**
-1. Modify the `_probability` method of [GaussianAnomalyDetector](file:///Users/markwatson/GITHUB/PythonAIBook/source-code/anomaly_detection/anomaly_detection.py#L32) to compute the joint log-probability of each sample. (Hint: compute the natural logarithm of individual feature probability densities, sum them across axis 1, and return this log-probability).
+1. Modify the `_probability` method of [GaussianAnomalyDetector](file:///Users/markwatson/GITHUB/PythonAIBook/source-code/anomaly_detection/src/anomaly_detection/detectors.py#L42) to compute the joint log-probability of each sample. (Hint: compute the natural logarithm of individual feature probability densities, sum them across axis 1, and return this log-probability).
 2. Update the `_tune_epsilon` and `predict` methods accordingly. Note that since log-probabilities are negative numbers, `epsilon` will also be negative, and a sample is an anomaly when its log-probability is *lower* (more negative) than `epsilon`. You will need to adjust the range of candidate thresholds swept in `_tune_epsilon`.
 3. Tune `epsilon` on the cross-validation set and evaluate the new log-likelihood detector on the test set.
 4. Compare the resulting Precision, Recall, and F1 scores with those of the original arithmetic-mean implementation.
 
 ### Problem 2 (Medium): Semi-Supervised Hyperparameter Tuning for Isolation Forest
-Currently, our [IsolationForestDetector](file:///Users/markwatson/GITHUB/PythonAIBook/source-code/anomaly_detection/anomaly_detection.py#L117) wrapper is fully unsupervised and uses a hardcoded `contamination=0.35` hyperparameter:
+Currently, our [IsolationForestDetector](file:///Users/markwatson/GITHUB/PythonAIBook/source-code/anomaly_detection/src/anomaly_detection/detectors.py#L132) wrapper is fully unsupervised and uses a hardcoded `contamination=0.35` hyperparameter:
 ```python
 iforest = IsolationForestDetector(contamination=0.35)
 ```
 In real-world settings, we often have a small labeled dataset (e.g., our cross-validation set) that we can use to tune hyperparameters, even if the model itself is trained in an unsupervised manner on the training set.
 
 **Task:**
-1. Extend the `fit` method of [IsolationForestDetector](file:///Users/markwatson/GITHUB/PythonAIBook/source-code/anomaly_detection/anomaly_detection.py#L117) to accept optional validation data `X_cv` and `y_cv`.
+1. Extend the `fit` method of [IsolationForestDetector](file:///Users/markwatson/GITHUB/PythonAIBook/source-code/anomaly_detection/src/anomaly_detection/detectors.py#L132) to accept optional validation data `X_cv` and `y_cv`.
 2. Implement a grid search within `fit` that sweeps over a range of hyperparameters when validation data is provided:
    - `contamination`: from `0.05` to `0.50` in steps of `0.05`
    - `n_estimators`: `[50, 100, 200, 300]`
 3. For each combination, fit the `IsolationForest` model on `X_train`, predict on `X_cv`, and calculate the validation F1 score.
 4. Store the best-performing hyperparameters and fit the final model using them.
-5. Integrate this tuning step in [wisconsin_anomaly.py](file:///Users/markwatson/GITHUB/PythonAIBook/source-code/anomaly_detection/wisconsin_anomaly.py), evaluate the optimized model on the test set, and compare the results to the default model. How much did tuning improve the Precision and F1 score?
+5. Integrate this tuning step in [wisconsin_anomaly.py](file:///Users/markwatson/GITHUB/PythonAIBook/source-code/anomaly_detection/src/anomaly_detection/wisconsin.py), evaluate the optimized model on the test set, and compare the results to the default model. How much did tuning improve the Precision and F1 score?
 
 ### Problem 3 (Hard): Density-based Detection with Local Outlier Factor (LOF) and PCA
 While Isolation Forest isolates anomalies using random partitioning, distance- or density-based methods like **Local Outlier Factor (LOF)** identify anomalies by comparing the local density of a point to that of its neighbors. In high-dimensional spaces, these density metrics can degrade due to the "curse of dimensionality."
 
 **Task:**
-1. Implement a new class `LOFDetector` in [anomaly_detection.py](file:///Users/markwatson/GITHUB/PythonAIBook/source-code/anomaly_detection/anomaly_detection.py) wrapping scikit-learn's `LocalOutlierFactor`. Set `novelty=True` in the constructor so you can call `fit` on training data and `predict`/`score` on test data.
+1. Implement a new class `LOFDetector` in [anomaly_detection.py](file:///Users/markwatson/GITHUB/PythonAIBook/source-code/anomaly_detection/src/anomaly_detection/detectors.py) wrapping scikit-learn's `LocalOutlierFactor`. Set `novelty=True` in the constructor so you can call `fit` on training data and `predict`/`score` on test data.
 2. Write a Python script that applies Principal Component Analysis (PCA) to reduce the 9-dimensional cancer dataset to 2 dimensions.
-3. Train all three detectors ([GaussianAnomalyDetector](file:///Users/markwatson/GITHUB/PythonAIBook/source-code/anomaly_detection/anomaly_detection.py#L32), [IsolationForestDetector](file:///Users/markwatson/GITHUB/PythonAIBook/source-code/anomaly_detection/anomaly_detection.py#L117), and your new `LOFDetector`) on:
+3. Train all three detectors ([GaussianAnomalyDetector](file:///Users/markwatson/GITHUB/PythonAIBook/source-code/anomaly_detection/src/anomaly_detection/detectors.py#L42), [IsolationForestDetector](file:///Users/markwatson/GITHUB/PythonAIBook/source-code/anomaly_detection/src/anomaly_detection/detectors.py#L132), and your new `LOFDetector`) on:
    - The original 9-dimensional space.
    - The 2-dimensional PCA space.
 4. Evaluate and compare the Precision, Recall, and F1 scores for all configurations on the test set.
