@@ -7,6 +7,8 @@
 # Requirements: uv pip install sparqlwrapper
 # Run: uv run dbpedia_cities.py
 
+from typing import Any, cast
+
 from SPARQLWrapper import SPARQLWrapper, JSON
 
 QUERY_STRING = """
@@ -32,15 +34,18 @@ LIMIT 10
 """
 
 
-def fetch_cities() -> list[dict[str, str]]:
+def fetch_cities() -> list[dict[str, object]]:
     sparql = SPARQLWrapper("https://dbpedia.org/sparql")
     sparql.addCustomHttpHeader("User-Agent", "PythonAIBook/1.0")
     sparql.setQuery(QUERY_STRING)
     sparql.setReturnFormat(JSON)
-    results = sparql.queryAndConvert()
+    raw = sparql.queryAndConvert()
+    if not isinstance(raw, dict):
+        raise TypeError(f"Expected dict from SPARQL query, got {type(raw).__name__}")
+    results = cast(dict[str, Any], raw)
 
     bindings = results.get("results", {}).get("bindings", [])
-    cities = []
+    cities: list[dict[str, object]] = []
     for r in bindings:
         cities.append(
             {

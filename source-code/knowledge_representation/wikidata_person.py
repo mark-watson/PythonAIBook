@@ -9,6 +9,8 @@
 # Run: uv run wikidata_person.py [person name]
 
 import sys
+from typing import Any, cast
+
 from SPARQLWrapper import SPARQLWrapper, JSON
 
 QUERY_TEMPLATE = """
@@ -32,7 +34,10 @@ def fetch_person(name: str) -> list[dict[str, str]]:
     sparql.addCustomHttpHeader("User-Agent", "PythonAIBook/1.0")
     sparql.setQuery(QUERY_TEMPLATE.format(name=name))
     sparql.setReturnFormat(JSON)
-    results = sparql.queryAndConvert()
+    raw = sparql.queryAndConvert()
+    if not isinstance(raw, dict):
+        raise TypeError(f"Expected dict from SPARQL query, got {type(raw).__name__}")
+    results = cast(dict[str, Any], raw)
 
     bindings = results.get("results", {}).get("bindings", [])
     people = []
