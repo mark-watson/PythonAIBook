@@ -28,6 +28,8 @@ response = client.models.generate_content(
 )
 
 # Parse the JSON from the response (strip any markdown code fences)
-raw = response.text.strip().removeprefix("```json").removesuffix("```").strip()
+text = response.text
+assert text is not None
+raw = text.strip().removeprefix("```json").removesuffix("```").strip()
 result = json.loads(raw)
 print(json.dumps(result, indent=2))

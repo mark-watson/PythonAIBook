@@ -30,7 +30,8 @@ response = client.chat.completions.create(
 )
 
 # Parse the JSON from the response (strip any markdown code fences)
-raw = response.choices[0].message.content.strip()
-raw = raw.removeprefix("```json").removesuffix("```").strip()
+content = response.choices[0].message.content
+assert content is not None
+raw = content.strip().removeprefix("```json").removesuffix("```").strip()
 result = json.loads(raw)
 print(json.dumps(result, indent=2))

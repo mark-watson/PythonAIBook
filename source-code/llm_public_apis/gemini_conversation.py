@@ -8,16 +8,17 @@
 # Environment: export GOOGLE_API_KEY="your-api-key"
 
 import os
+from typing import Any
 from google import genai
 from google.genai import types
 
 client = genai.Client(api_key=os.getenv("GOOGLE_API_KEY"))
 
 # Build a conversation as a list of content parts
-conversation = []
+conversation: list[Any] = []
 
 
-def chat(user_message):
+def chat(user_message: str) -> str:
     """Send a message and get a response, maintaining conversation history."""
     conversation.append(
         types.Content(role="user", parts=[types.Part(text=user_message)])
@@ -25,10 +26,10 @@ def chat(user_message):
     response = client.models.generate_content(
         model="gemini-3-flash-preview", contents=conversation
     )
-    conversation.append(
-        types.Content(role="model", parts=[types.Part(text=response.text)])
-    )
-    return response.text
+    text = response.text
+    assert text is not None
+    conversation.append(types.Content(role="model", parts=[types.Part(text=text)]))
+    return text
 
 
 # A multi-turn conversation — note how later questions reference earlier answers

@@ -9,16 +9,17 @@
 
 import os
 from openai import OpenAI
+from openai.types.chat import ChatCompletionMessageParam
 
 client = OpenAI(
     base_url="https://api.fireworks.ai/inference/v1",
     api_key=os.getenv("FIREWORKS_API_KEY"),
 )
 
-messages = []
+messages: list[ChatCompletionMessageParam] = []
 
 
-def chat(user_message):
+def chat(user_message: str) -> str:
     """Send a message and get a response, maintaining conversation history."""
     messages.append({"role": "user", "content": user_message})
     response = client.chat.completions.create(
@@ -26,6 +27,8 @@ def chat(user_message):
         messages=messages,
     )
     reply = response.choices[0].message.content
+    if reply is None:
+        raise RuntimeError("Empty response from model")
     messages.append({"role": "assistant", "content": reply})
     return reply
 

@@ -10,6 +10,7 @@
 # Environment: export OPENAI_API_KEY="your-api-key"
 
 from openai import OpenAI
+from openai.types.responses import ResponseOutputMessage, ResponseOutputText
 
 client = OpenAI()
 
@@ -21,11 +22,9 @@ response = client.responses.create(
 )
 
 # Extract the assistant's text from the response output
-output_items = list(response.output)
-for item in reversed(output_items):
-    kind = getattr(type(item), "__name__", "")
-    if kind == "ResponseOutputMessage" and getattr(item, "role", None) == "assistant":
+for item in response.output:
+    if isinstance(item, ResponseOutputMessage) and item.role == "assistant":
         for content in item.content:
-            if type(content).__name__ == "ResponseOutputText":
+            if isinstance(content, ResponseOutputText):
                 print(content.text)
                 break
