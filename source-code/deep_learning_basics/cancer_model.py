@@ -6,6 +6,8 @@ Wisconsin Breast Cancer dataset (same data used in the
 scikit-learn chapter).
 """
 
+from typing import override
+
 import numpy as np
 import pandas as pd
 import torch
@@ -71,14 +73,20 @@ class CancerNet(nn.Module):
             nn.Linear(15, 1),
         )
 
-    def forward(self, x):
+    @override
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.network(x)
 
 
 # ── Training loop ────────────────────────────────────
 
 
-def train_model(model, train_loader, epochs=60, lr=0.01):
+def train_model(
+    model: nn.Module,
+    train_loader: DataLoader[tuple[torch.Tensor, ...]],
+    epochs: int = 60,
+    lr: float = 0.01,
+) -> None:
     """Train the model using SGD and BCEWithLogitsLoss."""
     # Binary cross-entropy with built-in sigmoid
     criterion = nn.BCEWithLogitsLoss()
@@ -115,7 +123,9 @@ if __name__ == "__main__":
 
     # Convert numpy arrays to PyTorch tensors
     train_ds = TensorDataset(torch.tensor(X_train), torch.tensor(Y_train))
-    train_loader = DataLoader(train_ds, batch_size=100, shuffle=True)
+    train_loader: DataLoader[tuple[torch.Tensor, ...]] = DataLoader(
+        train_ds, batch_size=100, shuffle=True
+    )
 
     model = CancerNet()
     print(model)
