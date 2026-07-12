@@ -1,0 +1,7 @@
+project-includes = ["chess_engine.py", "chess_bot.py", "main.py", "tests"]
+project-excludes = ["**/__pycache__", "**/*venv/**", "**/.*/**"]
+python-version = "3.14"
+preset = "strict"
+
+[errors]
+non-exhaustive-match = "error"

@@ -54,37 +54,68 @@ This project implements a complete chess board representation, legal move genera
 
 ```bash
 Chess_game/
-├── chess_engine.py   # Board state representation, BoardState history, & Zobrist keys
-├── chess_bot.py      # Iterative Deepening Negamax AI, Transposition Table, & evaluation
-├── main.py           # CLI interface & interactive game loop
-├── test_engine.py    # Perft & Zobrist verification suite
-├── pyproject.toml    # Project dependencies & Python requirements
-└── uv.lock           # Locked dependency tree
+├── chess_engine.py      # Board state representation, BoardState history, & Zobrist keys
+├── chess_bot.py         # Iterative Deepening Negamax AI, Transposition Table, & evaluation
+├── main.py              # CLI interface & interactive game loop
+├── tests/
+│   ├── conftest.py      # sys.path shim so tests can import the flat modules
+│   └── test_engine.py   # pytest-based Perft & Zobrist verification suite
+├── pyproject.toml       # Project dependencies & dev tooling
+├── pyrefly.toml         # Strict type-checker config
+├── justfile             # Task runner (fmt / lint / typecheck / test)
+├── Makefile             # clean / test / run
+├── .claude/             # Claude Code hooks that gate every edit and turn end
+└── uv.lock              # Locked dependency tree
 ```
 
 ---
 
 ## 🚀 Installation & Running
 
-This project uses `uv`, an extremely fast Python package installer and manager.
+This project uses [`uv`](https://docs.astral.sh/uv/) for dependency management and [`just`](https://just.systems/) as its task runner.
 
 ### Prerequisites
-Make sure you have `uv` installed. If you do not have it, you can install it using:
 ```bash
+# uv (macOS / Linux)
 curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# just (Rust task runner — do NOT install the "just" package from PyPI, it will shadow this one)
+brew install just     # macOS
+# or: cargo install just
 ```
 
-### 1. Playing the Game
-To launch the interactive CLI game client, run:
+### 1. Install dev dependencies
+
 ```bash
-uv run main.py
+uv sync
 ```
 
-### 2. Running Move Generation & Zobrist Tests (Perft)
-To verify that the move generator and Zobrist hashing are correct and benchmark the engine's speed (nodes per second):
+This creates `.venv/` and installs `ruff`, `pyrefly`, `pytest`, `hypothesis`, and friends.
+
+### 2. Playing the Game
+
 ```bash
-uv run test_engine.py
+uv run python main.py
+# or
+make run
 ```
+
+### 3. Running Move Generation & Zobrist Tests (Perft)
+
+```bash
+just test          # fast run via pytest-testmon
+just test-all      # full parallel run
+# or
+uv run pytest -v
+```
+
+### 4. Full quality gate
+
+```bash
+just check   # fmt-check + lint + typecheck + test
+```
+
+The same gate runs automatically when Claude Code ends a turn. Per-edit, the `.claude/hooks/py-check.sh` hook formats + typechecks the file you just touched.
 
 ---
 
