@@ -14,7 +14,7 @@ LHS).  Build them with ``Pat(FactType, field=Op, ...)`` or negate with
 from __future__ import annotations
 
 import re
-from typing import Any, Callable
+from typing import Any, Callable, override
 
 __all__ = [
     "PatternOp",
@@ -67,9 +67,11 @@ class Var(PatternOp):
         self._name = name
 
     @property
+    @override
     def bind_name(self) -> str:
         return self._name
 
+    @override
     def test(self, value: Any) -> bool:  # noqa: D401
         return True
 
@@ -83,6 +85,7 @@ class Eq(PatternOp):
     def __init__(self, value: Any) -> None:
         self._value = value
 
+    @override
     def test(self, value: Any) -> bool:
         return value == self._value
 
@@ -96,6 +99,7 @@ class Gt(PatternOp):
     def __init__(self, value: Any) -> None:
         self._value = value
 
+    @override
     def test(self, value: Any) -> bool:
         return value > self._value
 
@@ -109,6 +113,7 @@ class Lt(PatternOp):
     def __init__(self, value: Any) -> None:
         self._value = value
 
+    @override
     def test(self, value: Any) -> bool:
         return value < self._value
 
@@ -122,6 +127,7 @@ class Ge(PatternOp):
     def __init__(self, value: Any) -> None:
         self._value = value
 
+    @override
     def test(self, value: Any) -> bool:
         return value >= self._value
 
@@ -135,6 +141,7 @@ class Le(PatternOp):
     def __init__(self, value: Any) -> None:
         self._value = value
 
+    @override
     def test(self, value: Any) -> bool:
         return value <= self._value
 
@@ -148,6 +155,7 @@ class In(PatternOp):
     def __init__(self, *values: Any) -> None:
         self._values = frozenset(values)
 
+    @override
     def test(self, value: Any) -> bool:
         return value in self._values
 
@@ -161,6 +169,7 @@ class Contains(PatternOp):
     def __init__(self, value: Any) -> None:
         self._value = value
 
+    @override
     def test(self, value: Any) -> bool:
         return self._value in value
 
@@ -175,6 +184,7 @@ class Match(PatternOp):
         self._pattern = pattern
         self._compiled = re.compile(pattern)
 
+    @override
     def test(self, value: Any) -> bool:
         return bool(self._compiled.search(str(value)))
 
@@ -188,6 +198,7 @@ class Test(PatternOp):
     def __init__(self, fn: Callable[[Any], bool]) -> None:
         self._fn = fn
 
+    @override
     def test(self, value: Any) -> bool:
         return self._fn(value)
 

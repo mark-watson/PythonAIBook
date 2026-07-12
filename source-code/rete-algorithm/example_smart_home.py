@@ -9,7 +9,9 @@ Demonstrates:
 """
 
 from dataclasses import dataclass
-from rete import Eq, Fact, Lt, Pat, ReteEngine, Var
+from typing import Any
+
+from rete import Eq, Fact, Lt, Pat, ReteEngine, RuleContext, Var
 
 
 # ── Fact types ─────────────────────────────────────────────────────
@@ -56,7 +58,7 @@ engine = ReteEngine(strategy="lex")
     Pat(SensorReading, room=Var("r"), type=Eq("motion"), value=Eq("active")),
     ~Pat(Occupancy, room=Var("r"), status=Eq("occupied")),
 )
-def detect_occupancy(ctx, r):
+def detect_occupancy(ctx: RuleContext, r: Any) -> None:
     """If motion is active and room is not marked occupied, mark it occupied."""
     # Retract vacancy if it exists
     for wme in ctx.token_wmes:
@@ -78,7 +80,7 @@ def detect_occupancy(ctx, r):
     ),
     ~Pat(HouseMode, mode=Eq("away")),
 )
-def turn_on_lights(ctx, r, d):
+def turn_on_lights(ctx: RuleContext, r: Any, d: Any) -> None:
     """If room is occupied, light is low (< 100 lux), lights are off, and mode is not away, turn them on."""
     for wme in ctx.token_wmes:
         if isinstance(wme.fact, DeviceStatus) and wme.fact.device_id == d:
@@ -101,7 +103,7 @@ def turn_on_lights(ctx, r, d):
     ),
     ~Pat(HouseMode, mode=Eq("away")),
 )
-def trigger_heating(ctx, r, h):
+def trigger_heating(ctx: RuleContext, r: Any, h: Any) -> None:
     """If room is occupied, temperature is cold (< 19.0°C), HVAC is idle, and mode is not away, turn on heating."""
     for wme in ctx.token_wmes:
         if isinstance(wme.fact, DeviceStatus) and wme.fact.device_id == h:
@@ -120,7 +122,7 @@ def trigger_heating(ctx, r, h):
     Pat(HouseMode, mode=Eq("away")),
     Pat(DeviceStatus, device_id=Var("d"), state=Eq("on")),
 )
-def auto_shutoff_away(ctx, d):
+def auto_shutoff_away(ctx: RuleContext, d: Any) -> None:
     """If house mode changes to 'away', turn off any active devices (lights/HVAC)."""
     for wme in ctx.token_wmes:
         if isinstance(wme.fact, DeviceStatus) and wme.fact.device_id == d:

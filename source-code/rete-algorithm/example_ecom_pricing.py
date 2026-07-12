@@ -9,7 +9,9 @@ Demonstrates:
 """
 
 from dataclasses import dataclass
-from rete import Eq, Fact, Pat, ReteEngine, Var
+from typing import Any
+
+from rete import Eq, Fact, Pat, ReteEngine, RuleContext, Var
 
 
 # ── Fact types ─────────────────────────────────────────────────────
@@ -85,7 +87,7 @@ engine = ReteEngine(strategy="lex")
         reason=Eq("Gold Loyalty (10%)"),
     ),
 )
-def apply_gold_discount(ctx, c_id, p_id, q, p):
+def apply_gold_discount(ctx: RuleContext, c_id: Any, p_id: Any, q: Any, p: Any) -> None:
     """Gold loyalty tier gets 10% discount on all items."""
     discount_amount = p * q * 0.10
     ctx.assert_fact(
@@ -117,7 +119,9 @@ def apply_gold_discount(ctx, c_id, p_id, q, p):
         reason=Eq("Silver Loyalty (5%)"),
     ),
 )
-def apply_silver_discount(ctx, c_id, p_id, q, p):
+def apply_silver_discount(
+    ctx: RuleContext, c_id: Any, p_id: Any, q: Any, p: Any
+) -> None:
     """Silver loyalty tier gets 5% discount on all items."""
     discount_amount = p * q * 0.05
     ctx.assert_fact(
@@ -150,7 +154,9 @@ def apply_silver_discount(ctx, c_id, p_id, q, p):
         reason=Eq("Active Category Campaign"),
     ),
 )
-def apply_campaign_discount(ctx, c_id, p_id, q, p, pct):
+def apply_campaign_discount(
+    ctx: RuleContext, c_id: Any, p_id: Any, q: Any, p: Any, pct: Any
+) -> None:
     """Applies active category-based campaign discount (e.g. 20% off apparel)."""
     discount_amount = p * q * pct
     ctx.assert_fact(
@@ -181,7 +187,7 @@ def apply_campaign_discount(ctx, c_id, p_id, q, p, pct):
         reason=Eq("Bulk Discount (15%)"),
     ),
 )
-def apply_bulk_discount(ctx, c_id, p_id, q, p):
+def apply_bulk_discount(ctx: RuleContext, c_id: Any, p_id: Any, q: Any, p: Any) -> None:
     """Applies a 15% bulk discount if ordering more than 5 units of any product."""
     if q <= 5:
         return
@@ -206,7 +212,7 @@ def apply_bulk_discount(ctx, c_id, p_id, q, p):
     Pat(Customer, id=Var("c_id")),
     ~Pat(CartSummary, customer_id=Var("c_id")),
 )
-def init_cart_summary(ctx, c_id):
+def init_cart_summary(ctx: RuleContext, c_id: Any) -> None:
     """Initialize empty CartSummary when customer exists."""
     ctx.assert_fact(CartSummary(customer_id=c_id))
     ctx.print(f"  [Summary] Initialized summary tracker for {c_id}")
@@ -228,7 +234,9 @@ def init_cart_summary(ctx, c_id):
         total_discount=Var("td"),
     ),
 )
-def accumulate_subtotal(ctx, c_id, p_id, q, p, sub, td):
+def accumulate_subtotal(
+    ctx: RuleContext, c_id: Any, p_id: Any, q: Any, p: Any, sub: Any, td: Any
+) -> None:
     """Add items to subtotal and mark them processed."""
     added_subtotal = p * q
     for wme in ctx.token_wmes:
@@ -256,7 +264,9 @@ def accumulate_subtotal(ctx, c_id, p_id, q, p, sub, td):
         total_discount=Var("td"),
     ),
 )
-def accumulate_discounts(ctx, c_id, p_id, a, sub, td):
+def accumulate_discounts(
+    ctx: RuleContext, c_id: Any, p_id: Any, a: Any, sub: Any, td: Any
+) -> None:
     """Add applied discounts to total discount and mark them processed."""
     for wme in ctx.token_wmes:
         if isinstance(wme.fact, CartSummary):
@@ -280,7 +290,7 @@ def accumulate_discounts(ctx, c_id, p_id, a, sub, td):
     ~Pat(AppliedDiscount, customer_id=Var("c_id"), processed=Eq(False)),
     ~Pat(Invoice, customer_id=Var("c_id")),
 )
-def create_invoice(ctx, c_id, sub, td):
+def create_invoice(ctx: RuleContext, c_id: Any, sub: Any, td: Any) -> None:
     """Generate the final invoice when all items and discounts have been summarized."""
     total = max(0.0, sub - td)
     ctx.assert_fact(Invoice(customer_id=c_id, subtotal=sub, discount=td, total=total))

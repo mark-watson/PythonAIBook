@@ -7,7 +7,8 @@ nodes) and attaches a production node at the end.
 
 from __future__ import annotations
 
-from typing import Callable
+from collections.abc import Callable
+from typing import Any
 
 from .alpha import AlphaMemory, AlphaNetwork, AlphaTestNode
 from .beta import (
@@ -35,7 +36,7 @@ class ReteNetwork:
     def __init__(self) -> None:
         self.alpha_network = AlphaNetwork()
         # Cache: (fact_type, frozenset of (field, repr(op))) -> AlphaMemory
-        self._alpha_memory_cache: dict[tuple, AlphaMemory] = {}
+        self._alpha_memory_cache: dict[tuple[Any, ...], AlphaMemory] = {}
 
     # ------------------------------------------------------------------
     # Rule compilation
@@ -45,7 +46,7 @@ class ReteNetwork:
         self,
         name: str,
         conds: list[Cond],
-        action: Callable,
+        action: Callable[..., Any],
         salience: int,
         conflict_set: list[Instantiation],
     ) -> None:

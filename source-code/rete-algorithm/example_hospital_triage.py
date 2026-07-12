@@ -9,7 +9,9 @@ Demonstrates:
 """
 
 from dataclasses import dataclass
-from rete import Eq, Fact, Gt, Lt, Pat, ReteEngine, Var
+from typing import Any
+
+from rete import Eq, Fact, Gt, Lt, Pat, ReteEngine, RuleContext, Var
 
 
 # ── Fact types ─────────────────────────────────────────────────────
@@ -61,7 +63,7 @@ engine = ReteEngine(strategy="lex")
     Pat(Staff, id=Var("s_id"), role=Eq("doctor"), busy=Eq(False)),
     salience=10,  # Assign critical cases first
 )
-def triage_critical_patient(ctx, p_id, b_id, s_id):
+def triage_critical_patient(ctx: RuleContext, p_id: Any, b_id: Any, s_id: Any) -> None:
     """Critical patient (severity 4 or 5) assigned to empty bed and doctor."""
     ctx.assert_fact(Assignment(patient_id=p_id, bed_id=b_id, staff_id=s_id))
 
@@ -86,7 +88,7 @@ def triage_critical_patient(ctx, p_id, b_id, s_id):
     Pat(Staff, id=Var("s_id"), role=Eq("nurse"), busy=Eq(False)),
     salience=5,  # Standard cases have normal priority
 )
-def triage_standard_patient(ctx, p_id, b_id, s_id):
+def triage_standard_patient(ctx: RuleContext, p_id: Any, b_id: Any, s_id: Any) -> None:
     """Standard patient (severity 1, 2, or 3) assigned to empty bed and nurse."""
     ctx.assert_fact(Assignment(patient_id=p_id, bed_id=b_id, staff_id=s_id))
 
@@ -109,7 +111,7 @@ def triage_standard_patient(ctx, p_id, b_id, s_id):
     Pat(PatientStatus, patient_id=Var("p_id"), status=Eq("assigned")),
     salience=1,  # Treatment happens after assignments have settled
 )
-def treat_patient(ctx, p_id, b_id, s_id):
+def treat_patient(ctx: RuleContext, p_id: Any, b_id: Any, s_id: Any) -> None:
     """Treat patient, complete workflow, and free up resources (bed + staff)."""
     # Retract Assignment and modify PatientStatus to 'treated'
     for wme in ctx.token_wmes:

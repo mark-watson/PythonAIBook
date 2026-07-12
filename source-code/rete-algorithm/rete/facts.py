@@ -77,6 +77,10 @@ class WME:
 
     __slots__ = ("fact", "id", "timestamp")
 
+    fact: Fact
+    id: int
+    timestamp: int
+
     def __init__(self, fact: Fact, wme_id: int, timestamp: int) -> None:
         object.__setattr__(self, "fact", fact)
         object.__setattr__(self, "id", wme_id)

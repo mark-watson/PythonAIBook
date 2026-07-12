@@ -15,7 +15,8 @@ to :class:`ReteEngine` for full control.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Callable
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from .beta import Instantiation
@@ -78,7 +79,7 @@ def resolve_priority_only(instantiations: list[Instantiation]) -> Instantiation:
 # Registry
 # ---------------------------------------------------------------------------
 
-STRATEGIES: dict[str, Callable[[list], object]] = {
+STRATEGIES: dict[str, Callable[[list[Any]], Any]] = {
     "lex": resolve_lex,
     "mea": resolve_mea,
     "priority-only": resolve_priority_only,
@@ -86,7 +87,7 @@ STRATEGIES: dict[str, Callable[[list], object]] = {
 }
 
 
-def resolve_strategy(name_or_fn) -> Callable:
+def resolve_strategy(name_or_fn: str | Callable[..., Any]) -> Callable[..., Any]:
     """Return a conflict-resolution callable.
 
     Parameters

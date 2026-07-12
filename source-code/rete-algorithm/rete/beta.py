@@ -6,8 +6,9 @@ checks) and terminates at production nodes that feed the conflict set.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any, Callable
+from typing import Any
 
 from .alpha import AlphaMemory
 from .facts import WME
@@ -386,7 +387,7 @@ class Instantiation:
     rule_name: str
     token: Token
     salience: int
-    action: Callable
+    action: Callable[..., Any]
     conds: list[Cond]
     timestamp: int
 
@@ -403,7 +404,7 @@ class ProductionNode:
         self,
         rule_name: str,
         salience: int,
-        action: Callable,
+        action: Callable[..., Any],
         conds: list[Cond],
         conflict_set: list[Instantiation],
     ) -> None:

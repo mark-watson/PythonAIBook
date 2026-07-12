@@ -1,8 +1,9 @@
 """Tests for the Rete engine — medical diagnosis example from Design.md."""
 
 from dataclasses import dataclass
+from typing import Any
 
-from rete import Contains, Eq, Fact, Gt, Lt, Pat, ReteEngine, Var
+from rete import Contains, Eq, Fact, Gt, Lt, Pat, ReteEngine, RuleContext, Var
 
 
 # ---------------------------------------------------------------------------
@@ -38,7 +39,7 @@ def test_single_rule_fires():
     engine = ReteEngine()
 
     @engine.rule(Pat(Patient, name=Var("n"), temperature=Gt(38.5)), salience=1)
-    def fever(ctx, n):
+    def fever(ctx: RuleContext, n: Any) -> None:
         ctx.assert_fact(Diagnosis(patient=n, condition="fever"))
 
     engine.assert_fact(Patient(name="Alice", temperature=39.2))
@@ -60,7 +61,7 @@ def test_rule_does_not_fire_when_unmatched():
     engine = ReteEngine()
 
     @engine.rule(Pat(Patient, temperature=Gt(38.5)))
-    def fever(ctx):
+    def fever(ctx: RuleContext) -> None:
         ctx.assert_fact(Diagnosis(patient="?", condition="fever"))
 
     engine.assert_fact(Patient(name="Bob", temperature=37.0))
@@ -82,7 +83,7 @@ def test_join_on_variable():
         Pat(Patient, name=Var("n"), temperature=Gt(38.5), symptoms=Contains("cough")),
         Pat(Diagnosis, patient=Var("n"), condition=Eq("fever")),
     )
-    def fever_with_cough(ctx, n):
+    def fever_with_cough(ctx: RuleContext, n: Any) -> None:
         ctx.assert_fact(Treatment(patient=n, action="rest and fluids"))
 
     engine.assert_fact(
@@ -105,7 +106,7 @@ def test_join_no_match_different_variable():
         Pat(Patient, name=Var("n"), temperature=Gt(38.5)),
         Pat(Diagnosis, patient=Var("n")),
     )
-    def combined(ctx, n):
+    def combined(ctx: RuleContext, n: Any) -> None:
         ctx.assert_fact(Treatment(patient=n, action="treat"))
 
     engine.assert_fact(Patient(name="Alice", temperature=39.0))
@@ -128,7 +129,7 @@ def test_negated_condition():
         ~Pat(Diagnosis, patient=Var("n")),
         salience=5,
     )
-    def needs_diagnosis(ctx, n):
+    def needs_diagnosis(ctx: RuleContext, n: Any) -> None:
         ctx.assert_fact(Diagnosis(patient=n, condition="unknown"))
 
     engine.assert_fact(Patient(name="Alice", temperature=39.0))
@@ -147,7 +148,7 @@ def test_negated_blocks_when_present():
         Pat(Patient, name=Var("n")),
         ~Pat(Diagnosis, patient=Var("n")),
     )
-    def needs_diag(ctx, n):
+    def needs_diag(ctx: RuleContext, n: Any) -> None:
         ctx.assert_fact(Diagnosis(patient=n, condition="pending"))
 
     # Assert diagnosis BEFORE patient — negation should block
@@ -172,14 +173,14 @@ def test_chained_rules():
         ~Pat(Diagnosis, patient=Var("n"), condition=Eq("flu")),
         salience=10,
     )
-    def diagnose_flu(ctx, n):
+    def diagnose_flu(ctx: RuleContext, n: Any) -> None:
         ctx.assert_fact(Diagnosis(patient=n, condition="flu"))
 
     @engine.rule(
         Pat(Diagnosis, patient=Var("n"), condition=Eq("flu")),
         ~Pat(Treatment, patient=Var("n")),
     )
-    def treat_flu(ctx, n):
+    def treat_flu(ctx: RuleContext, n: Any) -> None:
         ctx.assert_fact(Treatment(patient=n, action="prescribe oseltamivir"))
 
     engine.assert_fact(
@@ -212,7 +213,7 @@ def test_refraction_prevents_refire():
     fire_count = 0
 
     @engine.rule(Pat(Patient, name=Var("n")))
-    def count_rule(ctx, n):
+    def count_rule(ctx: RuleContext, n: Any) -> None:
         nonlocal fire_count
         fire_count += 1
 
@@ -233,11 +234,11 @@ def test_salience_ordering():
     order: list[str] = []
 
     @engine.rule(Pat(Patient, name=Var("n")), salience=1)
-    def low_priority(ctx, n):
+    def low_priority(ctx: RuleContext, n: Any) -> None:
         order.append("low")
 
     @engine.rule(Pat(Patient, name=Var("n")), salience=10)
-    def high_priority(ctx, n):
+    def high_priority(ctx: RuleContext, n: Any) -> None:
         order.append("high")
 
     engine.assert_fact(Patient(name="Alice", temperature=37.0))
@@ -256,11 +257,11 @@ def test_halt_stops_cycle():
     engine = ReteEngine()
 
     @engine.rule(Pat(Patient, name=Var("n")), salience=10)
-    def stop(ctx, n):
+    def stop(ctx: RuleContext, n: Any) -> None:
         ctx.halt()
 
     @engine.rule(Pat(Patient, name=Var("n")), salience=1)
-    def should_not_fire(ctx, n):
+    def should_not_fire(ctx: RuleContext, n: Any) -> None:
         raise AssertionError("Should not have fired!")
 
     engine.assert_fact(Patient(name="Alice", temperature=37.0))
@@ -283,7 +284,7 @@ def test_max_cycles():
     engine = ReteEngine()
 
     @engine.rule(Pat(Counter, value=Var("v")))
-    def inc(ctx, v):
+    def inc(ctx: RuleContext, v: Any) -> None:
         # This would loop forever without max_cycles
         pass
 
@@ -310,7 +311,7 @@ def test_lt_operator():
     results: list[str] = []
 
     @engine.rule(Pat(Item, name=Var("n"), price=Lt(10.0)))
-    def cheap(ctx, n):
+    def cheap(ctx: RuleContext, n: Any) -> None:
         results.append(n)
 
     engine.assert_fact(Item(name="pen", price=5.0))
@@ -325,7 +326,7 @@ def test_contains_operator():
     results: list[str] = []
 
     @engine.rule(Pat(Item, name=Var("n"), tags=Contains("sale")))
-    def on_sale(ctx, n):
+    def on_sale(ctx: RuleContext, n: Any) -> None:
         results.append(n)
 
     engine.assert_fact(Item(name="shirt", price=20.0, tags=("sale", "new")))
@@ -344,7 +345,7 @@ def test_retraction():
     engine = ReteEngine()
 
     @engine.rule(Pat(Patient, name=Var("n")))
-    def greet(ctx, n):
+    def greet(ctx: RuleContext, n: Any) -> None:
         ctx.assert_fact(Diagnosis(patient=n, condition="greeted"))
 
     wme = engine.assert_fact(Patient(name="Alice", temperature=37.0))

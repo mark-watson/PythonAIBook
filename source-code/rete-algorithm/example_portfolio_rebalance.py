@@ -9,7 +9,9 @@ Demonstrates:
 """
 
 from dataclasses import dataclass
-from rete import Eq, Fact, Pat, ReteEngine, Var
+from typing import Any
+
+from rete import Eq, Fact, Pat, ReteEngine, RuleContext, Var
 
 
 # ── Fact types ─────────────────────────────────────────────────────
@@ -57,7 +59,7 @@ engine = ReteEngine(strategy="lex")
     Pat(TargetAllocation, portfolio_id=Var("p_id")),
     ~Pat(PortfolioSummary, portfolio_id=Var("p_id")),
 )
-def init_portfolio_summary(ctx, p_id):
+def init_portfolio_summary(ctx: RuleContext, p_id: Any) -> None:
     """Create a PortfolioSummary tracker if target allocations exist."""
     ctx.assert_fact(PortfolioSummary(portfolio_id=p_id))
     ctx.print(f"  [Portfolio] Initialized summary tracker for {p_id}")
@@ -73,7 +75,9 @@ def init_portfolio_summary(ctx, p_id):
     ),
     Pat(PortfolioSummary, portfolio_id=Var("p_id"), total_value=Var("tot")),
 )
-def sum_portfolio_holdings(ctx, p_id, ac, val, tot):
+def sum_portfolio_holdings(
+    ctx: RuleContext, p_id: Any, ac: Any, val: Any, tot: Any
+) -> None:
     """Aggregate holdings values into the summary and mark the allocation processed."""
     for wme in ctx.token_wmes:
         if isinstance(wme.fact, PortfolioSummary):
@@ -106,7 +110,9 @@ def sum_portfolio_holdings(ctx, p_id, ac, val, tot):
     ~Pat(AssetAllocation, portfolio_id=Var("p_id"), processed=Eq(False)),
     ~Pat(RebalanceTrade, portfolio_id=Var("p_id"), asset_class=Var("ac")),
 )
-def check_drift_and_rebalance(ctx, p_id, ac, curr, t_pct, tot):
+def check_drift_and_rebalance(
+    ctx: RuleContext, p_id: Any, ac: Any, curr: Any, t_pct: Any, tot: Any
+) -> None:
     """Detects if an asset's drift from target is > 5% and suggests buys/sells."""
     if tot <= 0.0:
         return

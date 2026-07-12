@@ -19,8 +19,8 @@ from __future__ import annotations
 import dataclasses
 import inspect
 import sys
-from collections.abc import Iterator
-from typing import Any, Callable
+from collections.abc import Callable, Iterator
+from typing import Any, TypeVar, overload
 
 from .beta import Instantiation
 from .conflict import resolve_strategy
@@ -28,6 +28,8 @@ from .context import RuleContext
 from .facts import Fact, WME
 from .network import ReteNetwork
 from .patterns import Cond
+
+_FactT = TypeVar("_FactT", bound=Fact)
 
 __all__ = ["WorkingMemory", "ReteEngine"]
 
@@ -72,6 +74,10 @@ class WorkingMemory:
         self.retract(wme)
         return self.assert_fact(new_fact)
 
+    @overload
+    def facts(self, fact_type: type[_FactT]) -> Iterator[_FactT]: ...
+    @overload
+    def facts(self, fact_type: None = None) -> Iterator[Fact]: ...
     def facts(self, fact_type: type | None = None) -> Iterator[Fact]:
         """Iterate over current facts, optionally filtered by type."""
         for wme in self._facts.values():
@@ -100,7 +106,7 @@ class ReteEngine:
         ``(list[Instantiation]) -> Instantiation``.
     """
 
-    def __init__(self, strategy: str | Callable = "lex") -> None:
+    def __init__(self, strategy: str | Callable[..., Any] = "lex") -> None:
         self._conflict_set: list[Instantiation] = []
         self._fired: set[tuple[str, frozenset[int]]] = set()  # refraction
         self._strategy = resolve_strategy(strategy)
@@ -118,7 +124,7 @@ class ReteEngine:
         *patterns: Cond,
         salience: int = 0,
         name: str | None = None,
-    ) -> Callable:
+    ) -> Callable[..., Callable[..., Any]]:
         """Decorator to register a rule.
 
         Each positional argument must be a :class:`Cond` (built via
@@ -135,7 +141,7 @@ class ReteEngine:
                 ...
         """
 
-        def decorator(fn: Callable) -> Callable:
+        def decorator(fn: Callable[..., Any]) -> Callable[..., Any]:
             rule_name = name or fn.__name__
             self.add_rule(rule_name, list(patterns), fn, salience)
             return fn
@@ -146,7 +152,7 @@ class ReteEngine:
         self,
         name: str,
         patterns: list[Cond],
-        action: Callable,
+        action: Callable[..., Any],
         salience: int = 0,
     ) -> None:
         """Programmatic rule registration."""
@@ -256,6 +262,10 @@ class ReteEngine:
     # Introspection
     # ------------------------------------------------------------------
 
+    @overload
+    def facts(self, fact_type: type[_FactT]) -> Iterator[_FactT]: ...
+    @overload
+    def facts(self, fact_type: None = None) -> Iterator[Fact]: ...
     def facts(self, fact_type: type | None = None) -> Iterator[Fact]:
         """Iterate over current facts in working memory."""
         return self.wm.facts(fact_type)

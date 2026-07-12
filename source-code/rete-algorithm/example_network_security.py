@@ -9,7 +9,9 @@ Demonstrates:
 """
 
 from dataclasses import dataclass
-from rete import Eq, Fact, Gt, Pat, ReteEngine, Test, Var
+from typing import Any
+
+from rete import Eq, Fact, Gt, Pat, ReteEngine, RuleContext, Test, Var
 
 
 # ── Fact types ─────────────────────────────────────────────────────
@@ -61,7 +63,7 @@ engine = ReteEngine(strategy="lex")
     Pat(LoginAttempt, ip=Var("ip"), result=Eq("fail")),
     ~Pat(FailedLoginCounter, ip=Var("ip")),
 )
-def init_failed_login_counter(ctx, ip):
+def init_failed_login_counter(ctx: RuleContext, ip: Any) -> None:
     """If a failed login occurs and no counter exists for this IP, create one."""
     ctx.assert_fact(FailedLoginCounter(ip=ip, count=1))
     # Consume the login attempt event
@@ -75,7 +77,7 @@ def init_failed_login_counter(ctx, ip):
     Pat(LoginAttempt, ip=Var("ip"), result=Eq("fail")),
     Pat(FailedLoginCounter, ip=Var("ip"), count=Var("c")),
 )
-def increment_failed_login_counter(ctx, ip, c):
+def increment_failed_login_counter(ctx: RuleContext, ip: Any, c: Any) -> None:
     """If a failed login occurs and a counter exists, increment the counter."""
     # Increment counter
     for wme in ctx.token_wmes:
@@ -91,7 +93,7 @@ def increment_failed_login_counter(ctx, ip, c):
     Pat(LoginAttempt, ip=Var("ip"), result=Eq("success")),
     Pat(FailedLoginCounter, ip=Var("ip")),
 )
-def reset_failed_login_counter(ctx, ip):
+def reset_failed_login_counter(ctx: RuleContext, ip: Any) -> None:
     """If a successful login occurs, reset/retract any failed login counter for that IP."""
     for wme in ctx.token_wmes:
         if isinstance(wme.fact, FailedLoginCounter):
@@ -108,7 +110,7 @@ def reset_failed_login_counter(ctx, ip):
     Pat(FailedLoginCounter, ip=Var("ip"), count=Gt(2)),
     ~Pat(BlockedIP, ip=Var("ip")),
 )
-def detect_brute_force(ctx, ip):
+def detect_brute_force(ctx: RuleContext, ip: Any) -> None:
     """If failed login counter exceeds 2 and IP is not blocked, block it and issue HIGH alert."""
     ctx.assert_fact(BlockedIP(ip=ip))
     ctx.assert_fact(
@@ -125,7 +127,7 @@ def detect_brute_force(ctx, ip):
     Pat(ConnectionEvent, ip=Var("ip"), port=Var("p")),
     ~Pat(PortScanCounter, ip=Var("ip")),
 )
-def init_port_scan_counter(ctx, ip, p):
+def init_port_scan_counter(ctx: RuleContext, ip: Any, p: Any) -> None:
     """If a connection occurs and no scan counter exists, create one with the port."""
     ctx.assert_fact(PortScanCounter(ip=ip, ports=(p,)))
     for wme in ctx.token_wmes:
@@ -138,7 +140,7 @@ def init_port_scan_counter(ctx, ip, p):
     Pat(ConnectionEvent, ip=Var("ip"), port=Var("p")),
     Pat(PortScanCounter, ip=Var("ip"), ports=Var("pts")),
 )
-def update_port_scan_counter(ctx, ip, p, pts):
+def update_port_scan_counter(ctx: RuleContext, ip: Any, p: Any, pts: Any) -> None:
     """If connection occurs and port is new, append it. Otherwise consume connection."""
     for wme in ctx.token_wmes:
         if isinstance(wme.fact, ConnectionEvent):
@@ -158,7 +160,7 @@ def update_port_scan_counter(ctx, ip, p, pts):
     Pat(PortScanCounter, ip=Var("ip"), ports=Test(lambda ports: len(ports) >= 3)),
     ~Pat(BlockedIP, ip=Var("ip")),
 )
-def detect_port_scan(ctx, ip):
+def detect_port_scan(ctx: RuleContext, ip: Any) -> None:
     """If an IP has connected to 3 or more distinct ports, block it and issue MEDIUM alert."""
     ctx.assert_fact(BlockedIP(ip=ip))
     ctx.assert_fact(
@@ -173,7 +175,7 @@ def detect_port_scan(ctx, ip):
     Pat(ConnectionEvent, ip=Var("ip")),
     Pat(BlockedIP, ip=Var("ip")),
 )
-def drop_blocked_ip_traffic(ctx, ip):
+def drop_blocked_ip_traffic(ctx: RuleContext, ip: Any) -> None:
     """Silently drop connections from blocked IPs."""
     for wme in ctx.token_wmes:
         if isinstance(wme.fact, ConnectionEvent):

@@ -10,8 +10,9 @@ Demonstrates:
 """
 
 from dataclasses import dataclass
+from typing import Any
 
-from rete import Contains, Eq, Fact, Gt, Pat, ReteEngine, Var
+from rete import Contains, Eq, Fact, Gt, Pat, ReteEngine, RuleContext, Var
 
 
 # ── Fact types ─────────────────────────────────────────────────────
@@ -46,7 +47,7 @@ engine = ReteEngine(strategy="lex")
     ~Pat(Diagnosis, patient=Var("n"), condition=Eq("flu")),
     salience=10,
 )
-def diagnose_flu(ctx, n):
+def diagnose_flu(ctx: RuleContext, n: Any) -> None:
     """High-fever patient with cough and no existing flu diagnosis → diagnose flu."""
     ctx.assert_fact(Diagnosis(patient=n, condition="flu"))
     ctx.print(f"  → Diagnosed {n} with flu")
@@ -56,7 +57,7 @@ def diagnose_flu(ctx, n):
     Pat(Diagnosis, patient=Var("n"), condition=Eq("flu")),
     ~Pat(Treatment, patient=Var("n")),
 )
-def treat_flu(ctx, n):
+def treat_flu(ctx: RuleContext, n: Any) -> None:
     """Flu diagnosis with no treatment yet → prescribe oseltamivir."""
     ctx.assert_fact(Treatment(patient=n, action="prescribe oseltamivir"))
     ctx.print(f"  → Treatment for {n}: oseltamivir")
@@ -67,7 +68,7 @@ def treat_flu(ctx, n):
     ~Pat(Diagnosis, patient=Var("n")),
     salience=5,
 )
-def diagnose_fever(ctx, n):
+def diagnose_fever(ctx: RuleContext, n: Any) -> None:
     """Moderate fever with no diagnosis → generic fever diagnosis."""
     ctx.assert_fact(Diagnosis(patient=n, condition="fever"))
     ctx.print(f"  → Diagnosed {n} with fever")

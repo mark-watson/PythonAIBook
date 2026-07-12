@@ -37,7 +37,7 @@ class RuleContext:
         "token_wmes",
     )
 
-    def __init__(self, engine: Any, token_wmes: list | None = None) -> None:
+    def __init__(self, engine: Any, token_wmes: list[Any] | None = None) -> None:
         self._engine = engine
         self._pending_asserts: list[Fact] = []
         self._pending_retracts: list[WME] = []
