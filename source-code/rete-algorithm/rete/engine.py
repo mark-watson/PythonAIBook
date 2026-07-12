@@ -36,11 +36,12 @@ __all__ = ["WorkingMemory", "ReteEngine"]
 # Working Memory
 # ---------------------------------------------------------------------------
 
+
 class WorkingMemory:
     """Stores all asserted facts and routes changes through the Rete network."""
 
     def __init__(self, network: ReteNetwork) -> None:
-        self._facts: dict[int, WME] = {}   # wme.id -> WME
+        self._facts: dict[int, WME] = {}  # wme.id -> WME
         self._timestamp: int = 0
         self._network = network
 
@@ -87,6 +88,7 @@ class WorkingMemory:
 # Rete Engine
 # ---------------------------------------------------------------------------
 
+
 class ReteEngine:
     """Top-level Rete engine — register rules, assert facts, run the cycle.
 
@@ -132,10 +134,12 @@ class ReteEngine:
             def my_rule(ctx, n):
                 ...
         """
+
         def decorator(fn: Callable) -> Callable:
             rule_name = name or fn.__name__
             self.add_rule(rule_name, list(patterns), fn, salience)
             return fn
+
         return decorator
 
     def add_rule(
@@ -204,7 +208,8 @@ class ReteEngine:
         """One cycle.  Returns (did_fire, halted)."""
         # Find eligible instantiations (refraction filter)
         eligible = [
-            inst for inst in self._conflict_set
+            inst
+            for inst in self._conflict_set
             if (inst.rule_name, inst.token.wme_ids()) not in self._fired
         ]
 

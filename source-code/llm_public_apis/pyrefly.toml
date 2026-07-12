@@ -1,0 +1,22 @@
+project-includes = [
+    "fireworks_conversation.py",
+    "fireworks_structured.py",
+    "fireworks_temperature.py",
+    "fireworks_text.py",
+    "fireworks_thinking.py",
+    "gemini_conversation.py",
+    "gemini_image.py",
+    "gemini_structured.py",
+    "gemini_temperature.py",
+    "gemini_text.py",
+    "gemini_thinking.py",
+    "openai_search.py",
+    "openai_text.py",
+    "tests",
+]
+project-excludes = ["**/__pycache__", "**/*venv/**", "**/.*/**"]
+python-version = "3.14"
+preset = "strict"
+
+[errors]
+non-exhaustive-match = "error"

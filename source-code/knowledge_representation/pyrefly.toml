@@ -1,0 +1,7 @@
+project-includes = ["dbpedia_cities.py", "sqlite_knowledge.py", "sqlite_lib.py", "wikidata_person.py", "tests"]
+project-excludes = ["**/__pycache__", "**/*venv/**", "**/.*/**"]
+python-version = "3.14"
+preset = "strict"
+
+[errors]
+non-exhaustive-match = "error"

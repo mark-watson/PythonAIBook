@@ -17,7 +17,7 @@ client = OpenAI()
 response = client.responses.create(
     model="gpt-5.4-nano",
     tools=[{"type": "web_search_preview"}],
-    input="What were the major AI announcements at Google I/O 2025?"
+    input="What were the major AI announcements at Google I/O 2025?",
 )
 
 # Extract the assistant's text from the response output

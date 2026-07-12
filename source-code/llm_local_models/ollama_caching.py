@@ -18,7 +18,8 @@ OLLAMA_URL = "http://localhost:11434/api/generate"
 MODEL = "llama3.2:3b"
 
 # A long static context that stays the same across queries
-CONTEXT = """
+CONTEXT = (
+    """
 The Python programming language was created by Guido van Rossum and first
 released in 1991. Python's design philosophy emphasizes code readability
 with its notable use of significant whitespace. Python is dynamically typed
@@ -30,7 +31,9 @@ It is widely used in web development, data science, machine learning,
 automation, and scientific computing. The language's large standard library
 and extensive ecosystem of third-party packages make it suitable for a
 wide range of applications.
-""" * 20  # repeat to create a substantial context
+"""
+    * 20
+)  # repeat to create a substantial context
 
 
 def timed_query(question: str, label: str) -> float:
@@ -40,7 +43,7 @@ def timed_query(question: str, label: str) -> float:
         "keep_alive": "60m",  # keep model and cache in memory
         "prompt": f"{CONTEXT}\n\nQuestion: {question}",
         "stream": False,
-        "options": {"num_ctx": 4096}
+        "options": {"num_ctx": 4096},
     }
     start = time.time()
     resp = requests.post(OLLAMA_URL, json=payload)

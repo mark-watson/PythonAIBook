@@ -7,3 +7,17 @@ dependencies = [
     "openai>=2.32.0",
     "pillow>=12.2.0",
 ]
+
+[dependency-groups]
+dev = [
+  "pyrefly",
+  "ruff",
+  "pytest",
+  "pytest-xdist",
+  "pytest-testmon",
+  "hypothesis",
+  "syrupy",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

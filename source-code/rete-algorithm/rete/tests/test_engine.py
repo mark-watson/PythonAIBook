@@ -2,12 +2,13 @@
 
 from dataclasses import dataclass
 
-from rete import Cond, Contains, Eq, Fact, Gt, Lt, Pat, ReteEngine, Var
+from rete import Contains, Eq, Fact, Gt, Lt, Pat, ReteEngine, Var
 
 
 # ---------------------------------------------------------------------------
 # Fact types
 # ---------------------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class Patient(Fact):
@@ -32,6 +33,7 @@ class Treatment(Fact):
 # Test: basic single-rule firing
 # ---------------------------------------------------------------------------
 
+
 def test_single_rule_fires():
     engine = ReteEngine()
 
@@ -53,6 +55,7 @@ def test_single_rule_fires():
 # Test: rule does NOT fire when conditions are not met
 # ---------------------------------------------------------------------------
 
+
 def test_rule_does_not_fire_when_unmatched():
     engine = ReteEngine()
 
@@ -71,6 +74,7 @@ def test_rule_does_not_fire_when_unmatched():
 # Test: multi-condition join
 # ---------------------------------------------------------------------------
 
+
 def test_join_on_variable():
     engine = ReteEngine()
 
@@ -81,7 +85,9 @@ def test_join_on_variable():
     def fever_with_cough(ctx, n):
         ctx.assert_fact(Treatment(patient=n, action="rest and fluids"))
 
-    engine.assert_fact(Patient(name="Alice", temperature=39.2, symptoms=("cough", "fatigue")))
+    engine.assert_fact(
+        Patient(name="Alice", temperature=39.2, symptoms=("cough", "fatigue"))
+    )
     engine.assert_fact(Diagnosis(patient="Alice", condition="fever"))
     fired = engine.run()
 
@@ -112,6 +118,7 @@ def test_join_no_match_different_variable():
 # ---------------------------------------------------------------------------
 # Test: negated condition element
 # ---------------------------------------------------------------------------
+
 
 def test_negated_condition():
     engine = ReteEngine()
@@ -155,6 +162,7 @@ def test_negated_blocks_when_present():
 # Test: chained rules (forward chaining)
 # ---------------------------------------------------------------------------
 
+
 def test_chained_rules():
     """Rules fire in sequence: diagnose_flu -> treat_flu."""
     engine = ReteEngine()
@@ -174,7 +182,9 @@ def test_chained_rules():
     def treat_flu(ctx, n):
         ctx.assert_fact(Treatment(patient=n, action="prescribe oseltamivir"))
 
-    engine.assert_fact(Patient(name="Alice", temperature=39.2, symptoms=("cough", "fatigue")))
+    engine.assert_fact(
+        Patient(name="Alice", temperature=39.2, symptoms=("cough", "fatigue"))
+    )
     engine.assert_fact(Patient(name="Bob", temperature=37.0, symptoms=("headache",)))
     fired = engine.run()
 
@@ -183,7 +193,9 @@ def test_chained_rules():
     assert any(d.patient == "Alice" and d.condition == "flu" for d in diagnoses)
 
     treatments = list(engine.facts(Treatment))
-    assert any(t.patient == "Alice" and t.action == "prescribe oseltamivir" for t in treatments)
+    assert any(
+        t.patient == "Alice" and t.action == "prescribe oseltamivir" for t in treatments
+    )
 
     # Bob should NOT have been diagnosed or treated
     assert not any(d.patient == "Bob" for d in diagnoses)
@@ -193,6 +205,7 @@ def test_chained_rules():
 # ---------------------------------------------------------------------------
 # Test: refraction
 # ---------------------------------------------------------------------------
+
 
 def test_refraction_prevents_refire():
     engine = ReteEngine()
@@ -213,6 +226,7 @@ def test_refraction_prevents_refire():
 # ---------------------------------------------------------------------------
 # Test: salience ordering
 # ---------------------------------------------------------------------------
+
 
 def test_salience_ordering():
     engine = ReteEngine()
@@ -237,6 +251,7 @@ def test_salience_ordering():
 # Test: halt
 # ---------------------------------------------------------------------------
 
+
 def test_halt_stops_cycle():
     engine = ReteEngine()
 
@@ -257,6 +272,7 @@ def test_halt_stops_cycle():
 # ---------------------------------------------------------------------------
 # Test: max_cycles
 # ---------------------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class Counter(Fact):
@@ -280,6 +296,7 @@ def test_max_cycles():
 # ---------------------------------------------------------------------------
 # Test: pattern operators
 # ---------------------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class Item(Fact):
@@ -321,6 +338,7 @@ def test_contains_operator():
 # ---------------------------------------------------------------------------
 # Test: retraction removes instantiations
 # ---------------------------------------------------------------------------
+
 
 def test_retraction():
     engine = ReteEngine()

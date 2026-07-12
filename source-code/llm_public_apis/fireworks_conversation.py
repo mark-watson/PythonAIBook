@@ -17,6 +17,7 @@ client = OpenAI(
 
 messages = []
 
+
 def chat(user_message):
     """Send a message and get a response, maintaining conversation history."""
     messages.append({"role": "user", "content": user_message})
@@ -27,6 +28,7 @@ def chat(user_message):
     reply = response.choices[0].message.content
     messages.append({"role": "assistant", "content": reply})
     return reply
+
 
 # A multi-turn conversation — note how later questions reference earlier answers
 print(chat("What is the capital of France?"))

@@ -16,19 +16,20 @@ client = genai.Client(api_key=os.getenv("GOOGLE_API_KEY"))
 # Build a conversation as a list of content parts
 conversation = []
 
+
 def chat(user_message):
     """Send a message and get a response, maintaining conversation history."""
     conversation.append(
         types.Content(role="user", parts=[types.Part(text=user_message)])
     )
     response = client.models.generate_content(
-        model="gemini-3-flash-preview",
-        contents=conversation
+        model="gemini-3-flash-preview", contents=conversation
     )
     conversation.append(
         types.Content(role="model", parts=[types.Part(text=response.text)])
     )
     return response.text
+
 
 # A multi-turn conversation — note how later questions reference earlier answers
 print(chat("What is the capital of France?"))

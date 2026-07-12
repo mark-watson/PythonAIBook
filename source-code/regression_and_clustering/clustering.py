@@ -5,7 +5,6 @@ Demonstrates unsupervised learning: discovering groups in data
 without labeled targets.
 """
 
-import numpy as np
 import pandas as pd
 from sklearn.datasets import load_iris
 from sklearn.cluster import KMeans
@@ -44,14 +43,15 @@ def run_kmeans():
 
     # Compare clusters to true species labels
     print("=== K-Means (k=3) Cluster vs. True Species ===")
-    df = pd.DataFrame({
-        "cluster": cluster_labels,
-        "true_species": [species_names[i] for i in true_labels],
-    })
+    df = pd.DataFrame(
+        {
+            "cluster": cluster_labels,
+            "true_species": [species_names[i] for i in true_labels],
+        }
+    )
 
     cross_tab = pd.crosstab(
-        df["true_species"], df["cluster"],
-        rownames=["Species"], colnames=["Cluster"]
+        df["true_species"], df["cluster"], rownames=["Species"], colnames=["Cluster"]
     )
     print(cross_tab)
     print()

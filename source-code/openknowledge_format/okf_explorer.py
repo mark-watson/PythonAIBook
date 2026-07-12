@@ -39,10 +39,10 @@ BUNDLE_DIR = Path(__file__).parent / "bundle"
 class Concept:
     """A single OKF concept document."""
 
-    concept_id: str          # relative path without .md suffix
-    path: Path               # absolute path to the file
-    frontmatter: dict        # parsed YAML frontmatter
-    body: str                # markdown body (everything after frontmatter)
+    concept_id: str  # relative path without .md suffix
+    path: Path  # absolute path to the file
+    frontmatter: dict  # parsed YAML frontmatter
+    body: str  # markdown body (everything after frontmatter)
 
     # Convenience accessors from frontmatter
     @property
@@ -79,6 +79,7 @@ class Concept:
 # ---------------------------------------------------------------------------
 # OKF parser
 # ---------------------------------------------------------------------------
+
 
 def _parse_simple_yaml(yaml_text: str) -> dict:
     """
@@ -126,7 +127,7 @@ def parse_concept(path: Path, bundle_root: Path) -> Concept | None:
     fm_match = re.match(r"^---\s*\n(.*?)\n---\s*\n", text, re.DOTALL)
     if fm_match:
         frontmatter = _parse_simple_yaml(fm_match.group(1))
-        body = text[fm_match.end():]
+        body = text[fm_match.end() :]
 
     # Concept ID = path relative to bundle root, without .md suffix
     concept_id = str(path.relative_to(bundle_root).with_suffix(""))
@@ -144,6 +145,7 @@ def parse_concept(path: Path, bundle_root: Path) -> Concept | None:
 # ---------------------------------------------------------------------------
 # OKF bundle loader
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class KnowledgeBundle:
@@ -206,6 +208,7 @@ class KnowledgeBundle:
 # LLM consumption agent
 # ---------------------------------------------------------------------------
 
+
 class OKFAgent:
     """
     A simple 'consumption agent' that uses an Ollama LLM to answer
@@ -265,6 +268,7 @@ class OKFAgent:
 # ---------------------------------------------------------------------------
 # Demo / main
 # ---------------------------------------------------------------------------
+
 
 def print_section(title: str) -> None:
     width = 70

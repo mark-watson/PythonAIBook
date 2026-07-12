@@ -16,7 +16,9 @@ def load_story() -> str:
         with open("story.txt", "r") as f:
             return f.read()
     except FileNotFoundError:
-        print("Error: story.txt not found. Please create story.txt with your adventure setting.")
+        print(
+            "Error: story.txt not found. Please create story.txt with your adventure setting."
+        )
         sys.exit(1)
 
 

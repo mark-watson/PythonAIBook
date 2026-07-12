@@ -1,0 +1,16 @@
+project-includes = [
+    "bw.py",
+    "family.py",
+    "frame.py",
+    "hackernews.py",
+    "n_queens.py",
+    "test_mzn.py",
+    "us_states.py",
+    "tests",
+]
+project-excludes = ["**/__pycache__", "**/*venv/**", "**/.*/**"]
+python-version = "3.14"
+preset = "strict"
+
+[errors]
+non-exhaustive-match = "error"

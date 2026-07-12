@@ -8,11 +8,12 @@ Demonstrates:
   - Multi-step reasoning (events -> counter updates -> threshold alerts -> blocking).
 """
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from rete import Eq, Fact, Gt, Pat, ReteEngine, Test, Var
 
 
 # ── Fact types ─────────────────────────────────────────────────────
+
 
 @dataclass(frozen=True)
 class LoginAttempt(Fact):
@@ -98,7 +99,9 @@ def reset_failed_login_counter(ctx, ip):
         elif isinstance(wme.fact, LoginAttempt):
             # Consume success event
             ctx.retract(wme)
-    ctx.print(f"  [Security] Reset failed login counter for {ip} due to successful login")
+    ctx.print(
+        f"  [Security] Reset failed login counter for {ip} due to successful login"
+    )
 
 
 @engine.rule(
@@ -108,7 +111,13 @@ def reset_failed_login_counter(ctx, ip):
 def detect_brute_force(ctx, ip):
     """If failed login counter exceeds 2 and IP is not blocked, block it and issue HIGH alert."""
     ctx.assert_fact(BlockedIP(ip=ip))
-    ctx.assert_fact(SecurityAlert(ip=ip, severity="high", message="Multiple failed login attempts (Brute Force)"))
+    ctx.assert_fact(
+        SecurityAlert(
+            ip=ip,
+            severity="high",
+            message="Multiple failed login attempts (Brute Force)",
+        )
+    )
     ctx.print(f"  [ALERT] HIGH: Brute force detected from {ip}! Blocking IP.")
 
 
@@ -134,13 +143,15 @@ def update_port_scan_counter(ctx, ip, p, pts):
     for wme in ctx.token_wmes:
         if isinstance(wme.fact, ConnectionEvent):
             ctx.retract(wme)
-            
+
     if p not in pts:
         new_ports = pts + (p,)
         for wme in ctx.token_wmes:
             if isinstance(wme.fact, PortScanCounter):
                 ctx.modify(wme, ports=new_ports)
-        ctx.print(f"  [Security] Logged new port {p} scan from {ip}. Ports: {new_ports}")
+        ctx.print(
+            f"  [Security] Logged new port {p} scan from {ip}. Ports: {new_ports}"
+        )
 
 
 @engine.rule(
@@ -150,7 +161,11 @@ def update_port_scan_counter(ctx, ip, p, pts):
 def detect_port_scan(ctx, ip):
     """If an IP has connected to 3 or more distinct ports, block it and issue MEDIUM alert."""
     ctx.assert_fact(BlockedIP(ip=ip))
-    ctx.assert_fact(SecurityAlert(ip=ip, severity="medium", message="Distinct ports scanned (Port Scan)"))
+    ctx.assert_fact(
+        SecurityAlert(
+            ip=ip, severity="medium", message="Distinct ports scanned (Port Scan)"
+        )
+    )
     ctx.print(f"  [ALERT] MEDIUM: Port scan detected from {ip}! Blocking IP.")
 
 
@@ -170,16 +185,22 @@ def drop_blocked_ip_traffic(ctx, ip):
 
 if __name__ == "__main__":
     print("=== Network Security Monitoring Expert System ===")
-    
+
     # Assert network events
     print("\nSimulating Brute-Force Attack...")
-    engine.assert_fact(LoginAttempt(ip="192.168.1.100", username="admin", result="fail"))
-    engine.assert_fact(LoginAttempt(ip="192.168.1.100", username="admin", result="fail"))
-    engine.assert_fact(LoginAttempt(ip="192.168.1.100", username="admin", result="fail"))
-    
+    engine.assert_fact(
+        LoginAttempt(ip="192.168.1.100", username="admin", result="fail")
+    )
+    engine.assert_fact(
+        LoginAttempt(ip="192.168.1.100", username="admin", result="fail")
+    )
+    engine.assert_fact(
+        LoginAttempt(ip="192.168.1.100", username="admin", result="fail")
+    )
+
     # Run the cycle to trigger block
     engine.run()
-    
+
     print("\nSimulating connection from the blocked IP...")
     engine.assert_fact(ConnectionEvent(ip="192.168.1.100", port=80))
     engine.run()
@@ -193,7 +214,9 @@ if __name__ == "__main__":
     print("\nSimulating failed then successful login...")
     engine.assert_fact(LoginAttempt(ip="172.16.0.5", username="user1", result="fail"))
     engine.run()
-    engine.assert_fact(LoginAttempt(ip="172.16.0.5", username="user1", result="success"))
+    engine.assert_fact(
+        LoginAttempt(ip="172.16.0.5", username="user1", result="success")
+    )
     engine.run()
 
     print("\n── Active Alerts ──")

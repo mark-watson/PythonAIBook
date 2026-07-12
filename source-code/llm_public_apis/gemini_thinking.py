@@ -29,7 +29,7 @@ response = client.models.generate_content(
         thinking_config=types.ThinkingConfig(
             thinking_budget=1000  # allow up to 1000 tokens of reasoning
         )
-    )
+    ),
 )
 
 print(response.text)

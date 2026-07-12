@@ -13,16 +13,19 @@ from openai import OpenAI
 # Point the OpenAI client at the local Ollama server
 client = OpenAI(
     base_url="http://localhost:11434/v1",
-    api_key="not-needed"  # Ollama doesn't require authentication locally
+    api_key="not-needed",  # Ollama doesn't require authentication locally
 )
 
 response = client.chat.completions.create(
     model="llama3.2:3b",
     messages=[
         {"role": "system", "content": "You are a helpful assistant."},
-        {"role": "user", "content": "What is the difference between a list and a tuple in Python?"}
+        {
+            "role": "user",
+            "content": "What is the difference between a list and a tuple in Python?",
+        },
     ],
-    temperature=0.7
+    temperature=0.7,
 )
 
 print(response.choices[0].message.content)

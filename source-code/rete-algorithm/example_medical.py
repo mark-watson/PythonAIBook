@@ -16,6 +16,7 @@ from rete import Contains, Eq, Fact, Gt, Pat, ReteEngine, Var
 
 # ── Fact types ─────────────────────────────────────────────────────
 
+
 @dataclass(frozen=True)
 class Patient(Fact):
     name: str
@@ -38,6 +39,7 @@ class Treatment(Fact):
 # ── Engine & rules ─────────────────────────────────────────────────
 
 engine = ReteEngine(strategy="lex")
+
 
 @engine.rule(
     Pat(Patient, name=Var("n"), temperature=Gt(38.5), symptoms=Contains("cough")),
@@ -78,7 +80,7 @@ if __name__ == "__main__":
 
     patients = [
         Patient(name="Alice", temperature=39.2, symptoms=("cough", "fatigue")),
-        Patient(name="Bob",   temperature=37.0, symptoms=("headache",)),
+        Patient(name="Bob", temperature=37.0, symptoms=("headache",)),
         Patient(name="Carol", temperature=38.3, symptoms=("chills",)),
     ]
 

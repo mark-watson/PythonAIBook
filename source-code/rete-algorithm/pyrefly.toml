@@ -1,0 +1,15 @@
+project-includes = [
+    "rete",
+    "example_ecom_pricing.py",
+    "example_hospital_triage.py",
+    "example_medical.py",
+    "example_network_security.py",
+    "example_portfolio_rebalance.py",
+    "example_smart_home.py",
+]
+project-excludes = ["**/__pycache__", "**/*venv/**", "**/.*/**"]
+python-version = "3.14"
+preset = "strict"
+
+[errors]
+non-exhaustive-match = "error"

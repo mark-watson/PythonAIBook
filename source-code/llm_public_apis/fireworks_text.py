@@ -18,7 +18,10 @@ client = OpenAI(
 response = client.chat.completions.create(
     model="accounts/fireworks/models/deepseek-v4-flash",
     messages=[
-        {"role": "user", "content": "Briefly explain what a transformer model is in AI."}
+        {
+            "role": "user",
+            "content": "Briefly explain what a transformer model is in AI.",
+        }
     ],
 )
 

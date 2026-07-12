@@ -10,7 +10,7 @@
 #   Bellman equation: https://en.wikipedia.org/wiki/Bellman_equation
 #   pymdptoolbox:     https://pymdptoolbox.readthedocs.io/
 
-import mdptoolbox.example   # Pre-built MDP models (e.g., forest management)
+import mdptoolbox.example  # Pre-built MDP models (e.g., forest management)
 import numpy as np
 
 print("=" * 55)
@@ -31,8 +31,8 @@ print("=" * 55)
 # =============================================================================
 
 print("\n--- Example 1: Custom 3x3 Grid World ---")
-n_states = 9       # 3 rows × 3 cols
-n_actions = 4      # ↑ (0), → (1), ↓ (2), ← (3)
+n_states = 9  # 3 rows × 3 cols
+n_actions = 4  # ↑ (0), → (1), ↓ (2), ← (3)
 
 # Build deterministic transition matrix:
 # P shape = (n_actions, n_states, n_states)
@@ -43,15 +43,15 @@ for s, (r, c) in enumerate(grid):
     for a, (dr, dc) in enumerate([(-1, 0), (0, 1), (1, 0), (0, -1)]):
         nr, nc = r + dr, c + dc
         if 0 <= nr < 3 and 0 <= nc < 3:
-            ns = nr * 3 + nc          # valid move — transition to new cell
+            ns = nr * 3 + nc  # valid move — transition to new cell
         else:
-            ns = s                     # wall bump — stay in same cell
-        P[a, s, ns] = 1.0             # deterministic: probability = 1.0
+            ns = s  # wall bump — stay in same cell
+        P[a, s, ns] = 1.0  # deterministic: probability = 1.0
 
 # Reward matrix R[s, a] = immediate reward for taking action a in state s
 R = np.zeros((n_states, n_actions))
-R[8, :] = 10.0    # goal cell (bottom-right) — all actions yield +10
-R[5, :] = -5.0    # trap cell (center-right) — all actions yield −5
+R[8, :] = 10.0  # goal cell (bottom-right) — all actions yield +10
+R[5, :] = -5.0  # trap cell (center-right) — all actions yield −5
 
 # --- Value Iteration ---
 # Iteratively updates the value function using the Bellman optimality equation:

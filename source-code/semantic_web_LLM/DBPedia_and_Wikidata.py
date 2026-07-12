@@ -23,7 +23,9 @@ Set environment variable:
 """
 
 from library import (
-    extract_entities, synthesize_answer, run_cli,
+    extract_entities,
+    synthesize_answer,
+    run_cli,
 )
 
 import DBPedia
@@ -33,6 +35,7 @@ import Wikidata
 # ---------------------------------------------------------------------------
 # Combined answer pipeline
 # ---------------------------------------------------------------------------
+
 
 def answer_question(question: str) -> tuple[str, str]:
     """Answer a question using both DBpedia and Wikidata.
@@ -70,14 +73,14 @@ def answer_question(question: str) -> tuple[str, str]:
     combined_context = "\n\n".join(parts)
 
     if not combined_context.strip():
-        return ("I couldn't find relevant entities in either knowledge "
-                "base.", "")
+        return ("I couldn't find relevant entities in either knowledge base.", "")
 
     print(f"[DEBUG] Combined context: {len(combined_context)} chars")
 
     # --- LLM synthesis over the merged context ---
     answer = synthesize_answer(
-        question, combined_context,
+        question,
+        combined_context,
         source_label="DBpedia and Wikidata",
     )
     if answer:

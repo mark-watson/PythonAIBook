@@ -19,9 +19,7 @@ def main():
 
     # Load the tokenizer and seq2seq model
     tokenizer = AutoTokenizer.from_pretrained(model_name)
-    model = AutoModelForSeq2SeqLM.from_pretrained(
-        model_name
-    )
+    model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
 
     # Input text to be summarized
     text = (
@@ -39,10 +37,7 @@ def main():
         "and Republican parties on spending."
     )
 
-    print(
-        f"\nOriginal text ({len(text.split())} words):\n"
-        f"{text}\n"
-    )
+    print(f"\nOriginal text ({len(text.split())} words):\n{text}\n")
 
     # Tokenize input (truncate to model max length)
     inputs = tokenizer(
@@ -61,9 +56,7 @@ def main():
     )
 
     # Decode token IDs back to text
-    summary = tokenizer.decode(
-        summary_ids[0], skip_special_tokens=True
-    )
+    summary = tokenizer.decode(summary_ids[0], skip_special_tokens=True)
 
     print(f"Summary:\n{summary}")
 

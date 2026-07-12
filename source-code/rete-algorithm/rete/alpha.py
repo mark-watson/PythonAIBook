@@ -93,8 +93,6 @@ class AlphaNetwork:
         """Push *wme* through the alpha network for its fact type."""
         fact_type = type(wme.fact)
         entry_nodes = self.type_dispatch.get(fact_type, [])
-        # Track which memories this WME lands in
-        memories_before = self._snapshot_memories(entry_nodes)
         for node in entry_nodes:
             if isinstance(node, AlphaMemory):
                 node.add(wme)
@@ -111,7 +109,9 @@ class AlphaNetwork:
         for am in memories:
             am.remove(wme)
 
-    def register_entry(self, fact_type: type, node: AlphaTestNode | AlphaMemory) -> None:
+    def register_entry(
+        self, fact_type: type, node: AlphaTestNode | AlphaMemory
+    ) -> None:
         """Register a top-level entry node for *fact_type*."""
         self.type_dispatch.setdefault(fact_type, []).append(node)
 

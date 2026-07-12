@@ -19,10 +19,7 @@ def main():
     # classifies into any candidate labels you provide
     classifier = pipeline(
         "zero-shot-classification",
-        model=(
-            "MoritzLaurer/"
-            "deberta-v3-base-zeroshot-v2.0"
-        ),
+        model=("MoritzLaurer/deberta-v3-base-zeroshot-v2.0"),
     )
 
     # Input text to be classified

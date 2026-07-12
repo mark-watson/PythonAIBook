@@ -87,8 +87,10 @@ def run_polynomial_regression(df):
 if __name__ == "__main__":
     df = load_housing_data()
     print(f"Dataset shape: {df.shape}")
-    print(f"Target range: {df['MedHouseVal'].min():.2f} - "
-          f"{df['MedHouseVal'].max():.2f} "
-          f"(units: $100,000s)\n")
+    print(
+        f"Target range: {df['MedHouseVal'].min():.2f} - "
+        f"{df['MedHouseVal'].max():.2f} "
+        f"(units: $100,000s)\n"
+    )
     run_linear_regression(df)
     run_polynomial_regression(df)

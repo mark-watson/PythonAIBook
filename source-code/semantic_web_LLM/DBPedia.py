@@ -16,9 +16,15 @@ Set environment variable:
 """
 
 from library import (
-    client, MODEL_ID, ENTITY_TYPES,
-    llm_complete, extract_entities, synthesize_answer,
-    query_sparql, detect_relationship, resolve_value, run_cli,
+    client,
+    MODEL_ID,
+    ENTITY_TYPES,
+    extract_entities,
+    synthesize_answer,
+    query_sparql,
+    detect_relationship,
+    resolve_value,
+    run_cli,
 )
 
 
@@ -111,8 +117,14 @@ RELATIONSHIP_PROPERTIES = {
     "who founded": ("http://dbpedia.org/ontology/foundedBy", "founder"),
     "industry": ("http://dbpedia.org/ontology/industry", "industry"),
     "location": ("http://dbpedia.org/ontology/locationCity", "location"),
-    "headquartered": ("http://dbpedia.org/ontology/locationCity", "headquarters location"),
-    "headquarters": ("http://dbpedia.org/ontology/locationCity", "headquarters location"),
+    "headquartered": (
+        "http://dbpedia.org/ontology/locationCity",
+        "headquarters location",
+    ),
+    "headquarters": (
+        "http://dbpedia.org/ontology/locationCity",
+        "headquarters location",
+    ),
     "country": ("http://dbpedia.org/ontology/country", "country"),
     "population": ("http://dbpedia.org/ontology/populationTotal", "population"),
     "leader": ("http://dbpedia.org/ontology/leaderName", "leader"),
@@ -191,6 +203,7 @@ ENRICHMENT_PROPERTIES = {
 # Query helpers
 # ---------------------------------------------------------------------------
 
+
 def query_dbpedia(sparql_query: str) -> list[dict]:
     """Execute a SPARQL query against the DBpedia endpoint."""
     return query_sparql(DBPEDIA_ENDPOINT, sparql_query)
@@ -235,9 +248,7 @@ def enrich_entity(name: str, entity_type: str) -> list[str]:
     if not props:
         return []
 
-    values_block = "\n    ".join(
-        f'(<{uri}> "{label}")' for label, uri in props.items()
-    )
+    values_block = "\n    ".join(f'(<{uri}> "{label}")' for label, uri in props.items())
     query = SPARQL_ENRICHMENT_TEMPLATE.format(name=name, values=values_block)
     try:
         results = query_dbpedia(query)
@@ -266,6 +277,7 @@ def enrich_entity(name: str, entity_type: str) -> list[str]:
 # Context building
 # ---------------------------------------------------------------------------
 
+
 def get_entity_context(entities: dict) -> str:
     """Execute SPARQL queries for extracted entities and build context text.
 
@@ -293,8 +305,7 @@ def get_entity_context(entities: dict) -> str:
                             best = value
                 facts = enrich_entity(name, entity_type)
                 if best and facts:
-                    context_parts.append(
-                        f"{name}: {best}\n" + "\n".join(facts))
+                    context_parts.append(f"{name}: {best}\n" + "\n".join(facts))
                 elif best:
                     context_parts.append(f"{name}: {best}")
                 elif facts:
@@ -308,6 +319,7 @@ def get_entity_context(entities: dict) -> str:
 # ---------------------------------------------------------------------------
 # Answer pipeline
 # ---------------------------------------------------------------------------
+
 
 def answer_question(question: str) -> tuple[str, str]:
     """Answer a question using DBpedia + Fireworks.ai.
@@ -324,8 +336,7 @@ def answer_question(question: str) -> tuple[str, str]:
         print(f"[DEBUG] Relationship detected: {verb} ({property_uri})")
         all_names = [n for names in entities.values() for n in names]
         if not all_names:
-            all_names = [w for w in question.replace("?", "").split()
-                         if w[0].isupper()]
+            all_names = [w for w in question.replace("?", "").split() if w[0].isupper()]
         for name in all_names:
             try:
                 rel_results = query_relationship(name, property_uri)
@@ -386,6 +397,7 @@ def answer_question(question: str) -> tuple[str, str]:
 # ---------------------------------------------------------------------------
 # Multi-turn chat
 # ---------------------------------------------------------------------------
+
 
 def chat_with_context(system_prompt: str = None):
     """Create a multi-turn conversation with DBpedia knowledge."""

@@ -26,8 +26,7 @@ def main():
         "The politician fled to South America.",
         "Canada and the US will be in the playoffs.",
         "The cat ran up the tree.",
-        "The meal tasted good but was expensive"
-        " and perhaps not worth the price.",
+        "The meal tasted good but was expensive and perhaps not worth the price.",
     ]
 
     # Encode all sentences into embedding vectors
@@ -41,9 +40,7 @@ def main():
     for i in range(len(cos_sim) - 1):
         for j in range(i + 1, len(cos_sim)):
             # Extract float score from the tensor
-            pairs.append(
-                (cos_sim[i][j].item(), i, j)
-            )
+            pairs.append((cos_sim[i][j].item(), i, j))
 
     # Sort by highest similarity first
     pairs.sort(key=lambda x: x[0], reverse=True)

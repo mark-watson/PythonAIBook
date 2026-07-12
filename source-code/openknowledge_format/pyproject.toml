@@ -6,3 +6,17 @@ description = "Open Knowledge Format (OKF) example with Ollama LLM Q&A"
 dependencies = [
     "ollama>=0.6.1",
 ]
+
+[dependency-groups]
+dev = [
+  "pyrefly",
+  "ruff",
+  "pytest",
+  "pytest-xdist",
+  "pytest-testmon",
+  "hypothesis",
+  "syrupy",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

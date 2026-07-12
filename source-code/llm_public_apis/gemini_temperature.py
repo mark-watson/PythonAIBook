@@ -22,7 +22,7 @@ prompt = "Write a one-sentence tagline for a coffee shop."
 response_low = client.models.generate_content(
     model="gemini-3-flash-preview",
     contents=prompt,
-    config=types.GenerateContentConfig(temperature=0.0)
+    config=types.GenerateContentConfig(temperature=0.0),
 )
 print(f"Temperature 0.0: {response_low.text}")
 
@@ -30,6 +30,6 @@ print(f"Temperature 0.0: {response_low.text}")
 response_high = client.models.generate_content(
     model="gemini-3-flash-preview",
     contents=prompt,
-    config=types.GenerateContentConfig(temperature=1.5)
+    config=types.GenerateContentConfig(temperature=1.5),
 )
 print(f"Temperature 1.5: {response_high.text}")

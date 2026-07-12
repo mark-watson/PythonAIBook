@@ -91,3 +91,19 @@ This project utilizes the `uv` tool for fast, reliable Python environment manage
 1. **Loader & Parsing:** The `KnowledgeBundle` class walks the `bundle/` directory recursively. It filters out reserved files (`index.md` and `log.md`) and loads each markdown file. It extracts the YAML block at the top and populates a Python `Concept` object.
 2. **Search Indexing:** A simple, lightweight in-memory keyword search is built directly in Python to match queries against concept titles, descriptions, and markdown body copy.
 3. **Retrieval-Augmented Q&A:** When a user asks a question, the `OKFAgent` gathers the top relevant markdown concept files, constructs a structured context, and prompts the local `gemma4:e2b-it-qat` model to answer the query referencing exact OKF concepts (such as citing `tables/sales_events`).
+
+## Development workflow
+
+Uses [`uv`](https://docs.astral.sh/uv/) for dependency management and [`just`](https://just.systems/) as the task runner. Install both, then:
+
+```bash
+uv sync
+just check       # fmt-check + lint + typecheck + test
+just fmt         # ruff format
+just lint        # ruff --fix
+just typecheck   # pyrefly (strict)
+just test        # pytest with testmon (fast)
+just test-all    # full parallel pytest run
+```
+
+Under Claude Code, `.claude/hooks/py-check.sh` runs after every edit (format + lint + per-file typecheck) and `.claude/hooks/py-stop.sh` runs the full gate before the turn ends. See `CLAUDE.md` for the workflow contract.

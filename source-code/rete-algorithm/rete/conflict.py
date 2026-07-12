@@ -33,6 +33,7 @@ __all__ = [
 # Strategy implementations
 # ---------------------------------------------------------------------------
 
+
 def resolve_lex(instantiations: list[Instantiation]) -> Instantiation:
     """LEX strategy: salience (desc) → recency/timestamp (desc) → specificity (desc).
 
@@ -56,6 +57,7 @@ def resolve_mea(instantiations: list[Instantiation]) -> Instantiation:
     condition element, matching OPS5's MEA ordering.  If the token has no WMEs
     (shouldn't happen in practice), falls back to 0.
     """
+
     def _mea_key(inst: Instantiation):
         wmes = inst.token.wmes()
         first_ts = wmes[0].timestamp if wmes else 0

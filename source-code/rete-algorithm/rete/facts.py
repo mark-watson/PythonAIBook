@@ -31,6 +31,7 @@ class Fact:
 # WME id generation
 # ---------------------------------------------------------------------------
 
+
 class _WMEIdGenerator:
     """Thread-unsafe monotonic counter for assigning unique WME ids.
 
@@ -57,6 +58,7 @@ _wme_id_gen = _WMEIdGenerator()
 # ---------------------------------------------------------------------------
 # WME
 # ---------------------------------------------------------------------------
+
 
 class WME:
     """Working Memory Element — an immutable wrapper around a ``Fact``.

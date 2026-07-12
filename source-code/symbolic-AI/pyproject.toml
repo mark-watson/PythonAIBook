@@ -8,3 +8,17 @@ dependencies = [
     "spacy>=3.8.13",
     "swiplserver>=1.0.2",
 ]
+
+[dependency-groups]
+dev = [
+  "pyrefly",
+  "ruff",
+  "pytest",
+  "pytest-xdist",
+  "pytest-testmon",
+  "hypothesis",
+  "syrupy",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

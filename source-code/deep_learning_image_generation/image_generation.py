@@ -23,33 +23,22 @@ def main():
     # Use float16 for GPU/MPS, float32 for CPU
     if torch.cuda.is_available():
         # NVIDIA GPU
-        pipe = DiffusionPipeline.from_pretrained(
-            model_id, torch_dtype=torch.float16
-        )
+        pipe = DiffusionPipeline.from_pretrained(model_id, torch_dtype=torch.float16)
         pipe = pipe.to("cuda")
     elif torch.backends.mps.is_available():
         # Apple Silicon GPU
-        pipe = DiffusionPipeline.from_pretrained(
-            model_id, torch_dtype=torch.float16
-        )
+        pipe = DiffusionPipeline.from_pretrained(model_id, torch_dtype=torch.float16)
         pipe = pipe.to("mps")
     else:
         # CPU fallback
-        pipe = DiffusionPipeline.from_pretrained(
-            model_id
-        )
+        pipe = DiffusionPipeline.from_pretrained(model_id)
 
     # Define the text prompt for image generation
-    prompt = (
-        "a serene mountain landscape at sunset,"
-        " oil painting style"
-    )
+    prompt = "a serene mountain landscape at sunset, oil painting style"
     print(f"Generating image for prompt: '{prompt}'")
 
     # Run the diffusion pipeline (25 steps for tiny-sd)
-    image = pipe(
-        prompt, num_inference_steps=25
-    ).images[0]
+    image = pipe(prompt, num_inference_steps=25).images[0]
 
     # Save the generated image to disk
     output_path = "generated_landscape.png"

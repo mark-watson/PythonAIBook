@@ -27,7 +27,7 @@ response = client.models.generate_content(
         thinking_config=types.ThinkingConfig(
             thinking_budget=0  # no thinking needed for simple description
         )
-    )
+    ),
 )
 
 print(response.text)

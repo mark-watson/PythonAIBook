@@ -9,13 +9,20 @@
 #   TD learning: https://en.wikipedia.org/wiki/Temporal_difference_learning
 
 import gymnasium as gym  # OpenAI Gymnasium RL environment library
-import numpy as np        # Numerical computing with arrays
+import numpy as np  # Numerical computing with arrays
 
 np.random.seed(42)  # Reproducible results across runs
 
 
-def q_learning(env, episodes=10000, alpha=0.1, gamma=0.99,
-               epsilon=1.0, epsilon_decay=0.999, min_epsilon=0.01):
+def q_learning(
+    env,
+    episodes=10000,
+    alpha=0.1,
+    gamma=0.99,
+    epsilon=1.0,
+    epsilon_decay=0.999,
+    min_epsilon=0.01,
+):
     """Train a Q-table via tabular Q-learning (Watkins, 1989).
 
     Q-learning is a model-free, off-policy temporal-difference (TD) algorithm.
@@ -39,8 +46,8 @@ def q_learning(env, episodes=10000, alpha=0.1, gamma=0.99,
         https://link.springer.com/article/10.1007/BF00992698       (original paper)
         https://en.wikipedia.org/wiki/Q-learning
     """
-    n_states = env.observation_space.n   # discrete state count (16 for 4×4 grid)
-    n_actions = env.action_space.n       # discrete action count (4: ←↓→↑)
+    n_states = env.observation_space.n  # discrete state count (16 for 4×4 grid)
+    n_actions = env.action_space.n  # discrete action count (4: ←↓→↑)
     Q = np.zeros((n_states, n_actions))  # Q-table initialized to zero
     success_history = []
 
@@ -56,18 +63,16 @@ def q_learning(env, episodes=10000, alpha=0.1, gamma=0.99,
             if np.random.random() < epsilon:
                 action = env.action_space.sample()  # explore: random action
             else:
-                action = np.argmax(Q[state])        # exploit: best known action
+                action = np.argmax(Q[state])  # exploit: best known action
 
             next_state, reward, terminated, truncated, _ = env.step(action)
-            done = terminated or truncated   # episode ends on goal, hole, or time limit
+            done = terminated or truncated  # episode ends on goal, hole, or time limit
 
             # Q-learning update (TD(0) rule):
             # Q(s,a) ← Q(s,a) + α [ r + γ·max_a' Q(s',a') − Q(s,a) ]
             # The target r + γ·max_b Q(next,b) is an off-policy bootstrap estimate.
             best_next = np.max(Q[next_state])  # max over actions in next state
-            Q[state, action] += alpha * (
-                reward + gamma * best_next - Q[state, action]
-            )
+            Q[state, action] += alpha * (reward + gamma * best_next - Q[state, action])
 
             state = next_state
 
@@ -102,10 +107,10 @@ def evaluate(env, Q, episodes=100):
         state, _ = env.reset()
         done = False
         while not done:
-            action = np.argmax(Q[state])         # greedy: always pick best action
+            action = np.argmax(Q[state])  # greedy: always pick best action
             state, reward, terminated, truncated, _ = env.step(action)
             done = terminated or truncated
-            if terminated and reward == 1.0:     # reached the goal tile
+            if terminated and reward == 1.0:  # reached the goal tile
                 successes += 1
     return successes / episodes
 
@@ -126,7 +131,7 @@ def print_policy(Q, env_name):
     for row in range(size):
         row_str = ""
         for col in range(size):
-            s = row * size + col     # flatten 2D grid index to state index
+            s = row * size + col  # flatten 2D grid index to state index
             row_str += arrows[np.argmax(Q[s])]  # best action for this state
         print(f"  {row_str}")
     print("  (←=left ↓=down →=right ↑=up)")
@@ -147,7 +152,7 @@ print("=" * 55)
 env = gym.make("FrozenLake-v1", is_slippery=True)
 print(f"States: {env.observation_space.n}")
 print(f"Actions: {env.action_space.n}")
-print(f"Map size: 4x4")
+print("Map size: 4x4")
 
 print("\nTraining:")
 Q, history = q_learning(env)
@@ -184,5 +189,3 @@ print(f"  Success rate: {final_rate2:.2f}")
 
 env.close()
 env2.close()
-
-

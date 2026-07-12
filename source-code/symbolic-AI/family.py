@@ -30,5 +30,7 @@ with PrologMQI() as mqi:
         print("Assert another test fact:")
         prolog_thread.query("assertz(father(ken, sam)).")
         result = prolog_thread.query("grandparent(A, B).")
-        pprint(result)  # now includes both grandparent(irene, ron) and grandparent(irene, sam)
+        pprint(
+            result
+        )  # now includes both grandparent(irene, ron) and grandparent(irene, sam)
         print(len(result))

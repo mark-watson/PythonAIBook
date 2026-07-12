@@ -1,0 +1,7 @@
+project-includes = ["frozen_lake_qlearning.py", "mdp_demo.py", "tests"]
+project-excludes = ["**/__pycache__", "**/*venv/**", "**/.*/**"]
+python-version = "3.11"
+preset = "strict"
+
+[errors]
+non-exhaustive-match = "error"

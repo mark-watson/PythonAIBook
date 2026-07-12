@@ -9,10 +9,11 @@ Demonstrates:
 """
 
 from dataclasses import dataclass
-from rete import Eq, Fact, Gt, Pat, ReteEngine, Var
+from rete import Eq, Fact, Pat, ReteEngine, Var
 
 
 # ── Fact types ─────────────────────────────────────────────────────
+
 
 @dataclass(frozen=True)
 class Customer(Fact):
@@ -67,56 +68,139 @@ engine = ReteEngine(strategy="lex")
 
 # ── Step 1: Matching and Creating Discounts ───────────────────────
 
+
 @engine.rule(
     Pat(Customer, id=Var("c_id"), loyalty_tier=Eq("gold")),
-    Pat(CartItem, customer_id=Var("c_id"), product_id=Var("p_id"), quantity=Var("q"), price=Var("p")),
-    ~Pat(AppliedDiscount, customer_id=Var("c_id"), product_id=Var("p_id"), reason=Eq("Gold Loyalty (10%)")),
+    Pat(
+        CartItem,
+        customer_id=Var("c_id"),
+        product_id=Var("p_id"),
+        quantity=Var("q"),
+        price=Var("p"),
+    ),
+    ~Pat(
+        AppliedDiscount,
+        customer_id=Var("c_id"),
+        product_id=Var("p_id"),
+        reason=Eq("Gold Loyalty (10%)"),
+    ),
 )
 def apply_gold_discount(ctx, c_id, p_id, q, p):
     """Gold loyalty tier gets 10% discount on all items."""
     discount_amount = p * q * 0.10
-    ctx.assert_fact(AppliedDiscount(customer_id=c_id, product_id=p_id, amount=discount_amount, reason="Gold Loyalty (10%)"))
-    ctx.print(f"  [Discounts] Gold customer {c_id}: 10% discount of {discount_amount:.2f} on {p_id}")
+    ctx.assert_fact(
+        AppliedDiscount(
+            customer_id=c_id,
+            product_id=p_id,
+            amount=discount_amount,
+            reason="Gold Loyalty (10%)",
+        )
+    )
+    ctx.print(
+        f"  [Discounts] Gold customer {c_id}: 10% discount of {discount_amount:.2f} on {p_id}"
+    )
 
 
 @engine.rule(
     Pat(Customer, id=Var("c_id"), loyalty_tier=Eq("silver")),
-    Pat(CartItem, customer_id=Var("c_id"), product_id=Var("p_id"), quantity=Var("q"), price=Var("p")),
-    ~Pat(AppliedDiscount, customer_id=Var("c_id"), product_id=Var("p_id"), reason=Eq("Silver Loyalty (5%)")),
+    Pat(
+        CartItem,
+        customer_id=Var("c_id"),
+        product_id=Var("p_id"),
+        quantity=Var("q"),
+        price=Var("p"),
+    ),
+    ~Pat(
+        AppliedDiscount,
+        customer_id=Var("c_id"),
+        product_id=Var("p_id"),
+        reason=Eq("Silver Loyalty (5%)"),
+    ),
 )
 def apply_silver_discount(ctx, c_id, p_id, q, p):
     """Silver loyalty tier gets 5% discount on all items."""
     discount_amount = p * q * 0.05
-    ctx.assert_fact(AppliedDiscount(customer_id=c_id, product_id=p_id, amount=discount_amount, reason="Silver Loyalty (5%)"))
-    ctx.print(f"  [Discounts] Silver customer {c_id}: 5% discount of {discount_amount:.2f} on {p_id}")
+    ctx.assert_fact(
+        AppliedDiscount(
+            customer_id=c_id,
+            product_id=p_id,
+            amount=discount_amount,
+            reason="Silver Loyalty (5%)",
+        )
+    )
+    ctx.print(
+        f"  [Discounts] Silver customer {c_id}: 5% discount of {discount_amount:.2f} on {p_id}"
+    )
 
 
 @engine.rule(
-    Pat(CartItem, customer_id=Var("c_id"), product_id=Var("p_id"), category=Var("cat"), quantity=Var("q"), price=Var("p")),
+    Pat(
+        CartItem,
+        customer_id=Var("c_id"),
+        product_id=Var("p_id"),
+        category=Var("cat"),
+        quantity=Var("q"),
+        price=Var("p"),
+    ),
     Pat(ActiveCampaign, category=Var("cat"), discount_pct=Var("pct")),
-    ~Pat(AppliedDiscount, customer_id=Var("c_id"), product_id=Var("p_id"), reason=Eq("Active Category Campaign")),
+    ~Pat(
+        AppliedDiscount,
+        customer_id=Var("c_id"),
+        product_id=Var("p_id"),
+        reason=Eq("Active Category Campaign"),
+    ),
 )
 def apply_campaign_discount(ctx, c_id, p_id, q, p, pct):
     """Applies active category-based campaign discount (e.g. 20% off apparel)."""
     discount_amount = p * q * pct
-    ctx.assert_fact(AppliedDiscount(customer_id=c_id, product_id=p_id, amount=discount_amount, reason="Active Category Campaign"))
-    ctx.print(f"  [Discounts] Category campaign '{pct*100}% off {pct}': discount of {discount_amount:.2f} on {p_id}")
+    ctx.assert_fact(
+        AppliedDiscount(
+            customer_id=c_id,
+            product_id=p_id,
+            amount=discount_amount,
+            reason="Active Category Campaign",
+        )
+    )
+    ctx.print(
+        f"  [Discounts] Category campaign '{pct * 100}% off {pct}': discount of {discount_amount:.2f} on {p_id}"
+    )
 
 
 @engine.rule(
-    Pat(CartItem, customer_id=Var("c_id"), product_id=Var("p_id"), quantity=Var("q"), price=Var("p")),
-    ~Pat(AppliedDiscount, customer_id=Var("c_id"), product_id=Var("p_id"), reason=Eq("Bulk Discount (15%)")),
+    Pat(
+        CartItem,
+        customer_id=Var("c_id"),
+        product_id=Var("p_id"),
+        quantity=Var("q"),
+        price=Var("p"),
+    ),
+    ~Pat(
+        AppliedDiscount,
+        customer_id=Var("c_id"),
+        product_id=Var("p_id"),
+        reason=Eq("Bulk Discount (15%)"),
+    ),
 )
 def apply_bulk_discount(ctx, c_id, p_id, q, p):
     """Applies a 15% bulk discount if ordering more than 5 units of any product."""
     if q <= 5:
         return
     discount_amount = p * q * 0.15
-    ctx.assert_fact(AppliedDiscount(customer_id=c_id, product_id=p_id, amount=discount_amount, reason="Bulk Discount (15%)"))
-    ctx.print(f"  [Discounts] Bulk discount: 15% discount of {discount_amount:.2f} on {p_id}")
+    ctx.assert_fact(
+        AppliedDiscount(
+            customer_id=c_id,
+            product_id=p_id,
+            amount=discount_amount,
+            reason="Bulk Discount (15%)",
+        )
+    )
+    ctx.print(
+        f"  [Discounts] Bulk discount: 15% discount of {discount_amount:.2f} on {p_id}"
+    )
 
 
 # ── Step 2: Accumulating Cart Summary ──────────────────────────────
+
 
 @engine.rule(
     Pat(Customer, id=Var("c_id")),
@@ -129,8 +213,20 @@ def init_cart_summary(ctx, c_id):
 
 
 @engine.rule(
-    Pat(CartItem, customer_id=Var("c_id"), product_id=Var("p_id"), quantity=Var("q"), price=Var("p"), processed=Eq(False)),
-    Pat(CartSummary, customer_id=Var("c_id"), subtotal=Var("sub"), total_discount=Var("td")),
+    Pat(
+        CartItem,
+        customer_id=Var("c_id"),
+        product_id=Var("p_id"),
+        quantity=Var("q"),
+        price=Var("p"),
+        processed=Eq(False),
+    ),
+    Pat(
+        CartSummary,
+        customer_id=Var("c_id"),
+        subtotal=Var("sub"),
+        total_discount=Var("td"),
+    ),
 )
 def accumulate_subtotal(ctx, c_id, p_id, q, p, sub, td):
     """Add items to subtotal and mark them processed."""
@@ -140,12 +236,25 @@ def accumulate_subtotal(ctx, c_id, p_id, q, p, sub, td):
             ctx.modify(wme, subtotal=sub + added_subtotal)
         elif isinstance(wme.fact, CartItem):
             ctx.modify(wme, processed=True)
-    ctx.print(f"  [Summary] Factored item {p_id} (subtotal: +{added_subtotal:.2f}) into cart summary")
+    ctx.print(
+        f"  [Summary] Factored item {p_id} (subtotal: +{added_subtotal:.2f}) into cart summary"
+    )
 
 
 @engine.rule(
-    Pat(AppliedDiscount, customer_id=Var("c_id"), product_id=Var("p_id"), amount=Var("a"), processed=Eq(False)),
-    Pat(CartSummary, customer_id=Var("c_id"), subtotal=Var("sub"), total_discount=Var("td")),
+    Pat(
+        AppliedDiscount,
+        customer_id=Var("c_id"),
+        product_id=Var("p_id"),
+        amount=Var("a"),
+        processed=Eq(False),
+    ),
+    Pat(
+        CartSummary,
+        customer_id=Var("c_id"),
+        subtotal=Var("sub"),
+        total_discount=Var("td"),
+    ),
 )
 def accumulate_discounts(ctx, c_id, p_id, a, sub, td):
     """Add applied discounts to total discount and mark them processed."""
@@ -159,8 +268,14 @@ def accumulate_discounts(ctx, c_id, p_id, a, sub, td):
 
 # ── Step 3: Producing Invoice (Barrier Completion) ────────────────
 
+
 @engine.rule(
-    Pat(CartSummary, customer_id=Var("c_id"), subtotal=Var("sub"), total_discount=Var("td")),
+    Pat(
+        CartSummary,
+        customer_id=Var("c_id"),
+        subtotal=Var("sub"),
+        total_discount=Var("td"),
+    ),
     ~Pat(CartItem, customer_id=Var("c_id"), processed=Eq(False)),
     ~Pat(AppliedDiscount, customer_id=Var("c_id"), processed=Eq(False)),
     ~Pat(Invoice, customer_id=Var("c_id")),
@@ -169,7 +284,9 @@ def create_invoice(ctx, c_id, sub, td):
     """Generate the final invoice when all items and discounts have been summarized."""
     total = max(0.0, sub - td)
     ctx.assert_fact(Invoice(customer_id=c_id, subtotal=sub, discount=td, total=total))
-    ctx.print(f"  [Invoice] CREATED INVOICE FOR {c_id}: Subtotal={sub:.2f}, Discount={td:.2f}, Final Total={total:.2f}")
+    ctx.print(
+        f"  [Invoice] CREATED INVOICE FOR {c_id}: Subtotal={sub:.2f}, Discount={td:.2f}, Final Total={total:.2f}"
+    )
 
 
 # ── Execution ──────────────────────────────────────────────────────
@@ -179,17 +296,43 @@ if __name__ == "__main__":
 
     # Setup database/rules facts
     print("\nSetting up active campaigns...")
-    engine.assert_fact(ActiveCampaign(category="apparel", discount_pct=0.20)) # 20% off apparel
-    
+    engine.assert_fact(
+        ActiveCampaign(category="apparel", discount_pct=0.20)
+    )  # 20% off apparel
+
     print("\nAdding customers and items...")
     # Alice: Gold loyalty customer ordering multiple items
     engine.assert_fact(Customer(id="Alice", loyalty_tier="gold"))
-    engine.assert_fact(CartItem(customer_id="Alice", product_id="jacket_1", category="apparel", quantity=1, price=150.00))
-    engine.assert_fact(CartItem(customer_id="Alice", product_id="socks_5", category="clothing", quantity=10, price=12.00)) # Bulk socks
+    engine.assert_fact(
+        CartItem(
+            customer_id="Alice",
+            product_id="jacket_1",
+            category="apparel",
+            quantity=1,
+            price=150.00,
+        )
+    )
+    engine.assert_fact(
+        CartItem(
+            customer_id="Alice",
+            product_id="socks_5",
+            category="clothing",
+            quantity=10,
+            price=12.00,
+        )
+    )  # Bulk socks
 
     # Bob: Silver loyalty customer
     engine.assert_fact(Customer(id="Bob", loyalty_tier="silver"))
-    engine.assert_fact(CartItem(customer_id="Bob", product_id="shirt_2", category="apparel", quantity=2, price=45.00))
+    engine.assert_fact(
+        CartItem(
+            customer_id="Bob",
+            product_id="shirt_2",
+            category="apparel",
+            quantity=2,
+            price=45.00,
+        )
+    )
 
     print("\nRunning rule calculations...")
     fired = engine.run()

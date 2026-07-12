@@ -1,0 +1,7 @@
+project-includes = ["image_generation.py", "gemini_image_generation.py", "tests"]
+project-excludes = ["**/__pycache__", "**/*venv/**", "**/.*/**"]
+python-version = "3.14"
+preset = "strict"
+
+[errors]
+non-exhaustive-match = "error"

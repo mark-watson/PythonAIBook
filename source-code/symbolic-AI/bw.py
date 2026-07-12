@@ -14,9 +14,11 @@
 
 import soar_sml as sml
 
+
 def callback_debug(mid, user_data, agent, message):
     """Print callback: receives output from Soar's print events."""
     print(message)
+
 
 if __name__ == "__main__":
     # Create the Soar kernel and a named agent

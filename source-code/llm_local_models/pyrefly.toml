@@ -1,0 +1,16 @@
+project-includes = [
+    "image_to_text_description.py",
+    "ollama_caching.py",
+    "ollama_memory.py",
+    "ollama_openai_compat.py",
+    "ollama_reasoning.py",
+    "ollama_streaming.py",
+    "ollama_text.py",
+    "tests",
+]
+project-excludes = ["**/__pycache__", "**/*venv/**", "**/.*/**"]
+python-version = "3.14"
+preset = "strict"
+
+[errors]
+non-exhaustive-match = "error"

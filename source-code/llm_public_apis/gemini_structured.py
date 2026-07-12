@@ -24,7 +24,7 @@ for the past 7 years. She specializes in NLP and recommendation systems."
 response = client.models.generate_content(
     model="gemini-3-flash-preview",
     contents=prompt,
-    config=types.GenerateContentConfig(temperature=0.0)
+    config=types.GenerateContentConfig(temperature=0.0),
 )
 
 # Parse the JSON from the response (strip any markdown code fences)

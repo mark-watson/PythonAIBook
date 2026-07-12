@@ -10,10 +10,8 @@ import ollama
 
 stream = ollama.chat(
     model="llama3.2:3b",
-    messages=[
-        {"role": "user", "content": "Write a short poem about programming."}
-    ],
-    stream=True
+    messages=[{"role": "user", "content": "Write a short poem about programming."}],
+    stream=True,
 )
 
 # Print each chunk as it arrives, without newlines between chunks

@@ -7,7 +7,7 @@ nodes) and attaches a production node at the end.
 
 from __future__ import annotations
 
-from typing import Any, Callable
+from typing import Callable
 
 from .alpha import AlphaMemory, AlphaNetwork, AlphaTestNode
 from .beta import (
@@ -75,7 +75,9 @@ class ReteNetwork:
 
         # --- build beta network chain ---
         # Track which variables have been bound in previous conditions
-        seen_vars: dict[str, str] = {}  # var_name -> field_name (from the cond that first bound it)
+        seen_vars: dict[
+            str, str
+        ] = {}  # var_name -> field_name (from the cond that first bound it)
         prev_beta: BetaMemory | None = None
 
         for i, c in enumerate(conds):
@@ -161,7 +163,8 @@ class ReteNetwork:
 
         # Build the alpha test chain
         non_var_constraints = [
-            (field, op) for field, op in c.field_constraints.items()
+            (field, op)
+            for field, op in c.field_constraints.items()
             if not isinstance(op, Var)
         ]
 
@@ -205,8 +208,10 @@ class ReteNetwork:
             if isinstance(op, Var):
                 var_name = op.bind_name
                 if var_name in seen_vars:
-                    tests.append(JoinTest(
-                        left_field=var_name,
-                        right_field=field_name,
-                    ))
+                    tests.append(
+                        JoinTest(
+                            left_field=var_name,
+                            right_field=field_name,
+                        )
+                    )
         return tests

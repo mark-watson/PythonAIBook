@@ -10,9 +10,7 @@ import ollama
 
 response = ollama.chat(
     model="llama3.2:3b",
-    messages=[
-        {"role": "user", "content": "Briefly explain what a neural network is."}
-    ]
+    messages=[{"role": "user", "content": "Briefly explain what a neural network is."}],
 )
 
 print(response.message.content)

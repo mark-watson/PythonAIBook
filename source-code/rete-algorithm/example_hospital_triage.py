@@ -14,6 +14,7 @@ from rete import Eq, Fact, Gt, Lt, Pat, ReteEngine, Var
 
 # ── Fact types ─────────────────────────────────────────────────────
 
+
 @dataclass(frozen=True)
 class Patient(Fact):
     id: str
@@ -37,7 +38,7 @@ class Bed(Fact):
 class Staff(Fact):
     id: str
     name: str
-    role: str      # "doctor", "nurse"
+    role: str  # "doctor", "nurse"
     busy: bool = False
 
 
@@ -63,7 +64,7 @@ engine = ReteEngine(strategy="lex")
 def triage_critical_patient(ctx, p_id, b_id, s_id):
     """Critical patient (severity 4 or 5) assigned to empty bed and doctor."""
     ctx.assert_fact(Assignment(patient_id=p_id, bed_id=b_id, staff_id=s_id))
-    
+
     # Mark status as assigned, bed occupied, doctor busy
     for wme in ctx.token_wmes:
         if isinstance(wme.fact, PatientStatus):
@@ -72,8 +73,10 @@ def triage_critical_patient(ctx, p_id, b_id, s_id):
             ctx.modify(wme, occupied=True)
         elif isinstance(wme.fact, Staff):
             ctx.modify(wme, busy=True)
-            
-    ctx.print(f"  [Triage - CRITICAL] Assigned critical Patient {p_id} to Bed {b_id} and Doctor {s_id}")
+
+    ctx.print(
+        f"  [Triage - CRITICAL] Assigned critical Patient {p_id} to Bed {b_id} and Doctor {s_id}"
+    )
 
 
 @engine.rule(
@@ -81,12 +84,12 @@ def triage_critical_patient(ctx, p_id, b_id, s_id):
     Pat(PatientStatus, patient_id=Var("p_id"), status=Eq("waiting")),
     Pat(Bed, id=Var("b_id"), occupied=Eq(False)),
     Pat(Staff, id=Var("s_id"), role=Eq("nurse"), busy=Eq(False)),
-    salience=5,   # Standard cases have normal priority
+    salience=5,  # Standard cases have normal priority
 )
 def triage_standard_patient(ctx, p_id, b_id, s_id):
     """Standard patient (severity 1, 2, or 3) assigned to empty bed and nurse."""
     ctx.assert_fact(Assignment(patient_id=p_id, bed_id=b_id, staff_id=s_id))
-    
+
     # Mark status as assigned, bed occupied, nurse busy
     for wme in ctx.token_wmes:
         if isinstance(wme.fact, PatientStatus):
@@ -95,14 +98,16 @@ def triage_standard_patient(ctx, p_id, b_id, s_id):
             ctx.modify(wme, occupied=True)
         elif isinstance(wme.fact, Staff):
             ctx.modify(wme, busy=True)
-            
-    ctx.print(f"  [Triage - Standard] Assigned Patient {p_id} to Bed {b_id} and Nurse {s_id}")
+
+    ctx.print(
+        f"  [Triage - Standard] Assigned Patient {p_id} to Bed {b_id} and Nurse {s_id}"
+    )
 
 
 @engine.rule(
     Pat(Assignment, patient_id=Var("p_id"), bed_id=Var("b_id"), staff_id=Var("s_id")),
     Pat(PatientStatus, patient_id=Var("p_id"), status=Eq("assigned")),
-    salience=1,   # Treatment happens after assignments have settled
+    salience=1,  # Treatment happens after assignments have settled
 )
 def treat_patient(ctx, p_id, b_id, s_id):
     """Treat patient, complete workflow, and free up resources (bed + staff)."""
@@ -120,8 +125,10 @@ def treat_patient(ctx, p_id, b_id, s_id):
             ctx.modify(wme, occupied=False)
         elif isinstance(wme.fact, Staff) and wme.fact.id == s_id:
             ctx.modify(wme, busy=False)
-            
-    ctx.print(f"  [Workflow] Treated Patient {p_id}. Bed {b_id} and Staff {s_id} are now FREE.")
+
+    ctx.print(
+        f"  [Workflow] Treated Patient {p_id}. Bed {b_id} and Staff {s_id} are now FREE."
+    )
 
 
 # ── Execution ──────────────────────────────────────────────────────
@@ -139,10 +146,10 @@ if __name__ == "__main__":
     # 2. Add patients arriving (Alice is standard, Bob is critical, Carol is standard)
     # Triage prioritization will place Bob first, despite Alice arriving first.
     print("\nAdmitting patients...")
-    
+
     engine.assert_fact(Patient(id="P01", name="Alice", severity=2))
     engine.assert_fact(PatientStatus(patient_id="P01", status="waiting"))
-    
+
     engine.assert_fact(Patient(id="P02", name="Bob", severity=5))  # CRITICAL!
     engine.assert_fact(PatientStatus(patient_id="P02", status="waiting"))
 

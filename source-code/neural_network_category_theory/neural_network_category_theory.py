@@ -55,6 +55,7 @@ class InputVec:
 
     Categorical role: object in the InputSpace category.
     """
+
     vals: tuple[float, ...]
 
 
@@ -64,6 +65,7 @@ class TargetVal:
 
     Categorical role: element of the Target object.
     """
+
     v: float
 
 
@@ -74,6 +76,7 @@ class Prediction:
     Categorical role: element of the Prediction object — the codomain of the
     composed lens morphism.
     """
+
     v: float
 
 
@@ -83,6 +86,7 @@ class LearningRate:
 
     Categorical role: scalar that scales the endomorphism on ModelState.
     """
+
     v: float
 
 
@@ -100,6 +104,7 @@ class LayerParams:
 
     Categorical role: an object in the ParameterSpace category.
     """
+
     W: list[list[float]]
     b: list[float]
 
@@ -117,6 +122,7 @@ class LayerGrads:
     db : list[float]
         Gradient of the loss w.r.t. b. Same shape as b.
     """
+
     dW: list[list[float]]
     db: list[float]
 
@@ -134,6 +140,7 @@ class Model:
     l2 : LayerParams  — hidden1(3) → hidden2(3)
     l3 : LayerParams  — hidden2(3) → output(1)
     """
+
     l1: LayerParams
     l2: LayerParams
     l3: LayerParams
@@ -142,6 +149,7 @@ class Model:
 # =============================================================================
 # 2.  UTILITY MATH
 # =============================================================================
+
 
 def sigmoid(z: float) -> float:
     """The logistic sigmoid activation function σ(z) = 1 / (1 + e^{-z})."""
@@ -280,8 +288,7 @@ def forward_lens_tracked(
         # ∇xⱼ = Σᵢ δᵢ · Wᵢⱼ   (Wᵀ · δ, transpose-multiply)
         n_inputs = len(inputs)
         dX = [
-            sum(delta[i] * W[i][j] for i in range(len(delta)))
-            for j in range(n_inputs)
+            sum(delta[i] * W[i][j] for i in range(len(delta))) for j in range(n_inputs)
         ]
 
         return LayerGrads(dW=dW, db=db), dX
@@ -318,6 +325,7 @@ class NetworkContext:
     final_act : float
         The scalar output of the network ŷ (cached for convenience).
     """
+
     pb1: PullbackFn
     pb2: PullbackFn
     pb3: PullbackFn
@@ -355,12 +363,15 @@ def model_forward(m: Model, xs: list[float]) -> tuple[Prediction, NetworkContext
     a3, pb3 = forward_lens_tracked(m.l3, a2)
     # Output layer has one neuron → a3 is a list of one element.
     y_hat = a3[0]
-    return Prediction(v=y_hat), NetworkContext(pb1=pb1, pb2=pb2, pb3=pb3, final_act=y_hat)
+    return Prediction(v=y_hat), NetworkContext(
+        pb1=pb1, pb2=pb2, pb3=pb3, final_act=y_hat
+    )
 
 
 # =============================================================================
 # 5.  LOSS  (typed morphism: Prediction × Target → SquaredError)
 # =============================================================================
+
 
 def mse_loss(pred: Prediction, tgt: TargetVal) -> float:
     """Mean-squared error loss (for one sample): L = (ŷ − y)².
@@ -390,6 +401,7 @@ def mse_loss_grad(pred: Prediction, tgt: TargetVal) -> float:
 #     f₁* ∘ f₂* ∘ f₃*  :  ∇Ŷ → ∇P₃ × ∇P₂ × ∇P₁ × ∇X
 #
 # Each pullback is the closure returned by forward_lens_tracked.
+
 
 def model_backward(
     ctx: NetworkContext,
@@ -437,7 +449,10 @@ def model_backward(
 #
 #   u_η(θ) = θ − η · ∇θ
 
-def update_layer(params: LayerParams, grads: LayerGrads, lr: LearningRate) -> LayerParams:
+
+def update_layer(
+    params: LayerParams, grads: LayerGrads, lr: LearningRate
+) -> LayerParams:
     """Apply one SGD step to a single layer's parameters.
 
     Implements the elementwise update::
@@ -461,8 +476,7 @@ def update_layer(params: LayerParams, grads: LayerGrads, lr: LearningRate) -> La
     """
     eta = lr.v
     new_W = [
-        [w - eta * dw for w, dw in zip(wi, dwi)]
-        for wi, dwi in zip(params.W, grads.dW)
+        [w - eta * dw for w, dw in zip(wi, dwi)] for wi, dwi in zip(params.W, grads.dW)
     ]
     new_b = [bi - eta * dbi for bi, dbi in zip(params.b, grads.db)]
     return LayerParams(W=new_W, b=new_b)
@@ -516,6 +530,7 @@ def model_update(
 # This is the single end-to-end arrow that composes:
 #   forward_lens ∘ loss ∘ backward_pullback ∘ update
 
+
 def train_step(
     m: Model,
     xs: list[float],
@@ -566,6 +581,7 @@ def train_step(
 # 9.  PARAMETER INITIALISATION
 # =============================================================================
 
+
 def glorot_rand(fan_in: int, fan_out: int) -> float:
     """Sample one weight using Glorot-uniform initialisation.
 
@@ -596,10 +612,7 @@ def make_layer(fan_in: int, fan_out: int) -> LayerParams:
         Weight matrix of shape (fan_out, fan_in) with Glorot-uniform values,
         and a zero bias vector of length fan_out.
     """
-    W = [
-        [glorot_rand(fan_in, fan_out) for _ in range(fan_in)]
-        for _ in range(fan_out)
-    ]
+    W = [[glorot_rand(fan_in, fan_out) for _ in range(fan_in)] for _ in range(fan_out)]
     b = [0.0] * fan_out
     return LayerParams(W=W, b=b)
 
@@ -617,9 +630,9 @@ def make_model() -> Model:
         A freshly initialised :class:`Model`.
     """
     return Model(
-        l1=make_layer(2, 3),   # Layer 1: 2 inputs  → 3 neurons
-        l2=make_layer(3, 3),   # Layer 2: 3 inputs  → 3 neurons
-        l3=make_layer(3, 1),   # Layer 3: 3 inputs  → 1 output
+        l1=make_layer(2, 3),  # Layer 1: 2 inputs  → 3 neurons
+        l2=make_layer(3, 3),  # Layer 2: 3 inputs  → 3 neurons
+        l3=make_layer(3, 1),  # Layer 3: 3 inputs  → 1 output
     )
 
 
@@ -688,6 +701,7 @@ def train(
 # =============================================================================
 # 11.  INFERENCE
 # =============================================================================
+
 
 def predict(m: Model, xs: list[float]) -> float:
     """Run a forward pass and return the scalar prediction ŷ.

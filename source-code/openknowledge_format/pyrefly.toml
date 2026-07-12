@@ -1,0 +1,7 @@
+project-includes = ["okf_explorer.py", "tests"]
+project-excludes = ["**/__pycache__", "**/*venv/**", "**/.*/**", "bundle/**"]
+python-version = "3.12"
+preset = "strict"
+
+[errors]
+non-exhaustive-match = "error"

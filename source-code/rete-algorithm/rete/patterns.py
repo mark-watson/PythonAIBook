@@ -18,14 +18,26 @@ from typing import Any, Callable
 
 __all__ = [
     "PatternOp",
-    "Var", "Eq", "Gt", "Lt", "Ge", "Le", "In", "Contains", "Match", "Test",
-    "Cond", "cond", "Pat",
+    "Var",
+    "Eq",
+    "Gt",
+    "Lt",
+    "Ge",
+    "Le",
+    "In",
+    "Contains",
+    "Match",
+    "Test",
+    "Cond",
+    "cond",
+    "Pat",
 ]
 
 
 # ---------------------------------------------------------------------------
 # Base class
 # ---------------------------------------------------------------------------
+
 
 class PatternOp:
     """Abstract base for pattern operators."""
@@ -43,6 +55,7 @@ class PatternOp:
 # ---------------------------------------------------------------------------
 # Operators
 # ---------------------------------------------------------------------------
+
 
 class Var(PatternOp):
     """Bind a field to a named variable.
@@ -186,6 +199,7 @@ class Test(PatternOp):
 # Condition element
 # ---------------------------------------------------------------------------
 
+
 class Cond:
     """A compiled condition element for one row of a rule's LHS.
 
@@ -237,6 +251,7 @@ class Cond:
 # ---------------------------------------------------------------------------
 # Factories
 # ---------------------------------------------------------------------------
+
 
 def cond(fact_type: type, negated: bool = False, **field_constraints: Any) -> Cond:
     """Create a Cond, auto-wrapping plain values in Eq."""

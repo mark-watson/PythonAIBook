@@ -42,11 +42,13 @@ def fetch_cities() -> list[dict[str, str]]:
     bindings = results.get("results", {}).get("bindings", [])
     cities = []
     for r in bindings:
-        cities.append({
-            "city": r.get("dbpedia_label", {}).get("value", "unknown"),
-            "population": int(r.get("population", {}).get("value", 0)),
-            "country": r.get("country_label", {}).get("value", "unknown"),
-        })
+        cities.append(
+            {
+                "city": r.get("dbpedia_label", {}).get("value", "unknown"),
+                "population": int(r.get("population", {}).get("value", 0)),
+                "country": r.get("country_label", {}).get("value", "unknown"),
+            }
+        )
     return cities
 
 

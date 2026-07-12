@@ -37,12 +37,14 @@ def fetch_person(name: str) -> list[dict[str, str]]:
     bindings = results.get("results", {}).get("bindings", [])
     people = []
     for r in bindings:
-        people.append({
-            "name": r.get("personLabel", {}).get("value", "unknown"),
-            "birth_place": r.get("birthPlaceLabel", {}).get("value", ""),
-            "birth_date": r.get("birthDate", {}).get("value", "")[:10],
-            "occupations": r.get("occupations", {}).get("value", ""),
-        })
+        people.append(
+            {
+                "name": r.get("personLabel", {}).get("value", "unknown"),
+                "birth_place": r.get("birthPlaceLabel", {}).get("value", ""),
+                "birth_date": r.get("birthDate", {}).get("value", "")[:10],
+                "occupations": r.get("occupations", {}).get("value", ""),
+            }
+        )
     return people
 
 

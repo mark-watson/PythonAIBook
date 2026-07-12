@@ -6,7 +6,7 @@ checks) and terminates at production nodes that feed the conflict set.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, Callable
 
 from .alpha import AlphaMemory
@@ -38,6 +38,7 @@ def is_descendant(t: Token, token: Token) -> bool:
 # Join test descriptor
 # ---------------------------------------------------------------------------
 
+
 @dataclass(frozen=True)
 class JoinTest:
     """Describes one consistency check between a token and a WME.
@@ -46,13 +47,14 @@ class JoinTest:
     ``token.binding_dict[left_field] == getattr(wme.fact, right_field)``.
     """
 
-    left_field: str   # variable name already bound in the token
+    left_field: str  # variable name already bound in the token
     right_field: str  # field name on the new WME's fact
 
 
 # ---------------------------------------------------------------------------
 # Beta memory
 # ---------------------------------------------------------------------------
+
 
 class BetaMemory:
     """Stores tokens (partial matches) and propagates to children."""
@@ -101,6 +103,7 @@ class BetaMemory:
 # ---------------------------------------------------------------------------
 # Join node
 # ---------------------------------------------------------------------------
+
 
 class JoinNode:
     """Performs an inter-element join between a beta input and an alpha memory.
@@ -228,6 +231,7 @@ class JoinNode:
 # Negative node
 # ---------------------------------------------------------------------------
 
+
 class NegativeNode:
     """Implements negated condition elements (NCEs).
 
@@ -324,10 +328,14 @@ class NegativeNode:
 
     def left_remove_token(self, token: Token) -> None:
         """Remove a specific token from tracking and propagate downstream."""
-        to_remove_blocked = [k for k, (t, _) in self._blocked.items() if is_descendant(t, token)]
+        to_remove_blocked = [
+            k for k, (t, _) in self._blocked.items() if is_descendant(t, token)
+        ]
         for k in to_remove_blocked:
             del self._blocked[k]
-        to_remove_passed = [k for k, t in self._passed.items() if is_descendant(t, token)]
+        to_remove_passed = [
+            k for k, t in self._passed.items() if is_descendant(t, token)
+        ]
         for k in to_remove_passed:
             del self._passed[k]
         for child in self.children:
@@ -353,6 +361,7 @@ class NegativeNode:
 # ---------------------------------------------------------------------------
 # Instantiation
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class Instantiation:
@@ -385,6 +394,7 @@ class Instantiation:
 # ---------------------------------------------------------------------------
 # Production node
 # ---------------------------------------------------------------------------
+
 
 class ProductionNode:
     """Terminal beta node — manages instantiations in the conflict set."""
@@ -437,7 +447,8 @@ class ProductionNode:
     def left_remove_token(self, token: Token) -> None:
         """Remove all instantiations whose tokens are descendants of *token*."""
         to_remove = [
-            tok_id for tok_id, inst in self.instantiations.items()
+            tok_id
+            for tok_id, inst in self.instantiations.items()
             if is_descendant(inst.token, token)
         ]
         for tok_id in to_remove:

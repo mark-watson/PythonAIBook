@@ -24,16 +24,11 @@ from PIL import Image
 def main():
     api_key = os.getenv("GOOGLE_API_KEY")
     if not api_key:
-        raise SystemExit(
-            "Set GOOGLE_API_KEY environment variable"
-        )
+        raise SystemExit("Set GOOGLE_API_KEY environment variable")
 
     client = genai.Client(api_key=api_key)
 
-    prompt = (
-        "a serene mountain landscape at sunset,"
-        " oil painting style"
-    )
+    prompt = "a serene mountain landscape at sunset, oil painting style"
     print(f"Generating image for prompt: '{prompt}'")
 
     response = client.models.generate_images(
@@ -45,9 +40,7 @@ def main():
     )
 
     for generated_image in response.generated_images:
-        image = Image.open(
-            io.BytesIO(generated_image.image.image_bytes)
-        )
+        image = Image.open(io.BytesIO(generated_image.image.image_bytes))
         output_path = "gemini_generated_landscape.png"
         image.save(output_path)
         print(f"Image saved to: {output_path}")

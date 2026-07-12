@@ -25,9 +25,13 @@ Set environment variable:
 import time
 
 from library import (
-    client, MODEL_ID, ENTITY_TYPES,
-    llm_complete, extract_entities, synthesize_answer,
-    query_sparql, detect_relationship, resolve_value, run_cli,
+    ENTITY_TYPES,
+    extract_entities,
+    synthesize_answer,
+    query_sparql,
+    detect_relationship,
+    resolve_value,
+    run_cli,
 )
 
 
@@ -215,6 +219,7 @@ ENRICHMENT_PROPERTIES = {
 # Query helpers
 # ---------------------------------------------------------------------------
 
+
 def lookup_entity_qid(name: str) -> str | None:
     """Look up the Wikidata Q-number for an entity by its English label.
 
@@ -307,6 +312,7 @@ def enrich_entity(qid: str, entity_type: str) -> list[str]:
 # Context building
 # ---------------------------------------------------------------------------
 
+
 def get_entity_context(entities: dict) -> str:
     """Execute SPARQL queries for extracted entities and build context text.
 
@@ -331,8 +337,7 @@ def get_entity_context(entities: dict) -> str:
             # Fetch the short description
             desc = ""
             try:
-                query = SPARQL_LOOKUP_TEMPLATE.format(
-                    name=name.replace("'", "\\'"))
+                query = SPARQL_LOOKUP_TEMPLATE.format(name=name.replace("'", "\\'"))
                 results = _query_wikidata(query)
                 for r in results:
                     if r.get("item", {}).get("value", "").endswith(qid):
@@ -345,13 +350,11 @@ def get_entity_context(entities: dict) -> str:
             facts = enrich_entity(qid, entity_type)
 
             if desc and facts:
-                context_parts.append(
-                    f"{name} ({qid}): {desc}\n" + "\n".join(facts))
+                context_parts.append(f"{name} ({qid}): {desc}\n" + "\n".join(facts))
             elif desc:
                 context_parts.append(f"{name} ({qid}): {desc}")
             elif facts:
-                context_parts.append(
-                    f"{name} ({qid}):\n" + "\n".join(facts))
+                context_parts.append(f"{name} ({qid}):\n" + "\n".join(facts))
 
     return "\n\n".join(context_parts)
 
@@ -359,6 +362,7 @@ def get_entity_context(entities: dict) -> str:
 # ---------------------------------------------------------------------------
 # Answer pipeline
 # ---------------------------------------------------------------------------
+
 
 def answer_question(question: str) -> tuple[str, str]:
     """Answer a question using Wikidata + Fireworks.ai.
@@ -375,8 +379,7 @@ def answer_question(question: str) -> tuple[str, str]:
         print(f"[DEBUG] Relationship detected: {verb} (P{pid})")
         all_names = [n for names in entities.values() for n in names]
         if not all_names:
-            all_names = [w for w in question.replace("?", "").split()
-                         if w[0].isupper()]
+            all_names = [w for w in question.replace("?", "").split() if w[0].isupper()]
         for name in all_names:
             qid = lookup_entity_qid(name)
             if not qid:

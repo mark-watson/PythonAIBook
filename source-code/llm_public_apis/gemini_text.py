@@ -13,7 +13,7 @@ client = genai.Client(api_key=os.getenv("GOOGLE_API_KEY"))
 
 response = client.models.generate_content(
     model="gemini-3-flash-preview",
-    contents="Briefly explain what a transformer model is in AI."
+    contents="Briefly explain what a transformer model is in AI.",
 )
 
 print(response.text)

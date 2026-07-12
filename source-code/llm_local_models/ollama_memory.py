@@ -39,7 +39,7 @@ class LocalAssistant:
 # Create an assistant with a specific personality
 assistant = LocalAssistant(
     system_prompt="You are a concise technical writing assistant. "
-                  "Keep answers under 3 sentences."
+    "Keep answers under 3 sentences."
 )
 
 # Multi-turn conversation — the model remembers prior context

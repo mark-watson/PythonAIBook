@@ -25,8 +25,8 @@ result = instance.solve()
 print(result)
 
 # Extract and display each state's assigned color number
-all_states = list(result.__dict__['solution'].__dict__.keys())
-all_states.remove('_checker')  # internal MiniZinc field, not a state
+all_states = list(result.__dict__["solution"].__dict__.keys())
+all_states.remove("_checker")  # internal MiniZinc field, not a state
 print(all_states)
 for state in all_states:
     print(f" {state} \t: \t{result[state]}")

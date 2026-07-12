@@ -1,0 +1,7 @@
+project-includes = ["DBPedia.py", "DBPedia_and_Wikidata.py", "Wikidata.py", "library.py", "tests"]
+project-excludes = ["**/__pycache__", "**/*venv/**", "**/.*/**"]
+python-version = "3.13"
+preset = "strict"
+
+[errors]
+non-exhaustive-match = "error"

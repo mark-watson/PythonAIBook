@@ -23,20 +23,23 @@ from swiplserver import PrologMQI
 
 # Load the spaCy English NLP model (auto-downloads if missing)
 import spacy
+
 try:
     spacy_model = spacy.load("en_core_web_sm")
 except:
-  from os import system
-  system("python -m spacy download en_core_web_sm")
-  spacy_model = spacy.load('en_core_web_sm')
+    from os import system
 
-LEN = 100 # larger amount of text is more expensive for OpenAI APIs
+    system("python -m spacy download en_core_web_sm")
+    spacy_model = spacy.load("en_core_web_sm")
+
+LEN = 100  # larger amount of text is more expensive for OpenAI APIs
 
 
-def get_new_stories(anAgent={'User-Agent': 'PythonAiBook/1.0'}):
+def get_new_stories(anAgent={"User-Agent": "PythonAiBook/1.0"}):
     """Fetch the IDs of the most recent Hacker News stories (returns top 3)."""
-    req = Request("https://hacker-news.firebaseio.com/v0/newstories.json",
-                  headers=anAgent)
+    req = Request(
+        "https://hacker-news.firebaseio.com/v0/newstories.json", headers=anAgent
+    )
     httpResponse = urlopen(req)
     data = httpResponse.read()
     ids = json.loads(data)
@@ -44,15 +47,16 @@ def get_new_stories(anAgent={'User-Agent': 'PythonAiBook/1.0'}):
     return ids[0:3]
 
 
-def get_story_data(id, anAgent={'User-Agent': 'PythonAiBook/1.0'}):
+def get_story_data(id, anAgent={"User-Agent": "PythonAiBook/1.0"}):
     """Fetch the JSON metadata for a single Hacker News story by ID."""
-    req = Request(f"https://hacker-news.firebaseio.com/v0/item/{id}.json",
-                  headers=anAgent)
+    req = Request(
+        f"https://hacker-news.firebaseio.com/v0/item/{id}.json", headers=anAgent
+    )
     httpResponse = urlopen(req)
     return json.loads(httpResponse.read())
 
 
-def get_story_text(a_uri, anAgent={'User-Agent': 'PythonAiBook/1.0'}):
+def get_story_text(a_uri, anAgent={"User-Agent": "PythonAiBook/1.0"}):
     """Fetch a web page and extract its visible text using BeautifulSoup."""
     req = Request(a_uri, headers=anAgent)
     httpResponse = urlopen(req)
@@ -62,20 +66,24 @@ def get_story_text(a_uri, anAgent={'User-Agent': 'PythonAiBook/1.0'}):
 
 def find_entities_in_text(some_text):
     """Run spaCy NER on text and return [entity_text, entity_label] pairs."""
+
     def clean(s):
-        return s.replace('\n', ' ').strip()
+        return s.replace("\n", " ").strip()
+
     doc = spacy_model(some_text)
     return map(list, [[clean(entity.text), entity.label_] for entity in doc.ents])
 
 
 import re
+
 # Regex to strip characters that are invalid in Prolog atoms
-regex = re.compile('[^a-z_]')
+regex = re.compile("[^a-z_]")
+
 
 def safe_prolog_text(s):
     """Convert a string into a valid Prolog atom (lowercase, underscores only)."""
-    s = s.lower().replace(' ','_').replace('&','and').replace('-','_')
-    return regex.sub('', s)
+    s = s.lower().replace(" ", "_").replace("&", "and").replace("-", "_")
+    return regex.sub("", s)
 
 
 # --- Main pipeline: fetch stories, extract entities, assert into Prolog ---
@@ -84,24 +92,32 @@ ids = get_new_stories()
 
 for id in ids:
     story_json_data = get_story_data(id)
-    if story_json_data != None and 'url' in story_json_data:
+    if story_json_data != None and "url" in story_json_data:
         print(f"Processing {story_json_data['url']}\n")
 
         # Fetch the story's web page (skip if blocked by the server)
         try:
-            story_text = get_story_text(story_json_data['url'])
+            story_text = get_story_text(story_json_data["url"])
         except Exception as e:
             print(f"  Skipping (could not fetch: {e})\n")
             continue
 
         # Extract named entities and partition into organizations and people
         entities = list(find_entities_in_text(story_text))
-        organizations = \
-            set([safe_prolog_text(name)
-                 for [name, entity_type] in entities if entity_type == "ORG"])
-        people = \
-            set([safe_prolog_text(name)
-                 for [name, entity_type] in entities if entity_type == "PERSON"])
+        organizations = set(
+            [
+                safe_prolog_text(name)
+                for [name, entity_type] in entities
+                if entity_type == "ORG"
+            ]
+        )
+        people = set(
+            [
+                safe_prolog_text(name)
+                for [name, entity_type] in entities
+                if entity_type == "PERSON"
+            ]
+        )
 
         # Assert each entity as a Prolog fact and query the knowledge base
         with PrologMQI() as mqi:

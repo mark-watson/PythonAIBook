@@ -35,16 +35,14 @@ MODEL_ID = "accounts/fireworks/models/deepseek-v4-flash"
 # Descriptive User-Agent so SPARQL endpoints (especially Wikidata) do not
 # rate-limit us as an unidentified bot.
 _USER_AGENT = (
-    "PythonAIBook/1.0 (educational project; "
-    "+https://github.com/markw/PythonAIBook)"
+    "PythonAIBook/1.0 (educational project; +https://github.com/markw/PythonAIBook)"
 )
 
 # Canonical entity-type ordering used by all KB-specific scripts.
 ENTITY_TYPES = ["PERSON", "ORG", "GPE", "MISC"]
 
 
-def llm_complete(prompt: str, max_tokens: int = 3000,
-                 temperature: float = 0) -> str:
+def llm_complete(prompt: str, max_tokens: int = 3000, temperature: float = 0) -> str:
     """Send a single user message to the Fireworks.ai LLM and return the text.
 
     Thin wrapper around the OpenAI-compatible chat-completions API so callers
@@ -62,6 +60,7 @@ def llm_complete(prompt: str, max_tokens: int = 3000,
 # ---------------------------------------------------------------------------
 # Entity extraction
 # ---------------------------------------------------------------------------
+
 
 def extract_entities(text: str) -> dict:
     """Extract named entities from text using the Fireworks.ai LLM.
@@ -115,8 +114,10 @@ Output: """
 # Answer synthesis
 # ---------------------------------------------------------------------------
 
-def synthesize_answer(question: str, context: str,
-                      source_label: str = "the knowledge base") -> str:
+
+def synthesize_answer(
+    question: str, context: str, source_label: str = "the knowledge base"
+) -> str:
     """Use the LLM to synthesize a natural-language answer from context.
 
     *question* is the user's original question.  *context* is the structured
@@ -144,6 +145,7 @@ def synthesize_answer(question: str, context: str,
 # SPARQL utilities
 # ---------------------------------------------------------------------------
 
+
 def query_sparql(endpoint: str, sparql_query: str) -> list[dict]:
     """Execute a SPARQL query against *endpoint* and return result bindings.
 
@@ -169,8 +171,9 @@ def query_sparql(endpoint: str, sparql_query: str) -> list[dict]:
     return ret
 
 
-def detect_relationship(question: str,
-                        relationship_table: dict) -> tuple[str, str] | None:
+def detect_relationship(
+    question: str, relationship_table: dict
+) -> tuple[str, str] | None:
     """Detect a relationship query in *question* using *relationship_table*.
 
     Scans the lowercased question for any key in the table. Multi-word keys
@@ -203,6 +206,7 @@ def resolve_value(obj: str, obj_label: str | None) -> str:
 # ---------------------------------------------------------------------------
 # Shared CLI
 # ---------------------------------------------------------------------------
+
 
 def run_cli(answer_fn, script_name: str):
     """Reusable command-line / interactive entry point.

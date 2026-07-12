@@ -115,17 +115,26 @@ def build_knowledge_base() -> sqlite3.Connection:
     )
     qed_id = cur.lastrowid
 
-    cur.executemany("INSERT INTO scientist_field VALUES (?, ?)", [
-        (einstein_id, physics_id), (einstein_id, qm_id),
-        (curie_id, physics_id), (curie_id, chemistry_id),
-        (feynman_id, physics_id), (feynman_id, qm_id),
-    ])
+    cur.executemany(
+        "INSERT INTO scientist_field VALUES (?, ?)",
+        [
+            (einstein_id, physics_id),
+            (einstein_id, qm_id),
+            (curie_id, physics_id),
+            (curie_id, chemistry_id),
+            (feynman_id, physics_id),
+            (feynman_id, qm_id),
+        ],
+    )
 
-    cur.executemany("INSERT INTO scientist_discovery VALUES (?, ?)", [
-        (einstein_id, sr_id),
-        (curie_id, rad_id),
-        (feynman_id, qed_id),
-    ])
+    cur.executemany(
+        "INSERT INTO scientist_discovery VALUES (?, ?)",
+        [
+            (einstein_id, sr_id),
+            (curie_id, rad_id),
+            (feynman_id, qed_id),
+        ],
+    )
 
     conn.commit()
     return conn
@@ -155,7 +164,9 @@ def query_knowledge_base(conn: sqlite3.Connection) -> None:
         ORDER BY d.year
     """)
     for row in cur.fetchall():
-        print(f"  {row['scientist']}: {row['discovery']} ({row['year']}) — {row['description']}")
+        print(
+            f"  {row['scientist']}: {row['discovery']} ({row['year']}) — {row['description']}"
+        )
 
     print("\nScientists who share a field:")
     cur.execute("""
