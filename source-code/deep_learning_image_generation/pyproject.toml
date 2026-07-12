@@ -12,3 +12,17 @@ dependencies = [
     "torchvision>=0.26.0",
     "transformers>=5.6.2",
 ]
+
+[dependency-groups]
+dev = [
+  "pyrefly",
+  "ruff",
+  "pytest",
+  "pytest-xdist",
+  "pytest-testmon",
+  "hypothesis",
+  "syrupy",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

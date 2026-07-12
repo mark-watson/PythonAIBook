@@ -91,11 +91,28 @@ the teacher network's 4-dim hidden representation to a 2-dim student space.
 ## Running
 
 ```bash
-# Using uv (recommended)
-uv run deep_learning_category_theory.py
+uv sync
+uv run python deep_learning_category_theory.py
+# or
+make run
 ```
 
-No third-party dependencies — uses only the Python standard library (`math`, `random`).
+No third-party runtime dependencies — the module uses only the Python standard library (`math`, `random`).
+
+## Development workflow
+
+Uses [`uv`](https://docs.astral.sh/uv/) for dependency management and [`just`](https://just.systems/) as the task runner.
+
+```bash
+just check       # fmt-check + lint + typecheck + test
+just fmt         # format all Python files
+just lint        # ruff --fix
+just typecheck   # pyrefly (strict preset)
+just test        # pytest with testmon (fast)
+just test-all    # full parallel pytest run
+```
+
+Under Claude Code, `.claude/hooks/py-check.sh` runs after every edit (format + lint + per-file typecheck) and `.claude/hooks/py-stop.sh` runs the full gate before the turn ends. See `CLAUDE.md` for the full workflow contract.
 
 ## Design Notes
 

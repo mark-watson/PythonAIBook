@@ -42,7 +42,7 @@ from __future__ import annotations
 
 import math
 import random
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Callable, Optional
 
 # =============================================================================
@@ -67,12 +67,14 @@ from typing import Callable, Optional
 # I.1  Typed wrappers - newtypes that encode semantic roles
 # ---------------------------------------------------------------------------
 
+
 @dataclass(frozen=True)
 class InputVec:
     """An element of the InputSpace - carries the raw feature vector.
 
     Categorical role: object in the InputSpace category.
     """
+
     vals: tuple[float, ...]
 
 
@@ -82,6 +84,7 @@ class TargetVal:
 
     Categorical role: element of the Target object.
     """
+
     v: float
 
 
@@ -92,6 +95,7 @@ class Prediction:
     Categorical role: element of the Prediction object - the codomain of the
     composed lens morphism.
     """
+
     v: float
 
 
@@ -101,6 +105,7 @@ class LearningRate:
 
     Categorical role: scalar that scales the endomorphism on ModelState.
     """
+
     v: float
 
 
@@ -117,6 +122,7 @@ class LayerParams:
 
     Categorical role: an object in the ParameterSpace category.
     """
+
     W: list[list[float]]
     b: list[float]
 
@@ -134,6 +140,7 @@ class LayerGrads:
     db : list[float]
         Gradient of the loss w.r.t. b. Same shape as b.
     """
+
     dW: list[list[float]]
     db: list[float]
 
@@ -150,12 +157,14 @@ class Model:
     layers : list[LayerParams]
         Ordered list of layer parameter objects, from input to output.
     """
+
     layers: list[LayerParams]
 
 
 # ---------------------------------------------------------------------------
 # I.2  Math utilities
 # ---------------------------------------------------------------------------
+
 
 def sigmoid(z: float) -> float:
     """The logistic sigmoid activation function σ(z) = 1 / (1 + e^{-z})."""
@@ -273,8 +282,8 @@ def forward_para(
     """
     W = params.W
     b = params.b
-    zs = vec_add(matvec(W, inputs), b)   # pre-activations
-    acts = [act(z) for z in zs]           # post-activations
+    zs = vec_add(matvec(W, inputs), b)  # pre-activations
+    acts = [act(z) for z in zs]  # post-activations
 
     # Pullback closure - the "put-back" of the categorical lens
     def pullback(upstream_grad: list[float]) -> tuple[LayerGrads, list[float]]:
@@ -302,6 +311,7 @@ def forward_para(
 #
 # This implements the functor  F : Para -> Para  that maps a sequence of layers
 # to their composed forward-pass + stacked pullback closures (survey §2.2).
+
 
 def network_forward(
     m: Model,
@@ -335,8 +345,7 @@ def network_forward(
     pullbacks: list[PullbackFn] = []
     params_list = m.layers
 
-    for i, p in enumerate(params_list):
-        is_last = (i == len(params_list) - 1)
+    for p in params_list:
         # Use sigmoid throughout (identity would also work for the output layer)
         layer_act = sigmoid
         layer_act_deriv = lambda z: sigmoid_deriv(sigmoid(z))  # noqa: E731
@@ -354,6 +363,7 @@ def network_forward(
 #
 # Survey §2.3: loss is a natural transformation from the prediction functor
 # to the real-number functor.  MSE is the simplest instance.
+
 
 def mse_loss(pred: Prediction, tgt: TargetVal) -> float:
     """Mean-squared error loss for one sample: L = (ŷ − y)².
@@ -381,6 +391,7 @@ def mse_loss_grad(pred: Prediction, tgt: TargetVal) -> float:
 # The survey (§2.2) notes that backpropagation is the composite of the
 # pullback morphisms in reverse order - a covariant functor on the gradient
 # category.
+
 
 def model_backward(pullbacks: list[PullbackFn], dl_dy_hat: float) -> list[LayerGrads]:
     """Run the backward pass by composing pullback morphisms in reverse order.
@@ -423,6 +434,7 @@ def model_backward(pullbacks: list[PullbackFn], dl_dy_hat: float) -> list[LayerG
 # Survey §2.1: the gradient-descent update  θ ← θ − η∇θ  is an endomorphism
 # u_η : Model -> Model on the parameter object of Para.
 
+
 def update_layer(params: LayerParams, grads: LayerGrads, eta: float) -> LayerParams:
     """Apply one SGD step to a single layer's parameters.
 
@@ -434,8 +446,7 @@ def update_layer(params: LayerParams, grads: LayerGrads, eta: float) -> LayerPar
     Returns a *new* LayerParams (the original is not mutated).
     """
     new_W = [
-        [w - eta * dw for w, dw in zip(wi, dwi)]
-        for wi, dwi in zip(params.W, grads.dW)
+        [w - eta * dw for w, dw in zip(wi, dwi)] for wi, dwi in zip(params.W, grads.dW)
     ]
     new_b = [bi - eta * dbi for bi, dbi in zip(params.b, grads.db)]
     return LayerParams(W=new_W, b=new_b)
@@ -454,14 +465,13 @@ def model_update(m: Model, grads_list: list[LayerGrads], eta: float) -> Model:
 
     Returns a *new* Model (the original is not mutated).
     """
-    return Model(
-        layers=[update_layer(p, g, eta) for p, g in zip(m.layers, grads_list)]
-    )
+    return Model(layers=[update_layer(p, g, eta) for p, g in zip(m.layers, grads_list)])
 
 
 # ---------------------------------------------------------------------------
 # I.8  One training step - the composed morphism
 # ---------------------------------------------------------------------------
+
 
 def train_step(
     m: Model,
@@ -497,6 +507,7 @@ def train_step(
 # I.9  Initialisation
 # ---------------------------------------------------------------------------
 
+
 def glorot_rand(fan_in: int, fan_out: int) -> float:
     """Sample one weight using Glorot-uniform initialisation.
 
@@ -508,10 +519,7 @@ def glorot_rand(fan_in: int, fan_out: int) -> float:
 
 def make_layer(fan_in: int, fan_out: int) -> LayerParams:
     """Create a randomly initialised LayerParams with Glorot weights and zero biases."""
-    W = [
-        [glorot_rand(fan_in, fan_out) for _ in range(fan_in)]
-        for _ in range(fan_out)
-    ]
+    W = [[glorot_rand(fan_in, fan_out) for _ in range(fan_in)] for _ in range(fan_out)]
     b = [0.0] * fan_out
     return LayerParams(W=W, b=b)
 
@@ -536,6 +544,7 @@ def make_network(arch: list[tuple[int, int]]) -> Model:
 # ---------------------------------------------------------------------------
 # I.10  Training loop
 # ---------------------------------------------------------------------------
+
 
 def train(
     m: Model,
@@ -585,6 +594,7 @@ def train(
 # I.11  Inference
 # ---------------------------------------------------------------------------
 
+
 def predict(m: Model, xs: list[float]) -> float:
     """Run a forward pass and return the scalar prediction ŷ.
 
@@ -627,6 +637,7 @@ def predict(m: Model, xs: list[float]) -> float:
 # II.1  Stochastic morphism composition (Kleisli composition)
 # ---------------------------------------------------------------------------
 
+
 def stochastic_compose(
     f: Callable[[list[float]], list[float]],
     g: Callable[[list[float]], list[float]],
@@ -645,6 +656,7 @@ def stochastic_compose(
 #
 # The stochastic forward pass samples a mask once; the backward pass reuses it
 # (this is the "closed" lens / optic requirement that both passes share state).
+
 
 def make_dropout_lens(
     keep_prob: float,
@@ -667,6 +679,7 @@ def make_dropout_lens(
     Callable
         A stochastic Para morphism: inputs -> (masked_output, pullback_fn).
     """
+
     def dropout_forward(
         inputs: list[float],
     ) -> tuple[list[float], Callable[[list[float]], list[float]]]:
@@ -695,9 +708,11 @@ def make_dropout_lens(
 #
 # We implement a single-layer Bayesian linear model with Gaussian weights.
 
+
 def gaussian_sample(mu: float, sigma: float) -> float:
     """Sample from N(μ, σ) using the Box-Muller transform."""
     import math as _math
+
     u1 = max(random.random(), 1e-10)
     u2 = random.random()
     z = _math.sqrt(-2.0 * _math.log(u1)) * _math.cos(2.0 * _math.pi * u2)
@@ -719,6 +734,7 @@ class BayesianLayer:
     fan_in : int
     fan_out : int
     """
+
     mu: list[list[float]]
     sigma: float
     fan_in: int
@@ -741,10 +757,7 @@ def make_bayesian_layer(fan_in: int, fan_out: int, sigma: float = 0.1) -> Bayesi
     -------
     BayesianLayer
     """
-    mu = [
-        [glorot_rand(fan_in, fan_out) for _ in range(fan_in)]
-        for _ in range(fan_out)
-    ]
+    mu = [[glorot_rand(fan_in, fan_out) for _ in range(fan_in)] for _ in range(fan_out)]
     return BayesianLayer(mu=mu, sigma=sigma, fan_in=fan_in, fan_out=fan_out)
 
 
@@ -766,10 +779,7 @@ def bayesian_forward(bl: BayesianLayer, inputs: list[float]) -> list[float]:
     list[float]
         Output activations: sigmoid(W_s · x) for sampled W_s.
     """
-    W_sample = [
-        [gaussian_sample(w, bl.sigma) for w in row]
-        for row in bl.mu
-    ]
+    W_sample = [[gaussian_sample(w, bl.sigma) for w in row] for row in bl.mu]
     bias = [0.0] * bl.fan_out
     return [sigmoid(z) for z in vec_add(matvec(W_sample, inputs), bias)]
 
@@ -851,6 +861,7 @@ def permutation_equivariant_map(
 # (survey §4.2): the cluster centre is the colimit / limit of points in the
 # cluster, and assignment is the universal morphism.
 
+
 def euclidean_dist(u: list[float], v: list[float]) -> float:
     """Euclidean distance between two vectors."""
     return math.sqrt(sum((a - b) ** 2 for a, b in zip(u, v)))
@@ -893,8 +904,7 @@ def update_centroids(
             n = len(cluster)
             # Centroid = colimit (average) of the cluster
             centroid = [
-                sum(pt[j] for pt in cluster) / n
-                for j in range(len(cluster[0]))
+                sum(pt[j] for pt in cluster) / n for j in range(len(cluster[0]))
             ]
             new_centroids.append(centroid)
     return new_centroids
@@ -964,6 +974,7 @@ def k_means(
 #
 # χ : InputSpace -> Ω ≅ [0,1]   (the sigmoid output IS the characteristic map)
 
+
 def subobject_classify(m: Model, xs: list[float]) -> tuple[float, int]:
     """Apply the subobject classifier χ : X -> Ω.
 
@@ -994,6 +1005,7 @@ def subobject_classify(m: Model, xs: list[float]) -> tuple[float, int]:
 #
 # We implement a two-expert ensemble with a consistency check ("gluing lemma").
 
+
 @dataclass(frozen=True)
 class SheafSection:
     """A local section F(U) of a sheaf - one expert's prediction on its context.
@@ -1005,6 +1017,7 @@ class SheafSection:
     prediction : float
         The expert's scalar prediction on this context.
     """
+
     context: str
     prediction: float
 
@@ -1054,6 +1067,7 @@ def sheaf_glue(sections: list[SheafSection], tol: float) -> Optional[float]:
 # (intuitionistic logic).  In a Boolean topos (Set), this collapses to
 # classical logic.  We represent propositions as probability thresholds.
 
+
 def heyting_and(p: float, q: float) -> float:
     """Conjunction: p ∧ q = min(p, q)."""
     return min(p, q)
@@ -1084,6 +1098,7 @@ def heyting_implies(p: float, q: float) -> float:
 # way.  We implement a simple "knowledge distillation" adapter - a linear map
 # from F-outputs to G-outputs - as a concrete natural transformation.
 
+
 @dataclass
 class NatTransform:
     """Components of a natural transformation η : F ⇒ G.
@@ -1099,6 +1114,7 @@ class NatTransform:
     adapter_b : list[float]
         Bias vector of length target_size.
     """
+
     adapter_W: list[list[float]]
     adapter_b: list[float]
 
@@ -1173,7 +1189,9 @@ if __name__ == "__main__":
         xs = list(inp.vals)
         y_hat = predict(trained_xor, xs)
         cls = 1 if y_hat > 0.5 else 0
-        print(f"      Input: {xs}  Target: {tgt.v:.1f}  Pred: {y_hat:.4f}  Class: {cls}")
+        print(
+            f"      Input: {xs}  Target: {tgt.v:.1f}  Pred: {y_hat:.4f}  Class: {cls}"
+        )
 
     print()
     print("  Category-theory reading:")
@@ -1224,7 +1242,7 @@ if __name__ == "__main__":
 
     print("  III-A  Permutation-Invariant Pooling (colimit / coproduct)")
     set1 = [1.0, 3.0, 5.0, 2.0]
-    set2 = [3.0, 1.0, 2.0, 5.0]   # permutation of set1
+    set2 = [3.0, 1.0, 2.0, 5.0]  # permutation of set1
     print(f"    Set 1 pool: {permutation_invariant_pool(set1)}  (order: {set1})")
     print(f"    Set 2 pool: {permutation_invariant_pool(set2)}  (order: {set2})")
     print("    -> Same result for both permutations ✓")
@@ -1232,9 +1250,15 @@ if __name__ == "__main__":
 
     print("  III-B  K-means as categorical colimit computation")
     cluster_data = [
-        [1.0, 1.0], [1.2, 0.8], [0.9, 1.1],
-        [5.0, 5.0], [5.1, 4.9], [4.8, 5.2],
-        [1.0, 5.0], [0.9, 4.8], [1.1, 5.1],
+        [1.0, 1.0],
+        [1.2, 0.8],
+        [0.9, 1.1],
+        [5.0, 5.0],
+        [5.1, 4.9],
+        [4.8, 5.2],
+        [1.0, 5.0],
+        [0.9, 4.8],
+        [1.1, 5.1],
     ]
     centroids, labels = k_means(cluster_data, k=3, max_iter=50)
     print(f"    Data: {len(cluster_data)} points in 2D")
@@ -1272,10 +1296,14 @@ if __name__ == "__main__":
     glued_12 = sheaf_glue([s1, s2], tol=0.1)
     glued_13 = sheaf_glue([s1, s3], tol=0.1)
     print(f"    Expert A pred: {s1.prediction},  Expert B pred: {s2.prediction}")
-    glue_str = f"{glued_12:.4f}" if glued_12 is not None else "INCONSISTENT - cannot glue"
+    glue_str = (
+        f"{glued_12:.4f}" if glued_12 is not None else "INCONSISTENT - cannot glue"
+    )
     print(f"    Glue A+B (tol=0.1): {glue_str}")
     print(f"    Expert C pred: {s3.prediction} (conflict with A)")
-    glue_str2 = f"{glued_13:.4f}" if glued_13 is not None else "INCONSISTENT - cannot glue"
+    glue_str2 = (
+        f"{glued_13:.4f}" if glued_13 is not None else "INCONSISTENT - cannot glue"
+    )
     print(f"    Glue A+C (tol=0.1): {glue_str2}")
     print()
     print("    Consistent sections glue to a global prediction; inconsistent")
@@ -1310,9 +1338,11 @@ if __name__ == "__main__":
     # by running a partial forward pass.
     layers = trained_xor.layers
     l1, l2 = layers[0], layers[1]
-    a1, _pb1 = forward_para(l1, sigmoid, lambda z: sigmoid_deriv(sigmoid(z)), [1.0, 0.0])
+    a1, _pb1 = forward_para(
+        l1, sigmoid, lambda z: sigmoid_deriv(sigmoid(z)), [1.0, 0.0]
+    )
     a2, _pb2 = forward_para(l2, sigmoid, lambda z: sigmoid_deriv(sigmoid(z)), a1)
-    teacher_hidden = a2   # 4-dim hidden representation
+    teacher_hidden = a2  # 4-dim hidden representation
 
     adapter = make_nat_transform(source_size=4, target_size=2)
     student_rep = apply_nat_transform(adapter, teacher_hidden)

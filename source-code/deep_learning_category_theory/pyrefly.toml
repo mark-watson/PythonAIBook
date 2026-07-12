@@ -1,0 +1,7 @@
+project-includes = ["deep_learning_category_theory.py", "tests"]
+project-excludes = ["**/__pycache__", "**/*venv/**", "**/.*/**"]
+python-version = "3.14"
+preset = "strict"
+
+[errors]
+non-exhaustive-match = "error"
