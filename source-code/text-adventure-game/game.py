@@ -38,13 +38,15 @@ def build_client() -> OpenAI:
 MODEL = "accounts/fireworks/models/deepseek-v4-flash"
 
 
-def get_ai_response(client: OpenAI, messages: list[dict]) -> str:
+def get_ai_response(client: OpenAI, messages: list[dict[str, str]]) -> str:
     """Send conversation history to the model and return its reply."""
     response = client.chat.completions.create(
         model=MODEL,
-        messages=messages,
+        messages=messages,  # type: ignore[arg-type]
     )
-    return response.choices[0].message.content
+    content = response.choices[0].message.content
+    assert content is not None, "Model returned empty response"
+    return content
 
 
 def main():
