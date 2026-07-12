@@ -1,0 +1,26 @@
+set shell := ["bash", "-uc"]
+
+default: check
+
+check: fmt-check lint typecheck test
+
+fmt:
+    uv run ruff format .
+
+fmt-check:
+    uv run ruff format --check .
+
+lint:
+    uv run ruff check --fix .
+
+typecheck:
+    uv run pyrefly check
+
+test:
+    uv run pytest -q --testmon
+
+test-all:
+    uv run pytest -q -n auto
+
+run:
+    uv run python -m anomaly_detection.wisconsin

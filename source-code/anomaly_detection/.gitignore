@@ -1,3 +1,12 @@
 __pycache__/
 *.png
 .venv/
+.pytest_cache/
+.ruff_cache/
+.hypothesis/
+.testmondata
+.testmondata-shm
+.testmondata-wal
+dist/
+build/
+*.egg-info/
