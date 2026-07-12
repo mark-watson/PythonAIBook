@@ -5,6 +5,8 @@
 # subframes, forming a tree structure. The BookShelf class provides a
 # simple container for searching across multiple frames.
 
+from typing import Any
+
 
 class Frame:
     """A recursive knowledge representation structure inspired by Lisp frames.
@@ -15,29 +17,29 @@ class Frame:
 
     frame_counter = 0  # class-level counter for auto-naming unnamed frames
 
-    def __init__(self, name=""):
+    def __init__(self, name: str = ""):
         Frame.frame_counter += 1
-        self.objects = []  # mixed list of numbers, strings, and child Frames
-        self.depth = 0  # nesting level (0 = top-level)
+        self.objects: list[Any] = []  # mixed list of numbers, strings, and child Frames
+        self.depth: int = 0  # nesting level (0 = top-level)
         if (len(name)) == 0:
             self.name = f"Frame:{Frame.frame_counter}"
         else:
             self.name = f'"{name}"'
 
-    def add_subframe(self, a_frame):
+    def add_subframe(self, a_frame: "Frame") -> None:
         """Nest a child frame inside this frame, adjusting its depth."""
         a_frame.depth = self.depth + 1
         self.objects.append(a_frame)
 
-    def add_number(self, a_number):
+    def add_number(self, a_number: int | float) -> None:
         """Store a numeric value in this frame."""
         self.objects.append(a_number)
 
-    def add_string(self, a_string):
+    def add_string(self, a_string: str) -> None:
         """Store a string value in this frame."""
         self.objects.append(a_string)
 
-    def __str__(self):
+    def __str__(self) -> str:
         """Recursively render the frame tree with indentation showing depth."""
         indent = " " * self.depth * 2
         ret = indent + f"<Frame {self.name}>\n"
@@ -58,15 +60,15 @@ class BookShelf:
     checks whether the search term appears anywhere in the tree.
     """
 
-    def __init__(self, name=""):
-        self.frames = []
+    def __init__(self, name: str = ""):
+        self.frames: list[Frame] = []
 
-    def add_frame(self, a_frame):
+    def add_frame(self, a_frame: Frame) -> None:
         self.frames.append(a_frame)
 
-    def search_text(self, search_string):
+    def search_text(self, search_string: str) -> list[Frame]:
         """Return all frames whose string representation contains search_string."""
-        ret = []
+        ret: list[Frame] = []
         for frm in self.frames:
             if frm.__str__().index(search_string):
                 ret.append(frm)

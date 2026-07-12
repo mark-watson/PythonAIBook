@@ -14,11 +14,12 @@
 #   uv pip install swiplserver spacy beautifulsoup4
 #   python -m spacy download en_core_web_sm
 
-from urllib.request import Request, urlopen
 import json
-from bs4 import BeautifulSoup
+import re
 from pprint import pprint
+from urllib.request import Request, urlopen
 
+from bs4 import BeautifulSoup
 from swiplserver import PrologMQI
 
 # Load the spaCy English NLP model (auto-downloads if missing)
@@ -26,7 +27,7 @@ import spacy
 
 try:
     spacy_model = spacy.load("en_core_web_sm")
-except:
+except Exception:
     from os import system
 
     system("python -m spacy download en_core_web_sm")
@@ -35,8 +36,10 @@ except:
 LEN = 100  # larger amount of text is more expensive for OpenAI APIs
 
 
-def get_new_stories(anAgent={"User-Agent": "PythonAiBook/1.0"}):
+def get_new_stories(anAgent: dict[str, str] | None = None):
     """Fetch the IDs of the most recent Hacker News stories (returns top 3)."""
+    if anAgent is None:
+        anAgent = {"User-Agent": "PythonAiBook/1.0"}
     req = Request(
         "https://hacker-news.firebaseio.com/v0/newstories.json", headers=anAgent
     )
@@ -47,8 +50,10 @@ def get_new_stories(anAgent={"User-Agent": "PythonAiBook/1.0"}):
     return ids[0:3]
 
 
-def get_story_data(id, anAgent={"User-Agent": "PythonAiBook/1.0"}):
+def get_story_data(id: int, anAgent: dict[str, str] | None = None):
     """Fetch the JSON metadata for a single Hacker News story by ID."""
+    if anAgent is None:
+        anAgent = {"User-Agent": "PythonAiBook/1.0"}
     req = Request(
         f"https://hacker-news.firebaseio.com/v0/item/{id}.json", headers=anAgent
     )
@@ -56,31 +61,31 @@ def get_story_data(id, anAgent={"User-Agent": "PythonAiBook/1.0"}):
     return json.loads(httpResponse.read())
 
 
-def get_story_text(a_uri, anAgent={"User-Agent": "PythonAiBook/1.0"}):
+def get_story_text(a_uri: str, anAgent: dict[str, str] | None = None):
     """Fetch a web page and extract its visible text using BeautifulSoup."""
+    if anAgent is None:
+        anAgent = {"User-Agent": "PythonAiBook/1.0"}
     req = Request(a_uri, headers=anAgent)
     httpResponse = urlopen(req)
     soup = BeautifulSoup(httpResponse.read(), "html.parser")
     return soup.get_text()
 
 
-def find_entities_in_text(some_text):
+def find_entities_in_text(some_text: str):
     """Run spaCy NER on text and return [entity_text, entity_label] pairs."""
 
-    def clean(s):
+    def clean(s: str) -> str:
         return s.replace("\n", " ").strip()
 
     doc = spacy_model(some_text)
     return map(list, [[clean(entity.text), entity.label_] for entity in doc.ents])
 
 
-import re
-
 # Regex to strip characters that are invalid in Prolog atoms
 regex = re.compile("[^a-z_]")
 
 
-def safe_prolog_text(s):
+def safe_prolog_text(s: str) -> str:
     """Convert a string into a valid Prolog atom (lowercase, underscores only)."""
     s = s.lower().replace(" ", "_").replace("&", "and").replace("-", "_")
     return regex.sub("", s)
@@ -92,7 +97,7 @@ ids = get_new_stories()
 
 for id in ids:
     story_json_data = get_story_data(id)
-    if story_json_data != None and "url" in story_json_data:
+    if story_json_data is not None and "url" in story_json_data:
         print(f"Processing {story_json_data['url']}\n")
 
         # Fetch the story's web page (skip if blocked by the server)
@@ -128,7 +133,7 @@ for id in ids:
                                   '{story_json_data['url']}'))."
                     try:
                         prolog_thread.query(s)
-                    except:
+                    except Exception:
                         print(f"Error with term: {s}")
 
                 # Assert organization(Name, URI) facts
@@ -136,17 +141,17 @@ for id in ids:
                     s = f"assertz(organization({organization}, '{story_json_data['url']}'))."
                     try:
                         prolog_thread.query(s)
-                    except:
+                    except Exception:
                         print(f"Error with term: {s}")
 
                 # Query and display all asserted organizations and people
                 try:
                     result = prolog_thread.query("organization(Organization, URI).")
                     pprint(result)
-                except:
+                except Exception:
                     print("No results for organizations.")
                 try:
                     result = prolog_thread.query("person(Person, URI).")
                     pprint(result)
-                except:
+                except Exception:
                     print("No results for people.")

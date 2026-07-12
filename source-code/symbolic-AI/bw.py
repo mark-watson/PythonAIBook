@@ -12,10 +12,12 @@
 #
 # Requirements: uv pip install soar-sml
 
-import soar_sml as sml
+from typing import Any
+
+import soar_sml as sml  # pyrefly: ignore[missing-import]
 
 
-def callback_debug(mid, user_data, agent, message):
+def callback_debug(mid: Any, user_data: Any, agent: Any, message: str) -> None:
     """Print callback: receives output from Soar's print events."""
     print(message)
 
