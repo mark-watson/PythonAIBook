@@ -23,31 +23,24 @@ from sklearn.metrics import (
 
 # ── Data loading ──────────────────────────────────────
 
+
 def load_data():
     """Load the cancer CSV files from the
     machine-learning directory."""
-    train_df = pd.read_csv(
-        "../machine-learning/labeled_cancer_data.csv"
-    )
-    test_df = pd.read_csv(
-        "../machine-learning/labeled_test_data.csv"
-    )
+    train_df = pd.read_csv("../machine-learning/labeled_cancer_data.csv")
+    test_df = pd.read_csv("../machine-learning/labeled_test_data.csv")
 
     train = train_df.to_numpy()
     # First 9 columns are features
     X_train = train[:, 0:9].astype(np.float32)
     # Last column is the label (0 or 1)
-    Y_train = (
-        train[:, -1].astype(np.float32).reshape(-1, 1)
-    )
+    Y_train = train[:, -1].astype(np.float32).reshape(-1, 1)
 
     test = test_df.to_numpy()
     # First 9 columns are features
     X_test = test[:, 0:9].astype(np.float32)
     # Last column is the label (0 or 1)
-    Y_test = (
-        test[:, -1].astype(np.float32).reshape(-1, 1)
-    )
+    Y_test = test[:, -1].astype(np.float32).reshape(-1, 1)
 
     # Scale features to zero mean and unit variance
     scaler = StandardScaler()
@@ -58,6 +51,7 @@ def load_data():
 
 
 # ── Model definition ─────────────────────────────────
+
 
 class CancerNet(nn.Module):
     """Simple feedforward network: 9 → 15 → 15 → 1."""
@@ -83,14 +77,13 @@ class CancerNet(nn.Module):
 
 # ── Training loop ────────────────────────────────────
 
+
 def train_model(model, train_loader, epochs=60, lr=0.01):
     """Train the model using SGD and BCEWithLogitsLoss."""
     # Binary cross-entropy with built-in sigmoid
     criterion = nn.BCEWithLogitsLoss()
     # Stochastic gradient descent optimizer
-    optimizer = torch.optim.SGD(
-        model.parameters(), lr=lr
-    )
+    optimizer = torch.optim.SGD(model.parameters(), lr=lr)
 
     for epoch in range(epochs):
         total_loss = 0.0
@@ -110,10 +103,7 @@ def train_model(model, train_loader, epochs=60, lr=0.01):
         # Print average loss every 10 epochs
         if (epoch + 1) % 10 == 0:
             avg_loss = total_loss / len(train_loader)
-            print(
-                f"  Epoch {epoch+1:3d}/{epochs}"
-                f"  loss: {avg_loss:.4f}"
-            )
+            print(f"  Epoch {epoch + 1:3d}/{epochs}  loss: {avg_loss:.4f}")
 
 
 # ── Main ─────────────────────────────────────────────
@@ -124,12 +114,8 @@ if __name__ == "__main__":
     print(f"Test examples:     {len(X_test)}\n")
 
     # Convert numpy arrays to PyTorch tensors
-    train_ds = TensorDataset(
-        torch.tensor(X_train), torch.tensor(Y_train)
-    )
-    train_loader = DataLoader(
-        train_ds, batch_size=100, shuffle=True
-    )
+    train_ds = TensorDataset(torch.tensor(X_train), torch.tensor(Y_train))
+    train_loader = DataLoader(train_ds, batch_size=100, shuffle=True)
 
     model = CancerNet()
     print(model)
@@ -167,8 +153,5 @@ if __name__ == "__main__":
     with torch.no_grad():
         # Convert logits to probabilities for samples
         sample_probs = torch.sigmoid(model(samples))
-    print(
-        "Sample predictions (should be"
-        " close to [[0], [1]]):"
-    )
+    print("Sample predictions (should be close to [[0], [1]]):")
     print(sample_probs.numpy())

@@ -8,3 +8,17 @@ dependencies = [
     "scikit-learn>=1.8.0",
     "torch>=2.11.0",
 ]
+
+[dependency-groups]
+dev = [
+  "pyrefly",
+  "ruff",
+  "pytest",
+  "pytest-xdist",
+  "pytest-testmon",
+  "hypothesis",
+  "syrupy",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
