@@ -68,7 +68,7 @@ for r in range(3):
         s = r * 3 + c
         row += f"  {actions[vi.policy[s]]}  "
     print(row)
-print(f"\nValue function: {np.round(vi.V, 2)}")
+print(f"\nValue function: {np.round(vi.V, 2)}")  # pyrefly: ignore[no-matching-overload]
 print(f"Iterations to converge: {vi.iter}")
 
 # --- Policy Iteration ---
@@ -113,5 +113,5 @@ vi2.run()
 print(f"Optimal policy: {tuple(vi2.policy)}")
 for s, a in enumerate(vi2.policy):
     print(f"  Forest age {s}: {'Wait' if a == 0 else 'Cut'}")
-print(f"Value function: {np.round(vi2.V, 2)}")
+print(f"Value function: {np.round(vi2.V, 2)}")  # pyrefly: ignore[no-matching-overload]
 print(f"Iterations: {vi2.iter}")

@@ -8,6 +8,9 @@
 #   Gymnasium:   https://gymnasium.farama.org/
 #   TD learning: https://en.wikipedia.org/wiki/Temporal_difference_learning
 
+
+from typing import Any
+
 import gymnasium as gym  # OpenAI Gymnasium RL environment library
 import numpy as np  # Numerical computing with arrays
 
@@ -15,14 +18,14 @@ np.random.seed(42)  # Reproducible results across runs
 
 
 def q_learning(
-    env,
-    episodes=10000,
-    alpha=0.1,
-    gamma=0.99,
-    epsilon=1.0,
-    epsilon_decay=0.999,
-    min_epsilon=0.01,
-):
+    env: Any,
+    episodes: int = 10000,
+    alpha: float = 0.1,
+    gamma: float = 0.99,
+    epsilon: float = 1.0,
+    epsilon_decay: float = 0.999,
+    min_epsilon: float = 0.01,
+) -> tuple[np.ndarray, list[tuple[int, float]]]:
     """Train a Q-table via tabular Q-learning (Watkins, 1989).
 
     Q-learning is a model-free, off-policy temporal-difference (TD) algorithm.
@@ -88,7 +91,7 @@ def q_learning(
     return Q, success_history
 
 
-def evaluate(env, Q, episodes=100):
+def evaluate(env: Any, Q: np.ndarray, episodes: int = 100) -> float:
     """Evaluate a greedy policy derived from Q-table over multiple episodes.
 
     Runs the agent with zero exploration (argmax over Q row), counting how
@@ -115,7 +118,7 @@ def evaluate(env, Q, episodes=100):
     return successes / episodes
 
 
-def print_policy(Q, env_name):
+def print_policy(Q: np.ndarray, env_name: str) -> None:
     """Print the greedy policy as a grid of arrow characters.
 
     Maps each state's argmax action to a Unicode arrow and displays it as a
@@ -132,7 +135,7 @@ def print_policy(Q, env_name):
         row_str = ""
         for col in range(size):
             s = row * size + col  # flatten 2D grid index to state index
-            row_str += arrows[np.argmax(Q[s])]  # best action for this state
+            row_str += arrows[int(np.argmax(Q[s]))]  # best action for this state
         print(f"  {row_str}")
     print("  (←=left ↓=down →=right ↑=up)")
 
@@ -150,8 +153,8 @@ print("=" * 55)
 # Create environment: 4×4 grid, stochastic transitions
 # See: https://gymnasium.farama.org/environments/toy_text/frozen_lake/
 env = gym.make("FrozenLake-v1", is_slippery=True)
-print(f"States: {env.observation_space.n}")
-print(f"Actions: {env.action_space.n}")
+print(f"States: {env.observation_space.n}")  # pyrefly: ignore[missing-attribute]
+print(f"Actions: {env.action_space.n}")  # pyrefly: ignore[missing-attribute]
 print("Map size: 4x4")
 
 print("\nTraining:")
@@ -175,8 +178,8 @@ print("Q-Learning on FrozenLake (deterministic, no slipping)")
 print("=" * 55)
 
 env2 = gym.make("FrozenLake-v1", is_slippery=False)
-print(f"States: {env2.observation_space.n}")
-print(f"Actions: {env2.action_space.n}")
+print(f"States: {env2.observation_space.n}")  # pyrefly: ignore[missing-attribute]
+print(f"Actions: {env2.action_space.n}")  # pyrefly: ignore[missing-attribute]
 
 print("\nTraining:")
 Q2, _ = q_learning(env2, episodes=2000)  # fewer episodes needed for deterministic
