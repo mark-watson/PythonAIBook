@@ -14,12 +14,12 @@
 import ollama
 
 
-def reason_about(question: str, model: str = "deepseek-r1:7b") -> dict:
+def reason_about(question: str, model: str = "deepseek-r1:7b") -> dict[str, str]:
     """Ask a question and extract both reasoning and final answer."""
     response = ollama.chat(
         model=model, messages=[{"role": "user", "content": question}]
     )
-    content = response.message.content
+    content = response.message.content or ""
 
     # DeepSeek-R1 wraps reasoning in <think>...</think> tags
     reasoning = ""

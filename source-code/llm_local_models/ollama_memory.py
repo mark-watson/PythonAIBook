@@ -27,7 +27,7 @@ class LocalAssistant:
         """Send a message and get a response, maintaining conversation history."""
         self.messages.append({"role": "user", "content": user_message})
         response = ollama.chat(model=self.model, messages=self.messages)
-        reply = response.message.content
+        reply = response.message.content or ""
         self.messages.append({"role": "assistant", "content": reply})
         return reply
 
