@@ -5,6 +5,8 @@ Demonstrates unsupervised learning: discovering groups in data
 without labeled targets.
 """
 
+from typing import Any
+
 import pandas as pd
 from sklearn.datasets import load_iris
 from sklearn.cluster import KMeans
@@ -12,9 +14,9 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import silhouette_score
 
 
-def run_kmeans():
+def run_kmeans() -> None:
     """Run K-Means clustering on the Iris dataset."""
-    iris = load_iris()
+    iris: Any = load_iris()  # sklearn Bunch typed as tuple in stubs
     X = iris.data
     feature_names = iris.feature_names
     true_labels = iris.target

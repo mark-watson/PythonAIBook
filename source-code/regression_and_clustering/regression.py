@@ -5,6 +5,8 @@ Demonstrates Linear Regression and Polynomial Regression
 with scikit-learn.
 """
 
+from typing import Any
+
 import numpy as np
 import pandas as pd
 from sklearn.datasets import fetch_california_housing
@@ -14,15 +16,15 @@ from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from sklearn.model_selection import train_test_split
 
 
-def load_housing_data():
+def load_housing_data() -> pd.DataFrame:
     """Load the California Housing dataset into a DataFrame."""
-    housing = fetch_california_housing()
+    housing: Any = fetch_california_housing()  # sklearn Bunch typed as tuple in stubs
     df = pd.DataFrame(housing.data, columns=housing.feature_names)
     df["MedHouseVal"] = housing.target
     return df
 
 
-def run_linear_regression(df):
+def run_linear_regression(df: pd.DataFrame) -> None:
     """Train and evaluate a Linear Regression model."""
     X = df.drop("MedHouseVal", axis=1)
     y = df["MedHouseVal"]
@@ -53,7 +55,7 @@ def run_linear_regression(df):
     print()
 
 
-def run_polynomial_regression(df):
+def run_polynomial_regression(df: pd.DataFrame) -> None:
     """Train a Polynomial Regression model using two features."""
     # Use only MedInc and AveRooms to keep it interpretable
     X = df[["MedInc", "AveRooms"]].copy()
