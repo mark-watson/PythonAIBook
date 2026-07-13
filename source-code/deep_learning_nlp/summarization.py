@@ -20,6 +20,8 @@ def main():
     # Load the tokenizer and seq2seq model
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
+    assert tokenizer is not None
+    assert model is not None
 
     # Input text to be summarized
     text = (
