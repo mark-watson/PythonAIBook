@@ -41,25 +41,33 @@ class Concept:
 
     concept_id: str  # relative path without .md suffix
     path: Path  # absolute path to the file
-    frontmatter: dict  # parsed YAML frontmatter
+    frontmatter: dict[str, str | list[str]]  # parsed YAML frontmatter
     body: str  # markdown body (everything after frontmatter)
 
     # Convenience accessors from frontmatter
     @property
     def type(self) -> str:
-        return self.frontmatter.get("type", "Unknown")
+        value = self.frontmatter.get("type", "Unknown")
+        assert isinstance(value, str)
+        return value
 
     @property
     def title(self) -> str:
-        return self.frontmatter.get("title", self.concept_id)
+        value = self.frontmatter.get("title", self.concept_id)
+        assert isinstance(value, str)
+        return value
 
     @property
     def description(self) -> str:
-        return self.frontmatter.get("description", "")
+        value = self.frontmatter.get("description", "")
+        assert isinstance(value, str)
+        return value
 
     @property
     def tags(self) -> list[str]:
-        return self.frontmatter.get("tags", [])
+        value = self.frontmatter.get("tags", [])
+        assert isinstance(value, list)
+        return value
 
     def as_context_block(self) -> str:
         """Return a compact text representation suitable for LLM context."""
@@ -81,7 +89,7 @@ class Concept:
 # ---------------------------------------------------------------------------
 
 
-def _parse_simple_yaml(yaml_text: str) -> dict:
+def _parse_simple_yaml(yaml_text: str) -> dict[str, str | list[str]]:
     """
     Minimal YAML parser for OKF frontmatter.
 
@@ -91,7 +99,7 @@ def _parse_simple_yaml(yaml_text: str) -> dict:
     Does NOT require PyYAML as a dependency so the example stays lightweight.
     Upgrade to `import yaml; yaml.safe_load(...)` for production use.
     """
-    result: dict = {}
+    result: dict[str, str | list[str]] = {}
     for line in yaml_text.splitlines():
         line = line.strip()
         if not line or line.startswith("#"):
@@ -122,7 +130,7 @@ def parse_concept(path: Path, bundle_root: Path) -> Concept | None:
     text = path.read_text(encoding="utf-8")
 
     # Extract YAML frontmatter delimited by ---
-    frontmatter: dict = {}
+    frontmatter: dict[str, str | list[str]] = {}
     body = text
     fm_match = re.match(r"^---\s*\n(.*?)\n---\s*\n", text, re.DOTALL)
     if fm_match:
@@ -262,7 +270,9 @@ class OKFAgent:
                 {"role": "user", "content": user_message},
             ],
         )
-        return response.message.content
+        content = response.message.content
+        assert content is not None
+        return content
 
 
 # ---------------------------------------------------------------------------
