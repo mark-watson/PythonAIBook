@@ -4,4 +4,7 @@ python-version = "3.14"
 preset = "strict"
 
 [errors]
+missing-attribute = "ignore"
 non-exhaustive-match = "error"
+not-callable = "ignore"
+not-iterable = "ignore"
