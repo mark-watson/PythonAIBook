@@ -15,6 +15,8 @@ Set environment variable:
     export FIREWORKS_API_KEY="your-api-key"
 """
 
+from openai.types.chat import ChatCompletionMessageParam  # noqa: F401
+
 from library import (
     client,
     MODEL_ID,
@@ -204,7 +206,7 @@ ENRICHMENT_PROPERTIES = {
 # ---------------------------------------------------------------------------
 
 
-def query_dbpedia(sparql_query: str) -> list[dict]:
+def query_dbpedia(sparql_query: str) -> list[dict[str, dict[str, str]]]:
     """Execute a SPARQL query against the DBpedia endpoint."""
     return query_sparql(DBPEDIA_ENDPOINT, sparql_query)
 
@@ -223,7 +225,7 @@ def build_sparql_query(name: str, dbpedia_type_uri: str) -> str:
     return SPARQL_QUERY_TEMPLATE.format(name=name, dbpedia_type=type_clause)
 
 
-def query_relationship(entity_name: str, property_uri: str) -> list[dict]:
+def query_relationship(entity_name: str, property_uri: str) -> list[dict[str, str]]:
     """Query DBpedia for the object of a relationship property on an entity."""
     query = SPARQL_RELATIONSHIP_TEMPLATE.format(
         name=entity_name, property_uri=property_uri
@@ -278,7 +280,7 @@ def enrich_entity(name: str, entity_type: str) -> list[str]:
 # ---------------------------------------------------------------------------
 
 
-def get_entity_context(entities: dict) -> str:
+def get_entity_context(entities: dict[str, list[str]]) -> str:
     """Execute SPARQL queries for extracted entities and build context text.
 
     Returns a structured context string with one paragraph per entity,
@@ -399,10 +401,10 @@ def answer_question(question: str) -> tuple[str, str]:
 # ---------------------------------------------------------------------------
 
 
-def chat_with_context(system_prompt: str = None):
+def chat_with_context(system_prompt: str | None = None):
     """Create a multi-turn conversation with DBpedia knowledge."""
     try:
-        messages = []
+        messages: list[ChatCompletionMessageParam] = []
         if system_prompt:
             messages.append({"role": "system", "content": system_prompt})
 
@@ -425,7 +427,8 @@ def chat_with_context(system_prompt: str = None):
                 messages=messages,
                 max_tokens=3500,
             )
-            answer = response.choices[0].message.content.strip()
+            content = response.choices[0].message.content
+            answer = content.strip() if content else ""
             print(f"\n{answer}")
             messages.append({"role": "assistant", "content": answer})
 

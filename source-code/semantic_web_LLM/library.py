@@ -17,6 +17,8 @@ Set environment variable:
 import os
 import json
 import re
+from collections.abc import Callable
+
 import requests
 from openai import OpenAI
 
@@ -54,7 +56,8 @@ def llm_complete(prompt: str, max_tokens: int = 3000, temperature: float = 0) ->
         max_tokens=max_tokens,
         temperature=temperature,
     )
-    return response.choices[0].message.content.strip()
+    content = response.choices[0].message.content
+    return content.strip() if content else ""
 
 
 # ---------------------------------------------------------------------------
@@ -62,7 +65,7 @@ def llm_complete(prompt: str, max_tokens: int = 3000, temperature: float = 0) ->
 # ---------------------------------------------------------------------------
 
 
-def extract_entities(text: str) -> dict:
+def extract_entities(text: str) -> dict[str, list[str]]:
     """Extract named entities from text using the Fireworks.ai LLM.
 
     Uses a one-shot prompt so the model sees an example input/output pair
@@ -146,7 +149,7 @@ def synthesize_answer(
 # ---------------------------------------------------------------------------
 
 
-def query_sparql(endpoint: str, sparql_query: str) -> list[dict]:
+def query_sparql(endpoint: str, sparql_query: str) -> list[dict[str, dict[str, str]]]:
     """Execute a SPARQL query against *endpoint* and return result bindings.
 
     Uses the ``requests`` library so we can set a descriptive User-Agent
@@ -172,7 +175,7 @@ def query_sparql(endpoint: str, sparql_query: str) -> list[dict]:
 
 
 def detect_relationship(
-    question: str, relationship_table: dict
+    question: str, relationship_table: dict[str, tuple[str, str]]
 ) -> tuple[str, str] | None:
     """Detect a relationship query in *question* using *relationship_table*.
 
@@ -208,7 +211,7 @@ def resolve_value(obj: str, obj_label: str | None) -> str:
 # ---------------------------------------------------------------------------
 
 
-def run_cli(answer_fn, script_name: str):
+def run_cli(answer_fn: Callable[[str], tuple[str, str]], script_name: str):
     """Reusable command-line / interactive entry point.
 
     *answer_fn* is a callable(question: str) -> (answer: str, context: str).

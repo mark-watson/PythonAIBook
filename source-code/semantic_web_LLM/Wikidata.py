@@ -47,7 +47,7 @@ WIKIDATA_ENDPOINT = "https://query.wikidata.org/sparql"
 SPARQL_DELAY = 1.0  # seconds between queries
 
 
-def _query_wikidata(sparql_query: str) -> list[dict]:
+def _query_wikidata(sparql_query: str) -> list[dict[str, dict[str, str]]]:
     """Execute a SPARQL query against Wikidata with rate-limit courtesy."""
     results = query_sparql(WIKIDATA_ENDPOINT, sparql_query)
     time.sleep(SPARQL_DELAY)
@@ -248,7 +248,7 @@ def lookup_entity_qid(name: str) -> str | None:
     return None
 
 
-def query_relationship(qid: str, pid: str) -> list[dict]:
+def query_relationship(qid: str, pid: str) -> list[dict[str, str]]:
     """Query Wikidata for the object of a relationship property.
 
     *qid* is the entity Q-number (e.g. "Q142") and *pid* is the property
@@ -313,7 +313,7 @@ def enrich_entity(qid: str, entity_type: str) -> list[str]:
 # ---------------------------------------------------------------------------
 
 
-def get_entity_context(entities: dict) -> str:
+def get_entity_context(entities: dict[str, list[str]]) -> str:
     """Execute SPARQL queries for extracted entities and build context text.
 
     For each entity, looks up the Wikidata Q-number, fetches the short
