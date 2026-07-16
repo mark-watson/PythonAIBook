@@ -224,8 +224,8 @@ To solidify your understanding of regression and clustering, try these practical
 Distance-based algorithms like K-Means are highly sensitive to the scale of the input features.
 - **Task**: Modify `clustering.py` to run K-Means on the original, unscaled dataset `X` (instead of `X_scaled`). 
 - **Requirements**:
-  1. Calculate and print the silhouette scores for $k=2$ through $6$ using the unscaled data.
-  2. Generate a cross-tabulation table comparing clusters ($k=3$) to the true species labels for the unscaled model.
+  1. Calculate and print the silhouette scores for `k=2`$ through `6`$ using the unscaled data.
+  2. Generate a cross-tabulation table comparing clusters (`k=3`$) to the true species labels for the unscaled model.
 - **Questions for Reflection**: How do the silhouette scores change when scaling is omitted? Looking at the features, why does sepal length or petal length dominate the distance calculations when unscaled?
 
 ### 2. Ridge and Lasso Regularization (Medium)
@@ -233,7 +233,7 @@ Standard Linear Regression can overfit or behave erratically when features are c
 - **Task**: Extend `regression.py` to train and evaluate `Ridge` and `Lasso` models from `sklearn.linear_model` on the California Housing dataset.
 - **Requirements**:
   1. Train `Ridge` and `Lasso` models using all 8 features (using scaled training data).
-  2. Compare their metrics (MAE, RMSE, $R^2$) to the standard `LinearRegression` model.
+  2. Compare their metrics (MAE, RMSE, `R^2`$) to the standard `LinearRegression` model.
   3. Print the feature coefficients for all three models side-by-side. Experiment with different regularization strengths (`alpha=0.1`, `alpha=1.0`, `alpha=10.0`).
 - **Questions for Reflection**: What is the key difference between Ridge (L2 penalty) and Lasso (L1 penalty) regarding the sparsity of the coefficients? Which coefficients shrink to exactly zero first under Lasso?
 
@@ -241,9 +241,9 @@ Standard Linear Regression can overfit or behave erratically when features are c
 While the silhouette score is a powerful metric, the "Elbow Method" using the sum of squared distances to the nearest centroid (inertia) is also widely used.
 - **Task**: Write a short script or modify `clustering.py` to implement the Elbow Method.
 - **Requirements**:
-  1. Run K-Means on the scaled Iris dataset for $k$ values from $1$ to $8$.
-  2. Record the value of the `inertia_` attribute for each $k$.
-  3. Print or plot the relationship between $k$ and inertia.
+  1. Run K-Means on the scaled Iris dataset for `k`$ values from `1`$ to `8`$.
+  2. Record the value of the `inertia_` attribute for each `k`$.
+  3. Print or plot the relationship between `k`$ and inertia.
 - **Questions for Reflection**: Identify the "elbow" point where the rate of decrease in inertia slows down significantly. Does this elbow match the optimal cluster count suggested by the silhouette score?
 
 ### 4. Robust Tuning with Pipelines and Grid Search (Hard)
@@ -255,5 +255,5 @@ Evaluating hyperparameter tuning and preprocessing choices using a single train/
      - Polynomial degree: `[1, 2]`
      - Ridge parameter `alpha`: `[0.1, 1.0, 10.0, 100.0]`
   3. Print the best parameters found by the grid search.
-  4. Evaluate the best estimator on your held-out test set and report the final MAE, RMSE, and $R^2$.
+  4. Evaluate the best estimator on your held-out test set and report the final MAE, RMSE, and `R^2`$.
 - **Questions for Reflection**: Why is it important to put `StandardScaler` inside the pipeline rather than scaling the entire dataset before cross-validation? How did the performance of this optimized model compare to the simple OLS model in the chapter?

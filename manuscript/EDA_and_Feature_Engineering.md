@@ -239,14 +239,14 @@ To solidify your understanding of exploratory data analysis and feature engineer
 ### 1. Outlier Handling: Clipping vs. Dropping (Easy)
 In `eda.py`, we identified that variables like `AveRooms` and `AveOccup` have extreme outliers.
 - **Your Task**: Write a function that uses the IQR method (or a fixed percentile threshold, e.g., the 1st and 99th percentiles) to clip (cap and floor) the extreme outliers of these features.
-- **Extension**: Train the linear regression model using these clipped features and compare the $R^2$ score against the baseline model. Does outlier clipping improve performance? How does it compare to dropping rows with outliers?
+- **Extension**: Train the linear regression model using these clipped features and compare the `R^2`$ score against the baseline model. Does outlier clipping improve performance? How does it compare to dropping rows with outliers?
 
 ### 2. Evaluating Alternative Scaling Methods (Medium)
 Our code uses `StandardScaler` to normalize features. However, features with large outliers can distort the mean and standard deviation.
 - **Your Task**: Update `feature_engineering.py` to compare three different scaling methods from `sklearn.preprocessing`: `StandardScaler`, `MinMaxScaler`, and `RobustScaler`.
-- **Extension**: Evaluate the linear regression model's $R^2$ score under each scaling method. Analyze the results: which scaler is more robust to extreme values, and how do they affect the final regression model?
+- **Extension**: Evaluate the linear regression model's `R^2`$ score under each scaling method. Analyze the results: which scaler is more robust to extreme values, and how do they affect the final regression model?
 
 ### 3. Geographic Feature Engineering with Clustering (Hard)
 The coordinates `Latitude` and `Longitude` represent spatial locations, but binning latitude into three simple regions (North, Central, South) ignores local cluster densities (such as the San Francisco Bay Area and Greater Los Angeles).
-- **Your Task**: Implement a script that uses the `KMeans` algorithm from `sklearn.cluster` to group coordinates into $K$ spatial clusters (e.g., $K = 10$).
-- **Extension**: Use the distance from each housing block to the cluster centers (obtained using `kmeans.transform(coordinates)`) as new continuous features, or one-hot encode the cluster assignments. Train the linear regression model with these clustering-based geographic features and compare the $R^2$ score against the simple regional binning approach.
+- **Your Task**: Implement a script that uses the `KMeans` algorithm from `sklearn.cluster` to group coordinates into `K`$ spatial clusters (e.g., `K = 10`$).
+- **Extension**: Use the distance from each housing block to the cluster centers (obtained using `kmeans.transform(coordinates)`) as new continuous features, or one-hot encode the cluster assignments. Train the linear regression model with these clustering-based geographic features and compare the `R^2`$ score against the simple regional binning approach.

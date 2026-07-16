@@ -417,8 +417,8 @@ I tagged this chapter as optional material because I believe most readers will g
 
 ### Problem 1: Parameter Sensitivity in Forest Management (Easy)
 
-In the Forest Management example in [mdp_demo.py](file:///Users/markwatson/GITHUB/PythonAIBook/source-code/reinforcement_learning/mdp_demo.py), the optimal policy with a discount factor of $\gamma = 0.9$ and a fire probability of $p = 0.1$ is to always Wait.
-1. Modify the script to perform a parameter sweep over different discount factors $\gamma \in \{0.1, 0.5, 0.9, 0.99\}$ and fire probabilities $p \in \{0.01, 0.05, 0.1, 0.3, 0.5\}$.
+In the Forest Management example in [mdp_demo.py](file:///Users/markwatson/GITHUB/PythonAIBook/source-code/reinforcement_learning/mdp_demo.py), the optimal policy with a discount factor of `\gamma = 0.9`$ and a fire probability of `p = 0.1`$ is to always Wait.
+1. Modify the script to perform a parameter sweep over different discount factors `\gamma \in \{0.1, 0.5, 0.9, 0.99\}`$ and fire probabilities `p \in \{0.01, 0.05, 0.1, 0.3, 0.5\}`$.
 2. Record the resulting optimal policy for each combination.
 3. Explain intuitively how a low discount factor (valuing short-term gains) or a high risk of fire (destroying progress) changes the agent's behavior from "Wait" to "Cut".
 
@@ -435,6 +435,6 @@ The tabular Q-learning code in [frozen_lake_qlearning.py](file:///Users/markwats
 1. Modify the script to use the larger 8x8 grid: `gym.make("FrozenLake-v1", map_name="8x8", is_slippery=True)`.
 2. Train the agent using the original parameters. You will likely observe that the success rate remains extremely low (often close to 0) because the reward is sparse (only 1.0 at the goal) and the state space is four times larger.
 3. Implement one or both of the following enhancements to solve the 8x8 grid:
-   - **Hyperparameter Sweep**: Write a search script to find optimal values for the learning rate $\alpha$, the decay rate of $\epsilon$, and the number of training episodes (hint: you may need 50,000+ episodes).
+   - **Hyperparameter Sweep**: Write a search script to find optimal values for the learning rate `\alpha`$, the decay rate of `\epsilon`$, and the number of training episodes (hint: you may need 50,000+ episodes).
    - **Reward Shaping**: Implement a custom wrapper or modify the step loop to provide intermediate feedback. For example, give a small positive reward proportional to the decrease in Manhattan distance to the goal, or apply a step penalty (e.g., -0.01) for non-goal steps to discourage circular paths.
 4. Report your final success rate and compare it against the baseline.

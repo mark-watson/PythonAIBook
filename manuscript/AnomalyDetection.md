@@ -73,7 +73,9 @@ The Gaussian approach is mathematically elegant and gives deep insight into *why
 
 For each feature, we compute the mean (μ) and variance (σ²) from the training data. Given a new observation **x**, we compute the probability of each feature under its Gaussian distribution and average the results:
 
-$$p(\mathbf{x}) = \frac{1}{n} \sum_{i=1}^{n} \frac{1}{\sqrt{2\pi}\,\sigma_i} \exp\left(-\frac{(x_i - \mu_i)^2}{2\sigma_i^2}\right)$$
+```$
+p(\mathbf{x}) = \frac{1}{n} \sum_{i=1}^{n} \frac{1}{\sqrt{2\pi}\,\sigma_i} \exp\left(-\frac{(x_i - \mu_i)^2}{2\sigma_i^2}\right)
+```
 
 If this aggregate probability falls below a threshold **epsilon** (ε), the observation is flagged as an anomaly.
 
@@ -269,9 +271,16 @@ The current implementation of the [GaussianAnomalyDetector](file:///Users/markwa
 return per_feature.mean(axis=1)
 ```
 If we assume that the features are conditionally independent given the class, the joint probability of a sample is the product of its feature probabilities:
-$$p(\mathbf{x}) = \prod_{i=1}^{n} p(x_i)$$
+
+```$
+p(\mathbf{x}) = \prod_{i=1}^{n} p(x_i)
+```
+
 Because multiplying small probabilities leads to numerical underflow, we typically compute the sum of log-probabilities instead:
-$$\log p(\mathbf{x}) = \sum_{i=1}^{n} \log p(x_i)$$
+
+```$
+\log p(\mathbf{x}) = \sum_{i=1}^{n} \log p(x_i)
+```
 
 **Task:**
 1. Modify the `_probability` method of [GaussianAnomalyDetector](file:///Users/markwatson/GITHUB/PythonAIBook/source-code/anomaly_detection/src/anomaly_detection/detectors.py#L42) to compute the joint log-probability of each sample. (Hint: compute the natural logarithm of individual feature probability densities, sum them across axis 1, and return this log-probability).

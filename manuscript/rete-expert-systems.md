@@ -2,7 +2,7 @@
 
 For decades, rule-based expert systems stood at the forefront of Artificial Intelligence. While deep learning models excel at recognition, perception, and approximate reasoning, rule-based systems remain the gold standard for applications requiring deterministic reasoning, absolute compliance, explicit logic, and high interpretability. 
 
-At the heart of the most powerful forward-chaining expert systems is the **Rete Algorithm**, designed by Charles Forgy in 1974. Rete solves a fundamental scaling challenge: in a naive production system, evaluating $R$ rules against $W$ working memory elements requires $O(R \times W)$ checks on every cycle. As working memory or the rule base grows, performance collapses. Rete achieves high efficiency by compiling rules into a dataflow network that evaluates conditions incrementally, trading computer memory (to cache partial matches) for execution speed.
+At the heart of the most powerful forward-chaining expert systems is the **Rete Algorithm**, designed by Charles Forgy in 1974. Rete solves a fundamental scaling challenge: in a naive production system, evaluating `R`$ rules against `W`$ working memory elements requires `O(R \times W)`$ checks on every cycle. As working memory or the rule base grows, performance collapses. Rete achieves high efficiency by compiling rules into a dataflow network that evaluates conditions incrementally, trading computer memory (to cache partial matches) for execution speed.
 
 This chapter walks through a modern, lightweight, and idiomatic Python implementation of the Rete algorithm. We will discuss its design, examine some of the trickiest details in Rete implementation, and analyze six complete, real-world case studies to offer practical advice on designing production-grade expert systems.
 
@@ -21,7 +21,7 @@ When a fact is asserted, the `WorkingMemory` wraps it in a `WME` container with 
 
 ### The Alpha Network (Intra-Fact Filtering)
 The Alpha Network performs single-fact filtering (e.g., checking if a patient's temperature is greater than 38.5).
-- **Type Dispatch**: The root `AlphaNetwork` directs incoming WMEs directly to branches corresponding to their specific Python class type using an $O(1)$ type lookup dictionary.
+- **Type Dispatch**: The root `AlphaNetwork` directs incoming WMEs directly to branches corresponding to their specific Python class type using an `O(1)`$ type lookup dictionary.
 - **Alpha Test Chains**: A chain of `AlphaTestNode` gates filters the fact's fields against constant criteria.
 - **Node Sharing**: If multiple rules check the exact same condition (e.g., `temperature > 38.5`), the network shares the corresponding alpha test nodes and routes them to a single shared `AlphaMemory` node, avoiding redundant checks.
 

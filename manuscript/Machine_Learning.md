@@ -160,15 +160,15 @@ I have already admitted my personal biases in favor of deep learning over simple
 To help solidify your understanding of "classic" machine learning with scikit-learn, try implementing the following practice problems by extending the existing code examples.
 
 ### 1. Easy: Hyperparameter Tuning for K-NN
-**Objective:** Understand how the choice of $k$ (number of neighbors) affects model performance.
+**Objective:** Understand how the choice of `k`$ (number of neighbors) affects model performance.
 
 **Task:**
 1. Open [classification.py](file:///Users/markwatson/GITHUB/PythonAIBook/source-code/machine-learning/classification.py).
 2. Modify the script to loop over different values of `n_neighbors` (for example, odd numbers from 1 to 15: `[1, 3, 5, 7, 9, 11, 13, 15]`).
-3. For each value of $k$:
+3. For each value of `k`$:
    - Initialize and fit the `KNeighborsClassifier`.
    - Calculate and print the classification accuracy on the test set.
-4. Identify which value of $k$ provides the best performance and explain why choosing an even vs. odd value for $k$ matters in binary classification.
+4. Identify which value of `k`$ provides the best performance and explain why choosing an even vs. odd value for `k`$ matters in binary classification.
 
 ### 2. Medium: Comparing Classifiers
 **Objective:** Compare the K-Nearest Neighbors classifier against other classic machine learning algorithms covered in this chapter.

@@ -431,7 +431,7 @@ Here are some exercises to help you apply the concepts from this chapter and ext
 - **Key Concepts**: Input loops, real-time output streaming with `flush=True`, basic text generation.
 
 ### 2. Context Window and History Management (Medium)
-- **Objective**: Modify the [LocalAssistant](file:///Users/markwatson/GITHUB/PythonAIBook/source-code/llm_local_models/ollama_memory.py#L17) class in [ollama_memory.py](file:///Users/markwatson/GITHUB/PythonAIBook/source-code/llm_local_models/ollama_memory.py) to handle context limits. Implement a maximum history size (e.g., $N$ messages). When the conversation history exceeds this limit, the assistant should discard the oldest user/assistant exchanges. However, make sure that the original system prompt is always preserved at the beginning of the message history.
+- **Objective**: Modify the [LocalAssistant](file:///Users/markwatson/GITHUB/PythonAIBook/source-code/llm_local_models/ollama_memory.py#L17) class in [ollama_memory.py](file:///Users/markwatson/GITHUB/PythonAIBook/source-code/llm_local_models/ollama_memory.py) to handle context limits. Implement a maximum history size (e.g., `N`$ messages). When the conversation history exceeds this limit, the assistant should discard the oldest user/assistant exchanges. However, make sure that the original system prompt is always preserved at the beginning of the message history.
 - **Key Concepts**: System prompt preservation, sliding window list management, message history truncation.
 
 ### 3. Extracting Structured JSON from Vision Models (Medium)

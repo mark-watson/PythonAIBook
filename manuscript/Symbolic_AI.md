@@ -755,14 +755,25 @@ Then, modify [family.py](file:///Users/markwatson/GITHUB/PythonAIBook/source-cod
 
 ### Problem 3 (Medium): Solving Cryptarithmetic Puzzles in MiniZinc
 In constraint programming, a classic puzzle is Cryptarithmetic, where letters represent unique digits from `0` to `9` (with no leading zeros). The sum of words must equal the target word:
-$$\text{SEND} + \text{MORE} = \text{MONEY}$$
+
+```$
+\text{SEND} + \text{MORE} = \text{MONEY}
+```
 
 Write a MiniZinc model (`send_more_money.mzn`) and a Python driver script to solve this puzzle:
 1. Define variables for `S, E, N, D, M, O, R, Y` as integers in `0..9`.
 2. Add a constraint ensuring all letters represent different values (use `alldifferent([S, E, N, D, M, O, R, Y])`).
 3. Add constraints to prevent leading zeros: `S != 0` and `M != 0`.
 4. Add the arithmetic constraint:
-   $$1000 \times S + 100 \times E + 10 \times N + D + 1000 \times M + 100 \times O + 10 \times R + E = 10000 \times M + 1000 \times O + 100 \times N + 10 \times E + Y$$
+
+```$
+\begin{aligned}
+&1000 S + 100 E + 10 N + D \\
+&{}+ 1000 M + 100 O + 10 R + E \\
+&= 10000 M + 1000 O + 100 N + 10 E + Y
+\end{aligned}
+```
+
 5. Solve and print the resulting equation in Python, formatted as `9567 + 1085 = 10652`.
 
 *Note*: You can use [test_mzn.py](file:///Users/markwatson/GITHUB/PythonAIBook/source-code/symbolic-AI/test_mzn.py) as a template for loading the model and retrieving solved variable values.

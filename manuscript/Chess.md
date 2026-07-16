@@ -104,7 +104,7 @@ class Board:
         self.reset_board()
 ```
 
-In addition to the 64-element `board` array, we maintain a `pieces` dictionary mapping each color to a set of square indices. This is a performance optimization: when generating moves we only need to iterate over the pieces of the side to move rather than scanning all 64 squares. The `king_square` dictionary gives us $O(1)$ access to the king's location for check detection.
+In addition to the 64-element `board` array, we maintain a `pieces` dictionary mapping each color to a set of square indices. This is a performance optimization: when generating moves we only need to iterate over the pieces of the side to move rather than scanning all 64 squares. The `king_square` dictionary gives us `O(1)`$ access to the king's location for check detection.
 
 Castling rights are stored as a 4-bit bitmask. The constants `WK = 1`, `WQ = 2`, `BK = 4`, and `BQ = 8` let us test and clear individual rights with bitwise operations. When the white king moves, for example, we clear both white rights with `self.castling_rights &= ~(WK | WQ)`.
 
@@ -632,9 +632,9 @@ The key line is `score = -search(board, depth - 1, -beta, -alpha)`. We make a mo
 
 ### Alpha-Beta Pruning
 
-Alpha-beta pruning is the optimization that makes deep search feasible. The idea is that if we are maximizing and we have already found a move that guarantees a score of $\alpha$, and the opponent has a response that limits us to a score of $\beta$ (where $\beta \leq \alpha$), then we do not need to search any further in this position — the opponent will never allow us to reach it. The `if alpha >= beta: break` line implements this cutoff.
+Alpha-beta pruning is the optimization that makes deep search feasible. The idea is that if we are maximizing and we have already found a move that guarantees a score of `\alpha`$, and the opponent has a response that limits us to a score of `\beta`$ (where `\beta \leq \alpha`$), then we do not need to search any further in this position — the opponent will never allow us to reach it. The `if alpha >= beta: break` line implements this cutoff.
 
-In the best case, with perfect move ordering, alpha-beta reduces the number of nodes searched from $O(b^d)$ to $O(b^{d/2})$ where $b$ is the branching factor (about 35 in chess) and $d$ is the depth. This means that with good move ordering, searching to depth 4 with alpha-beta takes roughly the same time as searching to depth 2 without it. Move ordering is therefore critical, and we will return to it shortly.
+In the best case, with perfect move ordering, alpha-beta reduces the number of nodes searched from `O(b^d)`$ to `O(b^{d/2})`$ where `b`$ is the branching factor (about 35 in chess) and `d`$ is the depth. This means that with good move ordering, searching to depth 4 with alpha-beta takes roughly the same time as searching to depth 2 without it. Move ordering is therefore critical, and we will return to it shortly.
 
 ### Checkmate Scoring
 
@@ -680,10 +680,10 @@ transposition_table[board.zobrist_hash] = {
 The `flag` field encodes what kind of score we have:
 
 - **TT_EXACT** (0): The score is the exact value of this position. We can return it immediately.
-- **TT_ALPHA** (1): The score is an upper bound. The true value is at most this. If it is $\leq \alpha$, we can return it.
-- **TT_BETA** (2): The score is a lower bound. The true value is at least this. If it is $\geq \beta$, we can return it.
+- **TT_ALPHA** (1): The score is an upper bound. The true value is at most this. If it is `\leq \alpha`$, we can return it.
+- **TT_BETA** (2): The score is a lower bound. The true value is at least this. If it is `\geq \beta`$, we can return it.
 
-These flags arise from alpha-beta cutoffs. When a beta cutoff occurs, we know the true value is at least `best_score` but we do not know the exact value — the search was cut short. Storing it as a lower bound (TT_BETA) lets us use it in future searches: if the lower bound is already $\geq \beta$, we can cut off immediately.
+These flags arise from alpha-beta cutoffs. When a beta cutoff occurs, we know the true value is at least `best_score` but we do not know the exact value — the search was cut short. Storing it as a lower bound (TT_BETA) lets us use it in future searches: if the lower bound is already `\geq \beta`$, we can cut off immediately.
 
 The lookup logic at the top of the search function checks the flag and uses the cached score only if it is safe to do so:
 
@@ -759,7 +759,7 @@ def quiescence_search(board, alpha, beta):
     return alpha
 ```
 
-The stand-pat score provides a lower bound: if doing nothing (standing pat) already gives us a score $\geq \beta$, the opponent will not allow this position, so we can cut off. We only search captures because they are the moves most likely to change the evaluation dramatically. Non-capture moves are assumed to not immediately improve our position beyond the stand-pat value, which is usually a good approximation.
+The stand-pat score provides a lower bound: if doing nothing (standing pat) already gives us a score `\geq \beta`$, the opponent will not allow this position, so we can cut off. We only search captures because they are the moves most likely to change the evaluation dramatically. Non-capture moves are assumed to not immediately improve our position beyond the stand-pat value, which is usually a good approximation.
 
 ## Move Ordering
 
