@@ -1,4 +1,4 @@
-.PHONY: check clean test regression clustering
+.PHONY: check clean test run regression clustering
 
 clean:
 	find . -type d -name __pycache__ -not -path './.venv/*' -exec rm -rf {} +
@@ -9,6 +9,9 @@ clean:
 
 test:
 	uv run pytest -q
+
+run:
+	uv run python regression.py
 
 regression:
 	uv run python regression.py

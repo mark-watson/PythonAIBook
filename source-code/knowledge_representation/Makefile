@@ -1,4 +1,4 @@
-.PHONY: check clean test dbpedia wikidata sqlite
+.PHONY: check clean test run dbpedia wikidata sqlite
 
 clean:
 	find . -type d -name __pycache__ -not -path './.venv/*' -exec rm -rf {} +
@@ -9,6 +9,9 @@ clean:
 
 test:
 	uv run pytest -q
+
+run:
+	uv run python dbpedia_cities.py
 
 dbpedia:
 	uv run python dbpedia_cities.py

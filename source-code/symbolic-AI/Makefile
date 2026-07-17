@@ -1,4 +1,4 @@
-.PHONY: check clean test family n-queens frame hackernews us-states test-mzn bw
+.PHONY: check clean test run family n-queens frame hackernews us-states test-mzn bw
 
 clean:
 	find . -type d -name __pycache__ -not -path './.venv/*' -exec rm -rf {} +
@@ -9,6 +9,9 @@ clean:
 
 test:
 	uv run pytest -q
+
+run:             # needs swi-prolog + swiplserver
+	uv run python family.py
 
 family:          # needs swi-prolog + swiplserver
 	uv run python family.py

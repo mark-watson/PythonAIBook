@@ -1,4 +1,4 @@
-.PHONY: check clean test text streaming caching memory reasoning openai-compat image
+.PHONY: check clean test run text streaming caching memory reasoning openai-compat image
 
 clean:
 	find . -type d -name __pycache__ -not -path './.venv/*' -exec rm -rf {} +
@@ -9,6 +9,9 @@ clean:
 
 test:
 	uv run pytest -q
+
+run:
+	uv run python ollama_text.py
 
 text:
 	uv run python ollama_text.py

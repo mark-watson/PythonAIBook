@@ -5,8 +5,17 @@ SUBDIRS = anomaly_detection Chess_game data_analysis_and_feature_engineering \
           regression_and_clustering reinforcement_learning rete-algorithm \
           semantic_web_LLM symbolic-AI text-adventure-game
 
-.PHONY: clean $(SUBDIRS)
+.PHONY: clean check test run $(SUBDIRS)
 
 clean:
 	for dir in $(SUBDIRS); do $(MAKE) -C $$dir clean; done
 	rm -rf */.venv
+
+check:
+	for dir in $(SUBDIRS); do $(MAKE) -C $$dir check; done
+
+test:
+	for dir in $(SUBDIRS); do $(MAKE) -C $$dir test; done
+
+run:
+	for dir in $(SUBDIRS); do $(MAKE) -C $$dir run; done

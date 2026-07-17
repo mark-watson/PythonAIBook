@@ -1,4 +1,4 @@
-.PHONY: check clean test similarity summarize zeroshot
+.PHONY: check clean test run similarity summarize zeroshot
 
 clean:
 	find . -type d -name __pycache__ -not -path './.venv/*' -exec rm -rf {} +
@@ -9,6 +9,9 @@ clean:
 
 test:
 	uv run pytest -q
+
+run:
+	uv run python sentence_similarity.py
 
 similarity:
 	uv run python sentence_similarity.py

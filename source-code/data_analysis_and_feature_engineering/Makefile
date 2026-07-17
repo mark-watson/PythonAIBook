@@ -1,4 +1,4 @@
-.PHONY: check clean test eda features
+.PHONY: check clean test run eda features
 
 clean:
 	find . -type d -name __pycache__ -not -path './.venv/*' -exec rm -rf {} +
@@ -9,6 +9,9 @@ clean:
 
 test:
 	uv run pytest -q
+
+run:
+	uv run python eda.py
 
 eda:
 	uv run python eda.py

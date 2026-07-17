@@ -1,4 +1,4 @@
-.PHONY: check clean test medical hospital ecom portfolio network smart-home
+.PHONY: check clean test run medical hospital ecom portfolio network smart-home
 
 clean:
 	find . -type d -name __pycache__ -not -path './.venv/*' -exec rm -rf {} +
@@ -9,6 +9,9 @@ clean:
 
 test:
 	uv run pytest -q
+
+run:
+	uv run python example_medical.py
 
 medical:
 	uv run python example_medical.py

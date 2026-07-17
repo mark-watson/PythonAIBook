@@ -1,4 +1,4 @@
-.PHONY: check clean test gemini-text gemini-conversation gemini-image gemini-structured gemini-temperature gemini-thinking fireworks-text fireworks-conversation fireworks-structured fireworks-temperature fireworks-thinking openai-text openai-search
+.PHONY: check clean test run gemini-text gemini-conversation gemini-image gemini-structured gemini-temperature gemini-thinking fireworks-text fireworks-conversation fireworks-structured fireworks-temperature fireworks-thinking openai-text openai-search
 
 clean:
 	find . -type d -name __pycache__ -not -path './.venv/*' -exec rm -rf {} +
@@ -9,6 +9,9 @@ clean:
 
 test:
 	uv run pytest -q
+
+run:
+	uv run python gemini_text.py
 
 # ── Gemini
 gemini-text:

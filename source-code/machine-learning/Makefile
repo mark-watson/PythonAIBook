@@ -1,4 +1,4 @@
-.PHONY: check clean test classification load
+.PHONY: check clean test run classification load
 
 clean:
 	find . -type d -name __pycache__ -not -path './.venv/*' -exec rm -rf {} +
@@ -9,6 +9,9 @@ clean:
 
 test:
 	uv run pytest -q
+
+run:
+	uv run python classification.py
 
 classification:
 	uv run python classification.py
