@@ -1,4 +1,4 @@
-.PHONY: clean test run
+.PHONY: check clean test run
 
 clean:
 	find . -type d -name __pycache__ -not -path './.venv/*' -exec rm -rf {} +
@@ -12,3 +12,7 @@ test:
 
 run:
 	uv run python game.py
+
+check:
+	python3 -m py_compile *.py
+	uv run python -c "import openai"

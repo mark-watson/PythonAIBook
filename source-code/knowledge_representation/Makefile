@@ -1,4 +1,4 @@
-.PHONY: clean test dbpedia wikidata sqlite
+.PHONY: check clean test dbpedia wikidata sqlite
 
 clean:
 	find . -type d -name __pycache__ -not -path './.venv/*' -exec rm -rf {} +
@@ -18,3 +18,7 @@ wikidata:
 
 sqlite:
 	uv run python sqlite_knowledge.py
+
+check:
+	python3 -m py_compile *.py
+	uv run python -c "import SPARQLWrapper"

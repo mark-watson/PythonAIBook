@@ -1,4 +1,4 @@
-.PHONY: clean test eda features
+.PHONY: check clean test eda features
 
 clean:
 	find . -type d -name __pycache__ -not -path './.venv/*' -exec rm -rf {} +
@@ -15,3 +15,7 @@ eda:
 
 features:
 	uv run python feature_engineering.py
+
+check:
+	python3 -m py_compile *.py
+	uv run python -c "import numpy, pandas, sklearn"

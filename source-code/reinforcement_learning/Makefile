@@ -1,4 +1,4 @@
-.PHONY: clean test mdp qlearning
+.PHONY: check clean test mdp qlearning
 
 clean:
 	find . -type d -name __pycache__ -not -path './.venv/*' -exec rm -rf {} +
@@ -15,3 +15,7 @@ mdp:
 
 qlearning:
 	uv run python frozen_lake_qlearning.py
+
+check:
+	python3 -m py_compile *.py
+	uv run python -c "import gymnasium, mdptoolbox, numpy"

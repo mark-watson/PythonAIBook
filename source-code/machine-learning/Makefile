@@ -1,4 +1,4 @@
-.PHONY: clean test classification load
+.PHONY: check clean test classification load
 
 clean:
 	find . -type d -name __pycache__ -not -path './.venv/*' -exec rm -rf {} +
@@ -15,3 +15,7 @@ classification:
 
 load:
 	uv run python load_data.py
+
+check:
+	python3 -m py_compile *.py
+	uv run python -c "import pandas, sklearn"

@@ -1,4 +1,4 @@
-.PHONY: clean test regression clustering
+.PHONY: check clean test regression clustering
 
 clean:
 	find . -type d -name __pycache__ -not -path './.venv/*' -exec rm -rf {} +
@@ -15,3 +15,7 @@ regression:
 
 clustering:
 	uv run python clustering.py
+
+check:
+	python3 -m py_compile *.py
+	uv run python -c "import numpy, pandas, sklearn"

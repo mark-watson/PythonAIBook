@@ -1,4 +1,4 @@
-.PHONY: clean test family n-queens frame hackernews us-states test-mzn bw
+.PHONY: check clean test family n-queens frame hackernews us-states test-mzn bw
 
 clean:
 	find . -type d -name __pycache__ -not -path './.venv/*' -exec rm -rf {} +
@@ -30,3 +30,7 @@ frame:           # pure Python
 
 bw:              # needs soar-sml (not in project deps)
 	uv run python bw.py
+
+check:
+	python3 -m py_compile *.py
+	uv run python -c "import bs4, minizinc, soar_sml, spacy, swiplserver"

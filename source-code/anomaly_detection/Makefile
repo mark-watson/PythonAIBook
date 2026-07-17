@@ -1,4 +1,4 @@
-.PHONY: clean test run
+.PHONY: check clean test run
 
 clean:
 	find . -type d -name __pycache__ -not -path './.venv/*' -exec rm -rf {} +
@@ -12,3 +12,7 @@ test:
 
 run:
 	uv run python -m anomaly_detection.wisconsin
+
+check:
+	find . -name "*.py" -not -path "./.venv/*" -not -path "./tests/*" -exec python3 -m py_compile {} +
+	uv run python -c "import anomaly_detection, beartype, matplotlib, numpy, sklearn"

@@ -1,4 +1,4 @@
-.PHONY: clean test dbpedia wikidata both
+.PHONY: check clean test dbpedia wikidata both
 
 clean:
 	find . -type d -name __pycache__ -not -path './.venv/*' -exec rm -rf {} +
@@ -18,3 +18,7 @@ wikidata:
 
 both:
 	uv run python DBPedia_and_Wikidata.py "tell me about the following: IBM, Microsoft"
+
+check:
+	python3 -m py_compile *.py
+	uv run python -c "import openai, requests"

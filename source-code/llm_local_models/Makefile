@@ -1,4 +1,4 @@
-.PHONY: clean test text streaming caching memory reasoning openai-compat image
+.PHONY: check clean test text streaming caching memory reasoning openai-compat image
 
 clean:
 	find . -type d -name __pycache__ -not -path './.venv/*' -exec rm -rf {} +
@@ -30,3 +30,7 @@ openai-compat:
 
 image:
 	uv run python image_to_text_description.py
+
+check:
+	python3 -m py_compile *.py
+	uv run python -c "import ollama, openai, requests"

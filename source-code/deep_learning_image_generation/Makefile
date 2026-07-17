@@ -1,4 +1,4 @@
-.PHONY: clean test local gemini
+.PHONY: check clean test local gemini
 
 clean:
 	find . -type d -name __pycache__ -not -path './.venv/*' -exec rm -rf {} +
@@ -15,3 +15,7 @@ local:
 
 gemini:
 	uv run python gemini_image_generation.py
+
+check:
+	python3 -m py_compile *.py
+	uv run python -c "import PIL, diffusers, google, torch"

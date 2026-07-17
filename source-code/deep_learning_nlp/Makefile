@@ -1,4 +1,4 @@
-.PHONY: clean test similarity summarize zeroshot
+.PHONY: check clean test similarity summarize zeroshot
 
 clean:
 	find . -type d -name __pycache__ -not -path './.venv/*' -exec rm -rf {} +
@@ -18,3 +18,7 @@ summarize:
 
 zeroshot:
 	uv run python zero_shot_classification.py
+
+check:
+	python3 -m py_compile *.py
+	uv run python -c "import sentence_transformers, transformers"

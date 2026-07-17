@@ -1,4 +1,4 @@
-.PHONY: clean test gemini-text gemini-conversation gemini-image gemini-structured gemini-temperature gemini-thinking fireworks-text fireworks-conversation fireworks-structured fireworks-temperature fireworks-thinking openai-text openai-search
+.PHONY: check clean test gemini-text gemini-conversation gemini-image gemini-structured gemini-temperature gemini-thinking fireworks-text fireworks-conversation fireworks-structured fireworks-temperature fireworks-thinking openai-text openai-search
 
 clean:
 	find . -type d -name __pycache__ -not -path './.venv/*' -exec rm -rf {} +
@@ -51,3 +51,7 @@ openai-text:
 
 openai-search:
 	uv run python openai_search.py
+
+check:
+	python3 -m py_compile *.py
+	uv run python -c "import PIL, google, openai"
