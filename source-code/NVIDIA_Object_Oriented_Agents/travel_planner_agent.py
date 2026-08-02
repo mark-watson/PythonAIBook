@@ -24,7 +24,7 @@
 # /// script
 # requires-python = ">=3.10"
 # dependencies = [
-#   "nooa",
+#   "nooa @ git+https://github.com/NVIDIA-NeMo/labs-OO-Agents",
 #   "openai>=1.0",
 #   "pydantic>=2",
 # ]
@@ -135,7 +135,7 @@ class TravelPlannerAgent(Agent, llm=llm):
         no punctuation, no explanation."""
         ...
 
-    async def draft_itinerary(self, city: str, nights: int) -> Itinerary:
+    async def draft_itinerary(self, city: str, nights: int) -> list[DayPlan]:
         """Produce a `nights + 1` day itinerary for `city`. Use `get_vibe`
         for local flavor. Number days starting at 1. Each day should have
         a theme plus morning/afternoon/evening activities."""
@@ -159,7 +159,7 @@ class TravelPlannerAgent(Agent, llm=llm):
             city = affordable[0] if affordable else next(iter(DESTINATIONS))
 
         cost = self.estimate_cost(city, nights)
-        itinerary = await self.draft_itinerary(city, nights)
+        itinerary = Itinerary(days=await self.draft_itinerary(city, nights))
         tip = await self.packing_tip(city)
 
         # Bonus flourish: one direct sync call to the sibling NVIDIA_client.
