@@ -1,8 +1,8 @@
 # LLMs with Public APIs
 
-The fastest way to use large language models is through cloud APIs. Google, OpenAI, and Anthropic,  all offer APIs that give you access to their most capable proprietary models with just a few lines of Python code. Fireworks.ai is an inference provider in the USA that offers fast inferencing for many open weight models. You don't need a GPU, you don't need to download model weights, and you can start building applications in minutes.
+The fastest way to use large language models is through cloud APIs. Google, OpenAI, and Anthropic,  all offer APIs that give you access to their most capable proprietary models with just a few lines of Python code. Fireworks.ai and NVIDIA are inference providers in the USA that offer fast inferencing for many open weight models. You don't need a GPU, you don't need to download model weights, and you can start building applications in minutes.
 
-In this chapter we work through practical examples using the Google Gemini API, the OpenAI API, and the Fireworks.ai API. Each provides Python client libraries (or compatibility layers) that handle authentication, request formatting, and response parsing. The patterns you learn here apply to other API providers as well — the core concepts of sending prompts, receiving completions, and managing conversations are the same across providers.
+In this chapter we work through practical examples using the Google Gemini API, the OpenAI API, the Fireworks.ai API, and NVIDIA's free NIM inference service. Each provides Python client libraries (or compatibility layers) that handle authentication, request formatting, and response parsing. The patterns you learn here apply to other API providers as well — the core concepts of sending prompts, receiving completions, and managing conversations are the same across providers.
 
 The examples for this chapter are in the directory **source-code/llm_public_apis**.
 
@@ -122,6 +122,85 @@ print(response.choices[0].message.content)
 ```
 
 The output is a concise explanation of transformer models. The key difference from the standard OpenAI setup is the **base_url** parameter, which redirects the SDK to Fireworks' servers. The **messages** format uses the familiar Chat Completions API structure with role-based message objects.
+
+### NVIDIA NIM (Free Inference)
+
+NVIDIA's [build.nvidia.com](https://build.nvidia.com) service provides free API access to a broad catalogue of open-weight models — Llama, Mistral, Phi, DeepSeek, and NVIDIA's own Nemotron family — hosted on NVIDIA GPUs. Like Fireworks.ai, NVIDIA exposes an OpenAI-compatible endpoint, so the same **openai** SDK works with just a different **base_url**.
+
+Sign up for a free account, generate a key, and store it in an environment variable:
+
+```bash
+export NVIDIA_API_KEY="your-api-key-here"
+```
+
+The **NVIDIA_client.py** example in this chapter's source directory takes a slightly different shape from the other examples. Instead of running its work at module level, it wraps the API in a small reusable library so you can **import** it from other scripts:
+
+```python
+# NVIDIA_client.py - Library for NVIDIA's free inference service
+
+import os
+from openai import OpenAI
+from openai.types.chat import ChatCompletionMessageParam
+
+DEFAULT_MODEL = "meta/llama-3.1-8b-instruct"
+_BASE_URL = "https://integrate.api.nvidia.com/v1"
+
+
+def get_client() -> OpenAI:
+    return OpenAI(
+        base_url=_BASE_URL,
+        api_key=os.getenv("NVIDIA_API_KEY"),
+    )
+
+
+def complete(prompt: str, model: str = DEFAULT_MODEL) -> str:
+    """Single-turn prompt → reply."""
+    response = get_client().chat.completions.create(
+        model=model,
+        messages=[{"role": "user", "content": prompt}],
+    )
+    content = response.choices[0].message.content
+    if content is None:
+        raise RuntimeError("Empty response from model")
+    return content
+
+
+def chat(
+    messages: list[ChatCompletionMessageParam],
+    model: str = DEFAULT_MODEL,
+) -> str:
+    """Multi-turn conversation history → next assistant reply."""
+    response = get_client().chat.completions.create(model=model, messages=messages)
+    content = response.choices[0].message.content
+    if content is None:
+        raise RuntimeError("Empty response from model")
+    return content
+
+
+if __name__ == "__main__":
+    print(complete("Briefly explain what a transformer model is in AI."))
+```
+
+Running the module directly (**python NVIDIA_client.py**) executes the demo in the **__main__** block; importing it from another script gives you clean helper functions with no module-level side effects:
+
+```python
+from NVIDIA_client import complete, chat
+
+# Single-turn: fire and forget
+print(complete("Summarize the plot of Moby Dick in two sentences."))
+
+# Multi-turn: pass along the conversation history yourself
+history = []
+for turn in ["What is the capital of France?", "What is its population?"]:
+    history.append({"role": "user", "content": turn})
+    reply = chat(history)
+    history.append({"role": "assistant", "content": reply})
+    print(reply)
+```
+
+Two things are worth noting about this structure. First, **get_client()** builds a fresh **OpenAI** instance on each call rather than a module-level singleton. That means importing the module never touches the network or requires **NVIDIA_API_KEY** to be set — the key is only read the first time you actually call one of the helper functions. This makes the module safe to import from tests and other utilities. Second, the **if __name__ == "__main__":** guard means the demo only runs when you execute the file directly; **import**ing it stays silent. That pattern — thin wrapper functions around a lazily constructed client, guarded by a **__main__** block — is a good template to follow when moving from prototyping to any code you'll import elsewhere.
+
+NVIDIA's model catalogue includes **meta/llama-3.1-8b-instruct** (fast and general-purpose, used as the default above), **mistralai/mixtral-8x7b-instruct-v0.1**, **nvidia/llama-3.1-nemotron-70b-instruct** (strong on reasoning and instruction-following), and many more. Change the **model** argument or the **DEFAULT_MODEL** constant to try a different one. Because the endpoint is OpenAI-compatible, everything else you learn in this chapter — temperature, structured output, multi-turn conversations — transfers directly.
 
 
 ## Text Generation
