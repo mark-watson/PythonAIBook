@@ -214,7 +214,7 @@ forms, not new node types. `sub(a, b)` becomes `a + (-1)·b`, `div(a, b)`
 becomes `a · b^-1`, and `neg(a)` becomes `-1·a`. Keeping only six node types
 dramatically shrinks the later case analyses: the simplifier, differentiator,
 and integrator never have to handle subtraction, division, or negation as
-special cases — they fall out of `add`, `mul`, and `pow` for free. This is a
+special cases; they fall out of `add`, `mul`, and `pow` for free. This is a
 recurring theme in compilers and CAS alike: **express features by desugaring
 (translating them into simpler forms) rather than by adding new cases.**
 
@@ -225,11 +225,11 @@ the code.
 
 The two predicates round out the vocabulary. `is_num(e)` answers "is this a
 constant?" `contains_var(e, x)` answers "does the variable `x` occur anywhere
-in this tree?" — a structural question that drives the integration logic
+in this tree?", a structural question that drives the integration logic
 later, where deciding whether a multiplier is a constant *depends on whether it
 mentions the variable of integration*. The recursion is generic: for any
-non-leaf node, check the node's children (`e[1:]`). This pattern — a recursive
-walk that terminates at leaves — is the backbone of every function in the file.
+non-leaf node, check the node's children (`e[1:]`). This pattern, a recursive
+walk that terminates at leaves, is the backbone of every function in the file.
 
 ---
 
@@ -276,7 +276,7 @@ def _merge_add(a, b):
 it returns `(3, x)`; for plain `x` it returns `(1, x)`; for a constant like
 `4` it returns `(4, 1)`. This matters because of *collecting like terms*:
 `3*x + 5*x` should simplify to `8*x`. `_merge_add` tries exactly that: it pulls
-both terms apart, and if the "rest" is identical — `x` and `x` — it adds the
+both terms apart, and if the "rest" is identical (`x` and `x`), it adds the
 coefficients and rebuilds. If the rests differ (e.g. `3*x + 5*y`), it returns
 `None`, signalling "no merge possible".
 
@@ -365,7 +365,7 @@ Read each case as a small ordered list of identities:
   `pow`/`var` cases spell out the combinations `x·x`, `x·x^b`, and `x^a·x`
   explicitly.
 - **`pow`**: evaluate `2^3` into `8` *only* when the exponent is a whole
-  number (`denominator == 1`) — otherwise `1/2` would be rounded; then apply
+  number (`denominator == 1`); otherwise `1/2` would be rounded; then apply
   `e^0 = 1` and `e^1 = e`.
 - **`sin`/`cos`/`exp`/`log`**: recurse into the argument only.
 
@@ -384,8 +384,8 @@ separate research project.
 ## 4. Pretty-Printing: Trees Back into Math
 
 A CAS is judged as much by what it *prints* as by what it computes. The
-printer's job is to render a tree as a human-readable linear string —
-`2*x^3 - 5*x + 4`, `1/3*log(3*x + 2)` — with the right parentheses and no
+printer's job is to render a tree as a human-readable linear string,
+`2*x^3 - 5*x + 4`, `1/3*log(3*x + 2)`, with the right parentheses and no
 redundant `+ -`, `1*`, or `*1`.
 
 ```python
@@ -483,7 +483,7 @@ The interesting decisions are all about *notation*, and each maps to a helper:
   `-1*x`).
 
 Because every rule lives in one function, the printer can never disagree with
-the simplifier about what a "number" is — they both check `is_num` and the
+the simplifier about what a "number" is; they both check `is_num` and the
 `Fraction`. The result is compact output that a reader could hand back to a
 calculator and verify.
 
@@ -549,7 +549,7 @@ exponent is free of `x` (`x^2`, `(2x+1)^3`, `√x`), we use the familiar power
 rule `c · base^(c-1) · base'`. When instead the *base* is free of `x`
 (`2^x`, `a^sin(x)`), we use the exponential rule `base^expo · log(base) ·
 expo'`. When *both* base and exponent mention `x` (`x^x`), differentiation is
-genuinely harder and the honest answer is `NotImplementedError` — a decision
+genuinely harder and the honest answer is `NotImplementedError`, a decision
 we will see echoed in the integrator. The guard
 `expo[1].denominator == 1` inside `simplify` guarantees that `2^3` (an integer
 exponent) collapses numerically, while `2^x` stays symbolic so the `log(2)`
@@ -558,13 +558,13 @@ branch can fire.
 **Every rule wraps its answer in `simplify`.** Differentiation *constructs*
 trees; simplification *normalizes* them. Without the wrapper, the derivative
 of `x^3` would be `3 · x^2 · 1 + ...` (the `·1` and `+0` terms from the
-product and power rules). With it, the output is `3*x^2`. This pairing —
-generate, then normalize — is the standard idiom of symbolic computing, and it
+product and power rules). With it, the output is `3*x^2`. This pairing,
+generate, then normalize, is the standard idiom of symbolic computing, and it
 is why the simplifier was built first.
 
 The chain rule appears entirely inside the four leaf cases: each computes the
 derivative of its *argument* (`inner`) exactly once and multiplies it onto the
-outer derivative. Because `deriv` is recursive, nesting works automatically —
+outer derivative. Because `deriv` is recursive, nesting works automatically:
 differentiating `sin(3*x + 1)` recurses through `sin` into `add` into `mul`
 and assembles `3·cos(3x+1)` on the way back out.
 
@@ -575,7 +575,7 @@ and assembles `3·cos(3x+1)` on the way back out.
 Integration is where the chapter's honesty shows. Unlike differentiation,
 there is **no simple compositional algorithm** for antiderivatives in general;
 a complete method (Risch-style) is the subject of graduate study. So this
-implementation integrates only a *pragmatic subset* — and, crucially, it
+implementation integrates only a *pragmatic subset* and, crucially, it
 *detects* the boundary of that subset and refuses politely rather than
 returning a wrong answer.
 
@@ -655,7 +655,7 @@ The two branches mirror the two branches of `deriv`'s power case. In the first
 (`f(x)^c`), if the base is linear, a change of variables gives
 `∫ (a·x+b)^c dx = (a·x+b)^(c+1) / (a·(c+1))`, with the special case `c = -1`
 handled separately as `log(base)/a`. The `a == ZERO` guard catches a base that
-is actually constant (e.g. `3^x` reduced to a base free of `x` — that can't
+is actually constant (e.g. `3^x` reduced to a base free of `x`; that can't
 happen here, but the guard keeps the code safe). In the second branch
 (`c^(a·x+b)`), `∫ c^(a·x+b) dx = c^(a·x+b) / (a·log(c))`.
 
@@ -692,8 +692,8 @@ linear argument:
 
 The `log` case is worth pausing on: the antiderivative of `log(u)` is
 `u·log(u) - u` (verify by the product rule and chain rule). This is the one
-rule in the file whose result is not just "scale the outer function" — it
-genuinely restructures the expression — and the self-check in the next section
+rule in the file whose result is not just "scale the outer function"; it
+genuinely restructures the expression, and the self-check in the next section
 will confirm it numerically.
 
 ### The top-level dispatcher
@@ -731,14 +731,14 @@ def integrate(e, x):
 
 The dispatcher has the same shape as `deriv`, with one crucial behavioral
 difference: **its `mul` case is only partially recursive.** If one factor is a
-constant (free of `x`), it pulls the constant out — `∫ c·f(x) dx = c·∫f(x) dx`.
+constant (free of `x`), it pulls the constant out: `∫ c·f(x) dx = c·∫f(x) dx`.
 But if *both* factors mention `x` (as in `x·exp(x)`), it raises
 `NotImplementedError`. That restriction is the honest boundary of the subset:
 integrating `x·exp(x)` needs integration by parts, which is out of scope.
 
 This "recognize or refuse" discipline is the most important idea in the
 chapter after the representation itself. A symbolic integrator that *guesses*
-is far worse than one that says no — a wrong "simplified" answer silently
+is far worse than one that says no; a wrong "simplified" answer silently
 corrupts everything downstream. The `NotImplementedError` carrying the
 expression (`cannot integrate x*exp(x)`) makes the system fail loudly and
 explain itself.
@@ -749,7 +749,7 @@ explain itself.
 
 `evaluate` is the mirror image of the earlier functions: instead of building
 trees, it destroys them into floats. It is the bridge between the symbolic
-world and the numeric world, and it exists for one purpose — **verification**.
+world and the numeric world, and it exists for one purpose: **verification**.
 
 ```python
 # ---------------------------------------------------------------- numeric eval
@@ -786,12 +786,12 @@ The `env` argument is an ordinary `dict` mapping variable names to values,
 e.g. `{'x': 0.8, 'y': 1.3}`. A `var` node simply looks itself up; a `num`
 becomes a `float` (this is the one place exactness is deliberately sacrificed,
 and only for the numeric check). The `math` functions are imported *inside*
-the leaf cases so the symbolic core never imports `math` at all — a small
+the leaf cases so the symbolic core never imports `math` at all, a small
 encapsulation that keeps the "pure" part of the library free of floats.
 
 This function is deliberately trivial because its correctness is assumed and
-then *used to test* the more interesting functions. That inversion — using
-simple code to check clever code — is the theme of the next section.
+then *used to test* the more interesting functions. That inversion, using
+simple code to check clever code, is the theme of the next section.
 
 ---
 
@@ -888,7 +888,7 @@ and "actually proves correctness".
 `f'(x₀)` as `(f(x₀+h) - f(x₀-h)) / (2h)` with `h = 1e-6`. The *central*
 form (as opposed to the one-sided `(f(x₀+h)-f(x₀))/h`) is second-order
 accurate, meaning its error shrinks as `h²`. At `h = 1e-6` the error is around
-`1e-12` in the function values, comfortably inside the `1e-6` tolerance —
+`1e-12` in the function values, comfortably inside the `1e-6` tolerance,
 *provided* `h` is not so small that floating-point cancellation in the
 subtraction round the difference to zero, which is why `h = 1e-6` rather than
 `1e-30`.
@@ -902,7 +902,7 @@ tiny and huge values.
 
 **Differentiating the antiderivative back.** The integral is verified by the
 fundamental theorem itself: compute `∫f`, differentiate it, and confirm the
-result equals `f` numerically. This is a beautifully *self-contained* check —
+result equals `f` numerically. This is a beautifully *self-contained* check:
 it never requires a reference CAS to compare against, only the two operations
 the program already implements. If either the integrator or the differentiator
 were broken in a way that affected these expressions, the `OK`/`FAIL` lines
@@ -921,7 +921,7 @@ python3 sym-math.py
 ```
 
 There is nothing to install; the program uses only `fractions` and `math`.
-The output is long — thirty-one examples, each a small block — so below we
+The output is long, thirty-one examples each a small block, so below we
 reproduce it in full as the program actually prints it:
 
 ```
@@ -1138,7 +1138,7 @@ f = 'x*cos(x) + sin(x)'  :  x*cos(x) + sin(x)
 ```
 
 Every example ends with `OK` on both checks, and the final three examples
-report `integrate: not supported` — exactly as designed.
+report `integrate: not supported`, exactly as designed.
 
 ---
 
@@ -1148,8 +1148,8 @@ The output a
 sequence of small mathematical arguments, each independently verified:
 
 **The `derivative check: OK` lines prove the symbolic differentiator agrees
-with numeric reality.** Every derivative — constant, power, product, chain
-rule, the two power-rule branches, and the four transcendental functions — is
+with numeric reality.** Every derivative (constant, power, product, chain
+rule, the two power-rule branches, and the four transcendental functions) is
 compared against a central finite-difference estimate at `x = 0.8`. If any
 rule were implemented with a wrong sign or a missing chain factor, that single
 numeric comparison would catch it. The fact that all thirty-one pass is
@@ -1162,19 +1162,19 @@ the answer, then confirms `d/dx(∫f) = f` at the same `x`. This is the
 Fundamental Theorem of Calculus used as a *runtime assertion*. Notice that
 this check exercises the two hardest rules jointly: for `log(2*x + 3)` the
 printed antiderivative is `1/2*((2*x + 3)*log(2*x + 3) - (2*x + 3))`, and its
-rederivative — `1/2*(2*log(2*x + 3) + (2*x + 3)*(2*(2*x + 3)^-1) - 2)` — is
+rederivative, `1/2*(2*log(2*x + 3) + (2*x + 3)*(2*(2*x + 3)^-1) - 2)`, is
 an ugly expression that only *simplifies numerically* to the original. The
 `OK` on that line is genuine, non-trivial verification of the `log` integration
 rule.
 
 **The output also demonstrates the two design properties we set out to
-achieve.** First, *exactness*: coefficients appear as `1/3`, `2/5`, `3/2` —
+achieve.** First, *exactness*: coefficients appear as `1/3`, `2/5`, `3/2`,
 rational numbers, not `0.333333…`. This is the `Fraction`-based representation
 paying off; nothing was ever rounded. Second, *honesty at the boundary*: the
 last three expressions (`x·exp(x)`, `x·sin(x)`, `x·cos(x) + sin(x)`) each get a
 correct derivative (`x·exp(x)` → `exp(x) + x·exp(x)`) but then print
 `integrate: not supported` instead of a guessed answer. Those integrals require
-integration by parts — deliberately out of scope — and the system says so in
+integration by parts, deliberately out of scope, and the system says so in
 plain text. A production CAS would integrate them; a teaching CAS is *more*
 correct for refusing than for silently returning a wrong result.
 
@@ -1182,17 +1182,17 @@ correct for refusing than for silently returning a wrong result.
 tandem.** Its derivative is `2^x*log(2)` (the `c^f(x)` branch of `deriv`); its
 integral is `2^x*log(2)^-1` (the `c^(a·x+b)` branch of `integrate_pow`). The
 inverse relationship between the two is exactly the `1/log(2)` factor flipping
-between numerator and denominator — a one-line illustration that
+between numerator and denominator, a one-line illustration that
 differentiation and integration are true inverses here, confirmed numerically.
 
 **Two cosmetic oddities in the output are worth understanding, not
 "fixing".** First, `1/x` prints as `x^-1` and its integral prints as `log(x)`
-— negative exponents are kept as powers (they fall out of the power rule), so
+because negative exponents are kept as powers (they fall out of the power rule), so
 the printer never writes them as fractions. Second, in the `log(x)` example the
 line `d/dx(∫) = log(x) + 1 - 1` shows an expression that is numerically `log(x)`
 but not fully simplified, because the simplifier does not cancel the `+1 - 1`
 that arises from the product rule applied to `x·log(x)`. The numeric check
-still passes — `1 - 1` cancels exactly in floating point — but it is a visible
+still passes; `1 - 1` cancels exactly in floating point; but it is a visible
 reminder that the simplifier is a *subset* of a real CAS, not a complete one.
 
 ---
@@ -1202,15 +1202,15 @@ reminder that the simplifier is a *subset* of a real CAS, not a complete one.
 The architecture makes each enhancement a local change, which is the real test
 of a clean symbolic design:
 
-- **More transcendental functions** — `tan`, `asin`, `sqrt` as a distinct node:
+- **More transcendental functions** (`tan`, `asin`, `sqrt` as a distinct node):
   add one builder, one derivative case, one integral case, and one printer case.
-- **Integration by parts** — recognize the `mul`-of-two-`x`-dependent-factors
+- **Integration by parts**: recognize the `mul`-of-two-`x`-dependent-factors
   pattern and apply `∫u dv = uv - ∫v du`; this would turn the three
   `not supported` lines into answers.
-- **A full simplifier** — normalize polynomials into sorted monomial form,
+- **A full simplifier**: normalize polynomials into sorted monomial form,
   cancel `+1 - 1`, and combine `log` factors; this removes the cosmetic
   `log(x) + 1 - 1` artifact.
-- **A parser** — turn the *string* `"x^2 + 3*x"` into the tree; this inverts
+- **A parser**: turn the *string* `"x^2 + 3*x"` into the tree; this inverts
   `to_str` and rounds out the builder DSL into a true little language.
 
 Each suggestion extends the same loop: **represent → simplify → differentiate

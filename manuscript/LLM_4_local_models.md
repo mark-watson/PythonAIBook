@@ -2,7 +2,7 @@
 
 Running language models on your own hardware gives you privacy, zero per-token cost, and the ability to work offline. The tradeoff is that local models are generally smaller and less capable than the frontier models available through cloud APIs, and running larger models requires significant GPU memory or Apple Silicon unified memory.
 
-In this chapter we focus on [Ollama](https://ollama.com), the most popular tool for running local models. Ollama handles model downloading, quantization, GPU acceleration, and exposes a simple API — you can go from zero to a running local LLM in minutes. We also briefly mention alternative tools at the end of the chapter.
+In this chapter we focus on [Ollama](https://ollama.com), the most popular tool for running local models. Ollama handles model downloading, quantization, GPU acceleration, and exposes a simple API; you can go from zero to a running local LLM in minutes. We also briefly mention alternative tools at the end of the chapter.
 
 If you want to go deeper into Ollama, including tool use, agents, RAG, and advanced configuration, see my book [Ollama in Action](https://leanpub.com/ollama-in-action).
 
@@ -51,7 +51,7 @@ Some recommended models to start with:
 | gemma3:4b | 3 GB | Google's small model, strong reasoning |
 | qwen3:4b | 2.6 GB | Excellent multilingual and coding |
 | deepseek-r1:7b | 4.7 GB | Strong reasoning with explicit chain-of-thought |
-| llava:7b | 4.7 GB | Vision model — can analyze images |
+| llava:7b | 4.7 GB | Vision model, can analyze images |
 
 
 ## Using Ollama from Python
@@ -64,7 +64,7 @@ uv pip install ollama
 
 ### Basic Text Generation
 
-The simplest use of the Ollama SDK — send a prompt and print the response:
+The simplest use of the Ollama SDK: send a prompt and print the response:
 
 ```python
 # ollama_text.py - Basic text generation with a local model
@@ -221,7 +221,7 @@ print()
 print(f"(Conversation has {assistant.message_count()} messages)")
 ```
 
-Note that unlike cloud APIs, keeping long conversation histories in local models is free — there are no per-token costs. The main constraint is the model's context window size, which varies by model (typically 4K to 128K tokens).
+Note that unlike cloud APIs, keeping long conversation histories in local models is free; there are no per-token costs. The main constraint is the model's context window size, which varies by model (typically 4K to 128K tokens).
 
 
 ## Prompt Caching for Performance
@@ -352,7 +352,7 @@ A QR code is displayed on the right side of the ticket
 for scanning at the venue.
 ```
 
-Even this small 0.8B-parameter vision model extracts detailed structured information from the ticket image — event details, pricing, seating, and layout elements. This simple capability makes it easy to add image understanding to your local applications without needing complex computer vision pipelines.
+Even this small 0.8B-parameter vision model extracts detailed structured information from the ticket image: event details, pricing, seating, and layout elements. This simple capability makes it easy to add image understanding to your local applications without needing complex computer vision pipelines.
 
 
 ## OpenAI-Compatible API
@@ -382,7 +382,7 @@ response = client.chat.completions.create(
 print(response.choices[0].message.content)
 ```
 
-This compatibility layer means you can prototype with local models and then switch to OpenAI, Gemini, or another provider by changing the client configuration — the rest of your code stays the same.
+This compatibility layer means you can prototype with local models and then switch to OpenAI, Gemini, or another provider by changing the client configuration; the rest of your code stays the same.
 
 
 ## Alternative Tools for Running Local Models
@@ -418,9 +418,9 @@ On Linux and Windows, a dedicated NVIDIA GPU with sufficient VRAM provides the b
 
 ## Summary
 
-Running LLMs locally with Ollama gives you a private, cost-free, offline-capable alternative to cloud APIs. The setup is straightforward — install Ollama, pull a model, and start making API calls from Python. Features like streaming, conversation memory, prompt caching, and reasoning models make local models practical for many real applications.
+Running LLMs locally with Ollama gives you a private, cost-free, offline-capable alternative to cloud APIs. The setup is straightforward: install Ollama, pull a model, and start making API calls from Python. Features like streaming, conversation memory, prompt caching, and reasoning models make local models practical for many real applications.
 
-The main tradeoff is capability: the largest models that run locally (7-14B parameters on typical hardware) are less capable than frontier cloud models with hundreds of billions of parameters. For many tasks — code assistance, text summarization, data extraction, conversational interfaces — local models perform well enough, and the privacy and cost benefits make them the better choice.
+The main tradeoff is capability: the largest models that run locally (7-14B parameters on typical hardware) are less capable than frontier cloud models with hundreds of billions of parameters. For many tasks (code assistance, text summarization, data extraction, conversational interfaces), local models perform well enough, and the privacy and cost benefits make them the better choice.
 
 ## Optional Practice Problems
 

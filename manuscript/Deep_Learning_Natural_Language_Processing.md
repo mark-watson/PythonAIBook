@@ -40,7 +40,7 @@ All models will be downloaded automatically to **~/.cache/huggingface** the firs
 
 ### Summarizing Text Using a Pre-trained Model on Your Laptop
 
-We use the **facebook/bart-large-cnn** model for text summarization. This model runs locally on your laptop using PyTorch — no API keys or cloud services needed. The downloaded model and associated files are a little less than two gigabytes of data.
+We use the **facebook/bart-large-cnn** model for text summarization. This model runs locally on your laptop using PyTorch; no API keys or cloud services needed. The downloaded model and associated files are a little less than two gigabytes of data.
 
 In the current version of the transformers library (v5+), we load the model and tokenizer explicitly using `AutoModelForSeq2SeqLM` and `AutoTokenizer`:
 
@@ -92,7 +92,7 @@ Note: for production summarization work with longer documents, consider using la
 
 ### Zero Shot Classification Using a Local Model
 
-Zero shot classification models work by specifying which classification labels you want to assign to input texts — no pre-training on labeled examples is required. We use the **MoritzLaurer/deberta-v3-base-zeroshot-v2.0** model, which is a modern and efficient replacement for the older **bart-large-mnli** model:
+Zero shot classification models work by specifying which classification labels you want to assign to input texts; no pre-training on labeled examples is required. We use the **MoritzLaurer/deberta-v3-base-zeroshot-v2.0** model, which is a modern and efficient replacement for the older **bart-large-mnli** model:
 
 ```python
 from pprint import pprint
@@ -215,7 +215,7 @@ tensor([[0.1793]])
 
 ## Deep Learning Natural Language Processing Wrap-up
 
-In this chapter we have seen examples of how effective deep learning is for NLP using PyTorch and the Hugging Face transformers ecosystem. All three examples — summarization, zero-shot classification, and sentence similarity — run locally on your laptop without requiring API keys or cloud services.
+In this chapter we have seen examples of how effective deep learning is for NLP using PyTorch and the Hugging Face transformers ecosystem. All three examples (summarization, zero-shot classification, and sentence similarity) run locally on your laptop without requiring API keys or cloud services.
 
 I worked on other methods of NLP over a 25-year period and I ask you, dear reader, to take my word on this: deep learning has revolutionized NLP and for almost all practical NLP applications, deep learning libraries and pre-trained models from organizations like Hugging Face should be the first thing that you consider using.
 

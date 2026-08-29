@@ -509,7 +509,7 @@ The Soar Python bindings are available as a pip package, making installation str
 uv pip install soar-sml
 ```
 
-This installs prebuilt bindings for the Soar kernel — no need to clone the repository or compile from source.
+This installs prebuilt bindings for the Soar kernel; no need to clone the repository or compile from source.
 
 I will present here a simple example and explain a subset of the capabilities of Soar. When we are done here you can reference a recent paper by Neha Rajan and 2Sunderrajan Srinivasan [Exploring Learning Capability of an Agent in SOAR: Using 8- Queens Problem](https://thescipub.com/pdf/jcssp.2020.642.650.pdf) for a complete example using Soar for cognitive modeling and a more complex example.
 

@@ -1,11 +1,11 @@
 # Anomaly Detection
 
-Anomaly detection is the task of identifying data points that deviate significantly from the expected pattern. Unlike classification, where we have balanced training examples for each class, anomaly detection is designed for situations where "normal" examples vastly outnumber "anomalous" ones — often by 100:1 or more. Fraud detection, network intrusion monitoring, manufacturing quality control, and medical diagnosis are all domains where anomaly detection excels.
+Anomaly detection is the task of identifying data points that deviate significantly from the expected pattern. Unlike classification, where we have balanced training examples for each class, anomaly detection is designed for situations where "normal" examples vastly outnumber "anomalous" ones, often by 100:1 or more. Fraud detection, network intrusion monitoring, manufacturing quality control, and medical diagnosis are all domains where anomaly detection excels.
 
 The key insight is that we can build a model of what "normal" looks like and then flag anything that doesn't fit. This chapter implements two complementary approaches:
 
-1. **Gaussian Statistical Detector** — a from-scratch implementation that models each feature with a Gaussian distribution and uses a tunable probability threshold.
-2. **Isolation Forest** — the current industry-standard tree-based algorithm from scikit-learn that requires no labeled data at all.
+1. **Gaussian Statistical Detector**: a from-scratch implementation that models each feature with a Gaussian distribution and uses a tunable probability threshold.
+2. **Isolation Forest**: the current industry-standard tree-based algorithm from scikit-learn that requires no labeled data at all.
 
 By comparing both approaches on the same dataset, we will see the tradeoffs between supervised tuning and fully unsupervised detection.
 
@@ -26,7 +26,7 @@ The `justfile` provides the developer workflow: `just check` runs format-check +
 
 We reuse the Wisconsin Diagnostic Breast Cancer dataset from earlier chapters, this time treating malignant samples as anomalies rather than a classification target. The dataset contains 648 samples with 9 features measuring cell characteristics (clump thickness, uniformity of cell size and shape, marginal adhesion, etc.) and a class label: 2 for benign, 4 for malignant.
 
-Roughly 35% of samples are malignant — a higher anomaly rate than most real-world problems, but useful for demonstrating the techniques with enough anomalies to evaluate precision and recall meaningfully.
+Roughly 35% of samples are malignant, a higher anomaly rate than most real-world problems, but useful for demonstrating the techniques with enough anomalies to evaluate precision and recall meaningfully.
 
 
 ## Data Preprocessing
@@ -47,7 +47,7 @@ X = (X_log - row_min) / (row_max - row_min + 1e-10)
 y = ((raw[:, 9] - 2) * 0.5).astype(int)
 ```
 
-We then split the data three ways — 60% training, 20% cross-validation, 20% test. Crucially, the training set is built from mostly normal (benign) examples, with only about 10% anomalies allowed through. This mimics the real-world scenario where we train on data that is overwhelmingly normal:
+We then split the data three ways: 60% training, 20% cross-validation, 20% test. Crucially, the training set is built from mostly normal (benign) examples, with only about 10% anomalies allowed through. This mimics the real-world scenario where we train on data that is overwhelmingly normal:
 
 ```python
 # Training set: keep mostly normal (benign) examples,
@@ -62,7 +62,7 @@ keep_idx = np.concatenate([
 X_train = X[keep_idx]
 ```
 
-The script also generates a 3×3 grid of per-feature histograms colour-coded by class, saved to `histograms.png`. Examining these distributions is always a good first step — features where the normal and anomaly distributions overlap heavily will be harder for any detector to leverage.
+The script also generates a 3×3 grid of per-feature histograms colour-coded by class, saved to `histograms.png`. Examining these distributions is always a good first step; features where the normal and anomaly distributions overlap heavily will be harder for any detector to leverage.
 
 
 ## Approach 1: Gaussian Statistical Detector
@@ -119,9 +119,9 @@ class GaussianAnomalyDetector:
 
 A few things to note:
 
-- The variance is computed as the mean of squared deviations from the mean — the standard formula for population variance.
+- The variance is computed as the mean of squared deviations from the mean, the standard formula for population variance.
 - We guard against zero variance with `np.maximum(self.sigma_sq, 1e-10)` to avoid division by zero in features with constant values.
-- The `predict` method returns `True` for anomalies — observations whose probability falls below epsilon.
+- The `predict` method returns `True` for anomalies: observations whose probability falls below epsilon.
 
 ### Tuning Epsilon
 
@@ -152,7 +152,7 @@ Isolation Forest, introduced by Fei Tony Liu, Kai Ming Ting, and Zhi-Hua Zhou in
 
 The algorithm builds an ensemble of random trees (similar to Random Forest, but without labels). Each tree recursively partitions the data by choosing a random feature and a random split point. Normal observations, which are surrounded by similar points, require many splits to isolate. Anomalies, which are few and different, get isolated in just a few splits.
 
-The **anomaly score** is based on the average path length from the root to the leaf across all trees. Shorter paths mean the observation was easy to isolate — hence, more anomalous.
+The **anomaly score** is based on the average path length from the root to the leaf across all trees. Shorter paths mean the observation was easy to isolate, and therefore more anomalous.
 
 ### Implementation
 
@@ -176,9 +176,9 @@ class IsolationForestDetector:
         return self.model.predict(X) == -1
 ```
 
-The key hyperparameter is `contamination` — the expected proportion of anomalies in the training data. Setting this correctly is critical: too low and the model misses anomalies; too high and it over-flags normal data. In our example we set it to 0.35 to match the dataset's actual anomaly rate.
+The key hyperparameter is `contamination`, the expected proportion of anomalies in the training data. Setting this correctly is critical: too low and the model misses anomalies; too high and it over-flags normal data. In our example we set it to 0.35 to match the dataset's actual anomaly rate.
 
-Unlike the Gaussian detector, Isolation Forest is **fully unsupervised** — it does not use the cross-validation labels at all. This is both its strength (works without any labels) and its weakness (cannot tune a decision boundary to match known anomaly patterns).
+Unlike the Gaussian detector, Isolation Forest is **fully unsupervised**: it does not use the cross-validation labels at all. This is both its strength (works without any labels) and its weakness (cannot tune a decision boundary to match known anomaly patterns).
 
 
 ## Running the Example
@@ -234,11 +234,11 @@ Histograms saved to histograms.png
 
 The results reveal an important lesson about the tradeoff between supervised and unsupervised approaches:
 
-**Gaussian Detector (F1 = 0.85)**: Because it uses cross-validation labels to tune epsilon, it achieves excellent balance — 90% precision with 80% recall. It correctly classifies 90% of all test samples.
+**Gaussian Detector (F1 = 0.85)**: Because it uses cross-validation labels to tune epsilon, it achieves excellent balance: 90% precision with 80% recall. It correctly classifies 90% of all test samples.
 
-**Isolation Forest (F1 = 0.74)**: It catches *every* anomaly (100% recall) but at the cost of many false positives (59% precision). It flags 38% of normal samples as anomalous. This is a common characteristic of unsupervised detectors — they err on the side of caution.
+**Isolation Forest (F1 = 0.74)**: It catches *every* anomaly (100% recall) but at the cost of many false positives (59% precision). It flags 38% of normal samples as anomalous. This is a common characteristic of unsupervised detectors: they err on the side of caution.
 
-The takeaway: **when you have even a small set of labeled anomalies for tuning, a simpler statistical model can outperform a more sophisticated unsupervised one.** In practice, many production systems use a hybrid approach — an unsupervised detector for initial screening, followed by a tuned model (or human review) for the final decision.
+The takeaway: **when you have even a small set of labeled anomalies for tuning, a simpler statistical model can outperform a more sophisticated unsupervised one.** In practice, many production systems use a hybrid approach: an unsupervised detector for initial screening, followed by a tuned model (or human review) for the final decision.
 
 ### Evaluation Metrics for Anomaly Detection
 
@@ -246,7 +246,7 @@ Standard accuracy is misleading for anomaly detection because the classes are im
 
 - **Precision**: Of the observations flagged as anomalies, how many actually are? High precision means few false alarms.
 - **Recall**: Of all true anomalies, how many did we catch? High recall means few missed anomalies.
-- **F1 Score**: The harmonic mean of precision and recall — a single number that balances both concerns.
+- **F1 Score**: The harmonic mean of precision and recall, a single number that balances both concerns.
 
 The right balance depends on your domain. In fraud detection, missing a fraud (low recall) is costly, so you tolerate more false positives. In manufacturing, false alarms that shut down a production line (low precision) are costly, so you set a higher threshold.
 
@@ -258,7 +258,7 @@ In this chapter we implemented two complementary approaches to anomaly detection
 - The **Gaussian statistical detector** gives us mathematical transparency: we can inspect the learned μ and σ² values per feature and understand exactly why an observation was flagged. The epsilon threshold provides a single, interpretable knob for controlling sensitivity.
 - The **Isolation Forest** requires no labels and scales well to high-dimensional data. It is the recommended starting point for any new anomaly detection project where labeled anomalies are unavailable.
 
-Both approaches are widely used in practice, and understanding their tradeoffs — supervised tuning vs. unsupervised convenience, interpretability vs. scalability — is essential for any practitioner working with anomaly detection problems.
+Both approaches are widely used in practice, and understanding their tradeoffs (supervised tuning vs. unsupervised convenience, interpretability vs. scalability) is essential for any practitioner working with anomaly detection problems.
 
 
 ## Optional Practice Problems

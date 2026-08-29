@@ -2,7 +2,7 @@
 
 As artificial intelligence systems and autonomous agents play an increasingly central role in data analytics, a new challenge has emerged: how do we share context, curated metadata, and operational playbooks between humans and AI systems? Historically, metadata has been stored in specialized database catalog systems (like Apache Atlas, Google Cloud Dataplex, or proprietary enterprise wikis) that are difficult for agents to access without custom integrations, or formatted as raw JSON/YAML payloads that are dry and hard for humans to collaborate on.
 
-Dear reader, in this chapter we explore the **Open Knowledge Format (OKF)**—a minimal, lightweight, human- and agent-friendly convention for representing knowledge surrounding data systems. Originally proposed in draft specs by Google Cloud Platform, OKF takes the position that knowledge should be readable, writeable, diffable (i.e., think output like `git diff`), and portable using nothing more than markdown files, YAML frontmatter, and standard version control (such as Git). 
+Dear reader, in this chapter we explore the **Open Knowledge Format (OKF)**, a minimal, lightweight, human- and agent-friendly convention for representing knowledge surrounding data systems. Originally proposed in draft specs by Google Cloud Platform, OKF takes the position that knowledge should be readable, writeable, diffable (i.e., think output like `git diff`), and portable using nothing more than markdown files, YAML frontmatter, and standard version control (such as Git). 
 
 In the preface to this chapter, we focus on creating a simple Python implementation of a system using OKF and  in the final **Wrap Up** section, we will catalog the diverse ways you can use this example code for building knowledge bases designed to serve both humans and AI systems, alongside practical project ideas for you to build upon.
 
@@ -24,7 +24,7 @@ According to the open specification draft, the format is intentionally minimal:
 * **Diffable:** Because it consists of plain-text markdown, changes can be reviewed, tracked, and merged using standard version control like Git.
 * **Portable:** There is no schema registry, database, or SDK dependency. If you can `git clone` or zip a directory, you can share an OKF knowledge bundle.
 
-An OKF repository is organized into a **Knowledge Bundle**—a self-contained, hierarchical collection of knowledge documents representing *concepts*. A concept can describe anything: a database table, an API endpoint, a financial KPI metric, or an operational playbook.
+An OKF repository is organized into a **Knowledge Bundle**, a self-contained, hierarchical collection of knowledge documents representing *concepts*. A concept can describe anything: a database table, an API endpoint, a financial KPI metric, or an operational playbook.
 
 ## Sample Knowledge Bundle Structure
 

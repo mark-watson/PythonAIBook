@@ -2,7 +2,7 @@
 
 The fastest way to use large language models is through cloud APIs. Google, OpenAI, and Anthropic,  all offer APIs that give you access to their most capable proprietary models with just a few lines of Python code. Fireworks.ai and NVIDIA are inference providers in the USA that offer fast inferencing for many open weight models. You don't need a GPU, you don't need to download model weights, and you can start building applications in minutes.
 
-In this chapter we work through practical examples using the Google Gemini API, the OpenAI API, the Fireworks.ai API, and NVIDIA's free NIM inference service. Each provides Python client libraries (or compatibility layers) that handle authentication, request formatting, and response parsing. The patterns you learn here apply to other API providers as well — the core concepts of sending prompts, receiving completions, and managing conversations are the same across providers.
+In this chapter we work through practical examples using the Google Gemini API, the OpenAI API, the Fireworks.ai API, and NVIDIA's free NIM inference service. Each provides Python client libraries (or compatibility layers) that handle authentication, request formatting, and response parsing. The patterns you learn here apply to other API providers as well; the core concepts of sending prompts, receiving completions, and managing conversations are the same across providers.
 
 The examples for this chapter are in the directory **source-code/llm_public_apis**.
 
@@ -27,7 +27,7 @@ Store your API key in an environment variable:
 export GOOGLE_API_KEY="your-api-key-here"
 ```
 
-Here is the simplest possible example — send a prompt to Gemini and print the response:
+Here is the simplest possible example: send a prompt to Gemini and print the response:
 
 ```python
 # gemini_text.py - Basic text generation with Google Gemini
@@ -90,7 +90,7 @@ Both APIs follow the same pattern: create a client, send a prompt, and extract t
 
 ### Fireworks.ai
 
-Fireworks.ai provides fast, cost-effective access to open-weight models through an OpenAI-compatible API. This means you can use the **openai** Python SDK you already installed — just point it at Fireworks' endpoint. DeepSeek V4 Flash, the default model we use here, delivers strong performance at a fraction of the cost of proprietary models.
+Fireworks.ai provides fast, cost-effective access to open-weight models through an OpenAI-compatible API. This means you can use the **openai** Python SDK you already installed; just point it at Fireworks' endpoint. DeepSeek V4 Flash, the default model we use here, delivers strong performance at a fraction of the cost of proprietary models.
 
 Get a free API key from [fireworks.ai](https://fireworks.ai/api-keys) and set it as an environment variable:
 
@@ -125,7 +125,7 @@ The output is a concise explanation of transformer models. The key difference fr
 
 ### NVIDIA NIM (Free Inference)
 
-NVIDIA's [build.nvidia.com](https://build.nvidia.com) service provides free API access to a broad catalogue of open-weight models — Llama, Mistral, Phi, DeepSeek, and NVIDIA's own Nemotron family — hosted on NVIDIA GPUs. Like Fireworks.ai, NVIDIA exposes an OpenAI-compatible endpoint, so the same **openai** SDK works with just a different **base_url**.
+NVIDIA's [build.nvidia.com](https://build.nvidia.com) service provides free API access to a broad catalogue of open-weight models (Llama, Mistral, Phi, DeepSeek, and NVIDIA's own Nemotron family) hosted on NVIDIA GPUs. Like Fireworks.ai, NVIDIA exposes an OpenAI-compatible endpoint, so the same **openai** SDK works with just a different **base_url**.
 
 Sign up for a free account, generate a key, and store it in an environment variable:
 
@@ -198,9 +198,9 @@ for turn in ["What is the capital of France?", "What is its population?"]:
     print(reply)
 ```
 
-Two things are worth noting about this structure. First, **get_client()** builds a fresh **OpenAI** instance on each call rather than a module-level singleton. That means importing the module never touches the network or requires **NVIDIA_API_KEY** to be set — the key is only read the first time you actually call one of the helper functions. This makes the module safe to import from tests and other utilities. Second, the **if __name__ == "__main__":** guard means the demo only runs when you execute the file directly; **import**ing it stays silent. That pattern — thin wrapper functions around a lazily constructed client, guarded by a **__main__** block — is a good template to follow when moving from prototyping to any code you'll import elsewhere.
+Two things are worth noting about this structure. First, **get_client()** builds a fresh **OpenAI** instance on each call rather than a module-level singleton. That means importing the module never touches the network or requires **NVIDIA_API_KEY** to be set; the key is only read the first time you actually call one of the helper functions. This makes the module safe to import from tests and other utilities. Second, the **if __name__ == "__main__":** guard means the demo only runs when you execute the file directly; **import**ing it stays silent. That pattern, thin wrapper functions around a lazily constructed client guarded by a **__main__** block, is a good template to follow when moving from prototyping to any code you'll import elsewhere.
 
-NVIDIA's model catalogue includes **meta/llama-3.1-8b-instruct** (fast and general-purpose, used as the default above), **mistralai/mixtral-8x7b-instruct-v0.1**, **nvidia/llama-3.1-nemotron-70b-instruct** (strong on reasoning and instruction-following), and many more. Change the **model** argument or the **DEFAULT_MODEL** constant to try a different one. Because the endpoint is OpenAI-compatible, everything else you learn in this chapter — temperature, structured output, multi-turn conversations — transfers directly.
+NVIDIA's model catalogue includes **meta/llama-3.1-8b-instruct** (fast and general-purpose, used as the default above), **mistralai/mixtral-8x7b-instruct-v0.1**, **nvidia/llama-3.1-nemotron-70b-instruct** (strong on reasoning and instruction-following), and many more. Change the **model** argument or the **DEFAULT_MODEL** constant to try a different one. Because the endpoint is OpenAI-compatible, everything else you learn in this chapter (temperature, structured output, multi-turn conversations) transfers directly.
 
 
 ## Text Generation
@@ -239,7 +239,7 @@ response_high = client.models.generate_content(
 print(f"Temperature 1.5: {response_high.text}")
 ```
 
-For most practical applications — code generation, data extraction, question answering — use a low temperature (0.0 to 0.3). For creative writing and brainstorming, higher temperatures (0.7 to 1.5) produce more interesting results.
+For most practical applications (code generation, data extraction, question answering), use a low temperature (0.0 to 0.3). For creative writing and brainstorming, higher temperatures (0.7 to 1.5) produce more interesting results.
 
 The Fireworks API works the same way. Since Fireworks uses the OpenAI Chat Completions format, temperature is passed as a top-level parameter:
 
@@ -343,7 +343,7 @@ if hasattr(message, "thinking") and message.thinking:
 print(message.content)
 ```
 
-The **extra_body** parameter passes the thinking configuration directly to the Fireworks API. DeepSeek's approach differs from Gemini's thinking budget — instead of controlling how many tokens to spend on reasoning, you simply enable or disable thinking mode. The reasoning trace is available via `message.thinking`, which is useful for debugging and understanding the model's logic.
+The **extra_body** parameter passes the thinking configuration directly to the Fireworks API. DeepSeek's approach differs from Gemini's thinking budget; instead of controlling how many tokens to spend on reasoning, you simply enable or disable thinking mode. The reasoning trace is available via `message.thinking`, which is useful for debugging and understanding the model's logic.
 
 
 ## Multi-Turn Conversations
@@ -415,7 +415,7 @@ print(chat("What is its population?"))
 print(chat("What are the top 3 tourist attractions there?"))
 ```
 
-The Fireworks implementation is notably simpler than the Gemini version — the Chat Completions format uses standard dicts for messages rather than typed objects, which makes message history management straightforward.
+The Fireworks implementation is notably simpler than the Gemini version; the Chat Completions format uses standard dicts for messages rather than typed objects, which makes message history management straightforward.
 
 
 ## Multimodal Input: Analyzing Images
@@ -482,14 +482,14 @@ for item in reversed(output_items):
                 break
 ```
 
-The **tools** parameter tells the model it can use web search to answer the question. The model decides whether to search based on the query — factual questions about recent events will trigger a search, while questions about well-known topics may not.
+The **tools** parameter tells the model it can use web search to answer the question. The model decides whether to search based on the query; factual questions about recent events will trigger a search, while questions about well-known topics may not.
 
 Google's Gemini also supports grounding with Google Search through a similar mechanism. Refer to the Google AI documentation for the current syntax, as this feature is actively evolving.
 
 
 ## Structured Output
 
-For many applications you need the model to return data in a specific format — JSON, CSV, or a particular schema. LLMs can be instructed to produce structured output through careful prompting.
+For many applications you need the model to return data in a specific format: JSON, CSV, or a particular schema. LLMs can be instructed to produce structured output through careful prompting.
 
 ```python
 # gemini_structured.py - Getting structured JSON output from Gemini
@@ -519,7 +519,7 @@ result = json.loads(response.text.strip().removeprefix("```json").removesuffix("
 print(json.dumps(result, indent=2))
 ```
 
-Using temperature 0.0 is important for structured output — you want the model to be deterministic and precise rather than creative. Some APIs also support specifying a JSON schema directly in the request, which guarantees the output conforms to a specific structure.
+Using temperature 0.0 is important for structured output: you want the model to be deterministic and precise rather than creative. Some APIs also support specifying a JSON schema directly in the request, which guarantees the output conforms to a specific structure.
 
 The Fireworks version uses the same prompting strategy. The code differs only in how the client is configured and how the response text is accessed:
 
@@ -554,7 +554,7 @@ result = json.loads(raw)
 print(json.dumps(result, indent=2))
 ```
 
-The output is identical to the Gemini version — a clean JSON object with the extracted fields. The JSON cleanup logic (stripping markdown code fences) is the same because all LLMs tend to wrap code blocks in backticks.
+The output is identical to the Gemini version: a clean JSON object with the extracted fields. The JSON cleanup logic (stripping markdown code fences) is the same because all LLMs tend to wrap code blocks in backticks.
 
 
 ## Practical Considerations
@@ -563,14 +563,14 @@ The output is identical to the Gemini version — a clean JSON object with the e
 
 API calls are billed per token. Input tokens (your prompt) and output tokens (the model's response) are priced separately, with output tokens typically costing 2-4x more. Prices vary significantly between providers and models:
 
-- Smaller, faster models (Gemini 2.5 Flash, GPT-5.4-nano) are very inexpensive — often under $0.10 per million input tokens
+- Smaller, faster models (Gemini 2.5 Flash, GPT-5.4-nano) are very inexpensive, often under $0.10 per million input tokens
 - Frontier models (Gemini 2.5 Pro, GPT-5.4, Claude Opus) cost 10-50x more but offer superior reasoning
 
 For most applications, start with a fast, inexpensive model and only upgrade to a frontier model for tasks that require it.
 
 ### Rate Limits
 
-All API providers enforce rate limits — maximum requests per minute, tokens per minute, and tokens per day. Free tiers have lower limits. If you're building a production application, you'll need to implement retry logic with exponential backoff and consider batching requests where possible.
+All API providers enforce rate limits: maximum requests per minute, tokens per minute, and tokens per day. Free tiers have lower limits. If you're building a production application, you'll need to implement retry logic with exponential backoff and consider batching requests where possible.
 
 ### Latency
 
@@ -578,7 +578,7 @@ API calls involve network round-trips and model inference time. Simple completio
 
 ### Privacy
 
-Any data you send to an API is transmitted to the provider's servers. For sensitive data — medical records, financial information, proprietary code — review the provider's data usage policies carefully. Some providers offer data residency guarantees and opt-out options for training. For maximum privacy, consider using local models instead, as covered in the next chapter.
+Any data you send to an API is transmitted to the provider's servers. For sensitive data (medical records, financial information, proprietary code), review the provider's data usage policies carefully. Some providers offer data residency guarantees and opt-out options for training. For maximum privacy, consider using local models instead, as covered in the next chapter.
 
 ### Error Handling
 

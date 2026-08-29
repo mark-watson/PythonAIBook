@@ -6,7 +6,7 @@ Here are a few things to consider when setting up your Python development enviro
 
 - Use **uv** as your primary tool for managing Python versions, virtual environments, and package dependencies. It is very fast and replaces older tools like `pip`, `venv`, and `conda`.
 - Use Git or another version control system to manage your codebase. I will not cover Git here so [read a good tutorial](https://git-scm.com/docs/gittutorial) if you have not used it before.
-- Use an IDE like PyCharm or VSCode, or a text editor like Emacs or Vim — whatever you are comfortable with.
+- Use an IDE like PyCharm or VSCode, or a text editor like Emacs or Vim, whatever you are comfortable with.
 - Keep your environment and dependencies up-to-date.
 - Add comments and documentation to your code. Your "future you" will thank you.
 

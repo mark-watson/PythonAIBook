@@ -117,7 +117,7 @@ def reset_board(self):
     self.from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
 ```
 
-The `from_fen` method parses all six FEN fields: piece placement, side to move, castling rights, en passant square, halfmove clock, and fullmove number. The companion `to_fen` method generates a FEN string from the current state, which the CLI exposes through the `fen` command. FEN support is invaluable for testing — you can set up a specific tactical position and watch how the bot handles it:
+The `from_fen` method parses all six FEN fields: piece placement, side to move, castling rights, en passant square, halfmove clock, and fullmove number. The companion `to_fen` method generates a FEN string from the current state, which the CLI exposes through the `fen` command. FEN support is invaluable for testing: you can set up a specific tactical position and watch how the bot handles it:
 
 ```
 Your move (or command): setfen
@@ -125,7 +125,7 @@ Enter FEN string: r1bqkbnr/pppp1ppp/2n5/4p3/2B1P3/5N2/PPPP1PPP/RNBQK2R b KQkq - 
 ```
 
 {class: tip}
-FEN is the lingua franca of chess engines. When you want to test a specific scenario — a forced mate, a tricky endgame, a positional sacrifice — find or construct the FEN string and load it. This is far more efficient than playing dozens of moves to reach the position you want to study.
+FEN is the lingua franca of chess engines. When you want to test a specific scenario (a forced mate, a tricky endgame, a positional sacrifice), find or construct the FEN string and load it. This is far more efficient than playing dozens of moves to reach the position you want to study.
 
 ## Precomputed Move Tables
 
@@ -191,7 +191,7 @@ def _precompute_moves():
 _precompute_moves()
 ```
 
-Knight and king moves are stored as flat lists of target squares. Sliding pieces (rook, bishop, queen) use *rays* — lists of squares extending in each direction from the origin. A ray lets us walk outward from a piece and stop as soon as we hit another piece, which is exactly how sliding-piece move generation works:
+Knight and king moves are stored as flat lists of target squares. Sliding pieces (rook, bishop, queen) use *rays*: lists of squares extending in each direction from the origin. A ray lets us walk outward from a piece and stop as soon as we hit another piece, which is exactly how sliding-piece move generation works:
 
 ```python
 for ray in rays:
@@ -289,7 +289,7 @@ if ptype == PAWN:
         # ... same for the other diagonal
 ```
 
-Notice that promotions generate four separate moves — one for each promotion piece. This is important: although queen promotions are almost always best, the search needs to consider underpromotions (to knight, bishop, or rook) because in rare positions they are the only winning move. A knight promotion can give check where a queen promotion would not, for example.
+Notice that promotions generate four separate moves, one for each promotion piece. This is important: although queen promotions are almost always best, the search needs to consider underpromotions (to knight, bishop, or rook) because in rare positions they are the only winning move. A knight promotion can give check where a queen promotion would not, for example.
 
 Castling is generated within the king-move section and includes all the necessary legality checks inline:
 
@@ -350,7 +350,7 @@ def get_legal_moves(self):
     return legal_moves
 ```
 
-This make-check-unmake pattern is the standard approach in chess engines. It is correct by construction — any move that does not leave the king in check is legal — and it relies on the efficiency of `make_move` and `unmake_move` to be fast enough for search.
+This make-check-unmake pattern is the standard approach in chess engines. It is correct by construction (any move that does not leave the king in check is legal) and it relies on the efficiency of `make_move` and `unmake_move` to be fast enough for search.
 
 ## Make Move and Unmake Move
 
@@ -411,11 +411,11 @@ def make_move(self, move):
 The `unmake_move` method reverses all of this using the `BoardState` snapshot. It restores the moved piece to its origin, restores any captured piece (including en passant), restores the rook during castling, and resets all metadata from the saved state. Because the board array and piece sets are modified in place, there is no memory allocation during search beyond the lightweight `BoardState` objects.
 
 {class: tip}
-The make/unmake pattern is one of the most important performance techniques in game-tree search. The alternative — cloning the board for each move — is conceptually simpler but dramatically slower. If you are building an engine for any turn-based game, learn this pattern. The key insight is that you only need to save the *difference* between the before and after states, not the entire state.
+The make/unmake pattern is one of the most important performance techniques in game-tree search. The alternative, cloning the board for each move, is conceptually simpler but dramatically slower. If you are building an engine for any turn-based game, learn this pattern. The key insight is that you only need to save the *difference* between the before and after states, not the entire state.
 
 ## Zobrist Hashing
 
-A transposition table is a cache of previously evaluated positions, keyed by a hash of the board state. The hash must be fast to compute and update incrementally — recomputing it from scratch on every move would negate the benefit of caching. **Zobrist hashing** is the standard solution.
+A transposition table is a cache of previously evaluated positions, keyed by a hash of the board state. The hash must be fast to compute and update incrementally; recomputing it from scratch on every move would negate the benefit of caching. **Zobrist hashing** is the standard solution.
 
 The idea is simple. At startup we generate a table of random 64-bit integers, one for each possible piece on each square (64 squares × piece types), plus one for the side to move, plus values for castling rights and en passant squares. The hash of a position is the XOR of all the random numbers corresponding to the pieces on the board, plus the side-to-move value if it is Black's turn, plus the castling and en passant values. XOR has the useful property that XORing a value twice cancels it out, so we can update the hash incrementally by XORing out the old piece position and XORing in the new one:
 
@@ -438,7 +438,7 @@ self.zobrist_hash ^= ZOBRIST_PIECES[move.from_square][move.piece_moved]
 self.zobrist_hash ^= ZOBRIST_PIECES[move.to_square][move.piece_moved]
 ```
 
-Because XOR is its own inverse, `unmake_move` does not need to recompute the hash at all — it simply restores the saved hash from the `BoardState` snapshot. The test suite verifies that the incremental hash matches a full recomputation after every move and is restored perfectly after every undo.
+Because XOR is its own inverse, `unmake_move` does not need to recompute the hash at all; it simply restores the saved hash from the `BoardState` snapshot. The test suite verifies that the incremental hash matches a full recomputation after every move and is restored perfectly after every undo.
 
 ## Evaluation
 
@@ -463,11 +463,11 @@ PIECE_VALUES = {
 }
 ```
 
-These values follow the traditional Reinfeld system. The king's value is set very high (20000) so that the search never treats losing the king as an acceptable trade — in practice the king can never be captured because illegal moves are filtered out, but the high value ensures that checkmate (which is detected separately) produces an overwhelming score.
+These values follow the traditional Reinfeld system. The king's value is set very high (20000) so that the search never treats losing the king as an acceptable trade; in practice the king can never be captured because illegal moves are filtered out, but the high value ensures that checkmate (which is detected separately) produces an overwhelming score.
 
 ### Piece-Square Tables
 
-A piece's value depends on where it stands. A knight in the center of the board controls more squares and is more powerful than a knight trapped in a corner. A pawn on the seventh rank is about to promote and is far more valuable than a pawn still on its starting square. We capture this knowledge with **piece-square tables** (PSTs) — 64-element arrays that add or subtract a positional bonus for each square.
+A piece's value depends on where it stands. A knight in the center of the board controls more squares and is more powerful than a knight trapped in a corner. A pawn on the seventh rank is about to promote and is far more valuable than a pawn still on its starting square. We capture this knowledge with **piece-square tables** (PSTs): 64-element arrays that add or subtract a positional bonus for each square.
 
 Here is the pawn table:
 
@@ -503,7 +503,7 @@ for sq in board.pieces[BLACK]:
 
 ### King Safety and Endgame Transition
 
-The king is special. In the middlegame the king should hide behind pawns in a castled position — standing in the center is dangerous because it is exposed to attack. In the endgame, when most pieces have been exchanged and the king is no longer in danger, the king becomes an active fighting piece that should march toward the center to support its pawns and attack the enemy. We handle this with two separate king tables:
+The king is special. In the middlegame the king should hide behind pawns in a castled position; standing in the center is dangerous because it is exposed to attack. In the endgame, when most pieces have been exchanged and the king is no longer in danger, the king becomes an active fighting piece that should march toward the center to support its pawns and attack the enemy. We handle this with two separate king tables:
 
 ```python
 # chess_bot.py — King middlegame table (encourages castling safety)
@@ -632,7 +632,7 @@ The key line is `score = -search(board, depth - 1, -beta, -alpha)`. We make a mo
 
 ### Alpha-Beta Pruning
 
-Alpha-beta pruning is the optimization that makes deep search feasible. The idea is that if we are maximizing and we have already found a move that guarantees a score of `\alpha`$, and the opponent has a response that limits us to a score of `\beta`$ (where `\beta \leq \alpha`$), then we do not need to search any further in this position — the opponent will never allow us to reach it. The `if alpha >= beta: break` line implements this cutoff.
+Alpha-beta pruning is the optimization that makes deep search feasible. The idea is that if we are maximizing and we have already found a move that guarantees a score of `\alpha`$, and the opponent has a response that limits us to a score of `\beta`$ (where `\beta \leq \alpha`$), then we do not need to search any further in this position; the opponent will never allow us to reach it. The `if alpha >= beta: break` line implements this cutoff.
 
 In the best case, with perfect move ordering, alpha-beta reduces the number of nodes searched from `O(b^d)`$ to `O(b^{d/2})`$ where `b`$ is the branching factor (about 35 in chess) and `d`$ is the depth. This means that with good move ordering, searching to depth 4 with alpha-beta takes roughly the same time as searching to depth 2 without it. Move ordering is therefore critical, and we will return to it shortly.
 
@@ -683,7 +683,7 @@ The `flag` field encodes what kind of score we have:
 - **TT_ALPHA** (1): The score is an upper bound. The true value is at most this. If it is `\leq \alpha`$, we can return it.
 - **TT_BETA** (2): The score is a lower bound. The true value is at least this. If it is `\geq \beta`$, we can return it.
 
-These flags arise from alpha-beta cutoffs. When a beta cutoff occurs, we know the true value is at least `best_score` but we do not know the exact value — the search was cut short. Storing it as a lower bound (TT_BETA) lets us use it in future searches: if the lower bound is already `\geq \beta`$, we can cut off immediately.
+These flags arise from alpha-beta cutoffs. When a beta cutoff occurs, we know the true value is at least `best_score` but we do not know the exact value; the search was cut short. Storing it as a lower bound (TT_BETA) lets us use it in future searches: if the lower bound is already `\geq \beta`$, we can cut off immediately.
 
 The lookup logic at the top of the search function checks the flag and uses the cached score only if it is safe to do so:
 
@@ -802,7 +802,7 @@ def move_value(board, move, tt_move=None):
 
 The heuristics, in priority order:
 
-1. **Transposition table move**: If a previous search found a best move for this position, try it first. This is the single most powerful ordering heuristic — the previous iteration's best move causes a cutoff on the first move in many positions.
+1. **Transposition table move**: If a previous search found a best move for this position, try it first. This is the single most powerful ordering heuristic: the previous iteration's best move causes a cutoff on the first move in many positions.
 2. **MVV-LVA** (Most Valuable Victim, Least Valuable Attacker): When capturing, prefer capturing the most valuable piece with the least valuable attacker. Capturing a queen with a pawn is great; capturing a pawn with a queen is less exciting (and possibly a blunder if the queen is then recaptured).
 3. **Promotions**: Promoting to a queen is almost always a strong move and should be searched early.
 4. **Castling**: Castling improves king safety and is usually a good developing move.
@@ -863,7 +863,7 @@ def get_best_move(board, depth=3):
     return best_move, best_score
 ```
 
-This seems wasteful — why search depth 1 and 2 when we ultimately want depth 4? The answer is that the move ordering information from shallow searches dramatically increases the number of alpha-beta cutoffs at deeper levels. Searching depths 1, 2, 3, and 4 in sequence is typically *faster* than searching depth 4 directly, because the depth-3 best moves (fed into the depth-4 search via the transposition table) cause cutoffs on the first or second move in most positions.
+This seems wasteful: why search depth 1 and 2 when we ultimately want depth 4? The answer is that the move ordering information from shallow searches dramatically increases the number of alpha-beta cutoffs at deeper levels. Searching depths 1, 2, 3, and 4 in sequence is typically *faster* than searching depth 4 directly, because the depth-3 best moves (fed into the depth-4 search via the transposition table) cause cutoffs on the first or second move in most positions.
 
 Iterative deepening has another benefit: it produces a result at every depth. If the bot runs out of time, it can return the best move from the last completed iteration. This is essential for tournament play with time controls, though our simple CLI does not implement time limits.
 
@@ -881,18 +881,18 @@ print("  3. Watch Bot vs Bot")
 choice = input("Enter choice (1-3): ").strip()
 ```
 
-The board display uses Unicode chess pieces and ANSI color codes for a clean terminal presentation. A sidebar shows the active turn, move count, 50-move rule status, check status, en passant square, castling rights, and the current evaluation score — all updated after every move:
+The board display uses Unicode chess pieces and ANSI color codes for a clean terminal presentation. A sidebar shows the active turn, move count, 50-move rule status, check status, en passant square, castling rights, and the current evaluation score, all updated after every move:
 
 ![Chess board after one move](chess_board.jpg)
 
 Moves are entered in UCI format: `e2e4` to move the e-pawn, `g1f3` to develop the knight, `e7e8q` to promote to a queen. The CLI also supports several utility commands:
 
-- `fen` — print the current position as a FEN string
-- `setfen` — load a custom FEN position
-- `legal` — list all legal moves in the current position
-- `reset` — reset the board to the starting position
-- `help` — show available commands
-- `exit` — quit the game
+- `fen`: print the current position as a FEN string
+- `setfen`: load a custom FEN position
+- `legal`: list all legal moves in the current position
+- `reset`: reset the board to the starting position
+- `help`: show available commands
+- `exit`: quit the game
 
 When it is the bot's turn, the CLI reports the search depth, the move chosen, the evaluation score, the number of nodes searched, and the time taken:
 
@@ -901,7 +901,7 @@ Bot searching depth 3...
 Bot played: e2e4 (eval: +0.50, nodes: 4291, time: 0.31s)
 ```
 
-The move parser validates user input against the list of legal moves, so you cannot enter an illegal move — you will get an error message and a chance to try again:
+The move parser validates user input against the list of legal moves, so you cannot enter an illegal move; you will get an error message and a chance to try again:
 
 ```
 Your move (or command): e2e5
@@ -963,7 +963,7 @@ All move generator tests passed successfully!
 About 187,000 nodes per second in pure Python is respectable for an educational engine. A C implementation of the same algorithms would run 50–100x faster, but the point here is clarity, not raw speed.
 
 {class: tip}
-If you modify the move generator, run perft immediately. It catches subtle bugs — a missing en passant case, a castling rights error, a wrong attack detection — that would be nearly impossible to find by playing games. Perft is your safety net. Extend the test to depth 4 or 5 if you make structural changes; the expected values (197,281 and 4,865,609) are well documented.
+If you modify the move generator, run perft immediately. It catches subtle bugs (a missing en passant case, a castling rights error, a wrong attack detection) that would be nearly impossible to find by playing games. Perft is your safety net. Extend the test to depth 4 or 5 if you make structural changes; the expected values (197,281 and 4,865,609) are well documented.
 
 ## Playing Against the Bot
 
@@ -989,7 +989,7 @@ Bot searching depth 2...
 Bot played: b8c6 (eval: -0.50, nodes: 0, time: 0.01s)
 ```
 
-The bot mirrors with `b8c6`, developing its knight to the same central square. The evaluation swings to +0.00 as the position is now symmetric. As the game progresses the bot will seek tactical opportunities — captures that win material, promotions, and checkmate sequences — guided by the combination of material values, piece-square tables, and the alpha-beta search.
+The bot mirrors with `b8c6`, developing its knight to the same central square. The evaluation swings to +0.00 as the position is now symmetric. As the game progresses the bot will seek tactical opportunities (captures that win material, promotions, and checkmate sequences) guided by the combination of material values, piece-square tables, and the alpha-beta search.
 
 When playing as a human, try the `legal` command when you are unsure what moves are available, and use `setfen` to load famous positions from chess literature. The FEN string for the position after 1.e4 e5 2.Nf3 Nc6 3.Bb5 (the Ruy Lopez, one of the oldest chess openings) is:
 

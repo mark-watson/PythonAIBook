@@ -96,7 +96,7 @@ Feature coefficients (scaled):
   Longitude            -0.8698
 ```
 
-Because we scaled the features, the coefficients tell us the relative importance of each feature. **MedInc** (median income) has the largest positive coefficient, confirming that income is the strongest predictor of housing prices. The geographic features (**Latitude** and **Longitude**) are also very influential — location matters!
+Because we scaled the features, the coefficients tell us the relative importance of each feature. **MedInc** (median income) has the largest positive coefficient, confirming that income is the strongest predictor of housing prices. The geographic features (**Latitude** and **Longitude**) are also very influential; location matters!
 
 An R² of 0.58 means our simple linear model explains about 58% of the variance in housing prices. Not bad for a single line of model code, but there is room for improvement.
 
@@ -129,7 +129,7 @@ With only 2 features, the polynomial model achieves R²=0.46 compared to 0.58 wi
 
 ## Clustering: Discovering Groups in Data
 
-Clustering is an **unsupervised** learning technique — unlike classification and regression, we do not provide labeled targets. Instead, the algorithm discovers natural groupings in the data.
+Clustering is an **unsupervised** learning technique: unlike classification and regression, we do not provide labeled targets. Instead, the algorithm discovers natural groupings in the data.
 
 K-Means is the most widely used clustering algorithm. It works by:
 
@@ -191,7 +191,7 @@ versicolor  39   0  11
 virginica   14   0  36
 ```
 
-K-Means perfectly separates all 50 setosa samples into cluster 1. However, it struggles to distinguish versicolor from virginica — 14 virginica samples are assigned to the versicolor-dominant cluster 0, and 11 versicolor samples end up in the virginica-dominant cluster 2. This confirms what the silhouette scores suggested.
+K-Means perfectly separates all 50 setosa samples into cluster 1. However, it struggles to distinguish versicolor from virginica: 14 virginica samples are assigned to the versicolor-dominant cluster 0, and 11 versicolor samples end up in the virginica-dominant cluster 2. This confirms what the silhouette scores suggested.
 
 The cluster centers (transformed back to the original scale) reveal the "typical" flower in each group:
 

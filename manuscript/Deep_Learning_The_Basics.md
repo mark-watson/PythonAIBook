@@ -70,7 +70,7 @@ def load_data():
     return X_train, Y_train, X_test, Y_test
 ```
 
-Note that we use `np.float32` — PyTorch expects 32-bit floats by default (unlike NumPy's default of 64-bit).
+Note that we use `np.float32`; PyTorch expects 32-bit floats by default (unlike NumPy's default of 64-bit).
 
 ### Defining the Model
 
@@ -95,7 +95,7 @@ class CancerNet(nn.Module):
         return self.network(x)
 ```
 
-The `forward` method defines how data flows through the network. PyTorch's autograd system automatically computes the gradients needed for backpropagation — we never need to write the backward pass manually.
+The `forward` method defines how data flows through the network. PyTorch's autograd system automatically computes the gradients needed for backpropagation, so we never need to write the backward pass manually.
 
 ### The Training Loop
 
@@ -121,7 +121,7 @@ def train_model(model, train_loader, epochs=60, lr=0.01):
             print(f"  Epoch {epoch+1:3d}/{epochs}  loss: {avg_loss:.4f}")
 ```
 
-We use `BCEWithLogitsLoss` which combines a sigmoid activation with binary cross-entropy loss — this is numerically more stable than applying sigmoid separately. The training loop follows the standard PyTorch pattern: zero gradients, forward pass, compute loss, backward pass, update weights.
+We use `BCEWithLogitsLoss` which combines a sigmoid activation with binary cross-entropy loss; this is numerically more stable than applying sigmoid separately. The training loop follows the standard PyTorch pattern: zero gradients, forward pass, compute loss, backward pass, update weights.
 
 ### Running the Example
 
@@ -170,7 +170,7 @@ Sample predictions (should be close to [[0], [1]]):
  [0.9907742]]
 ```
 
-The model achieves 93% accuracy on the test set — matching the performance of our scikit-learn KNN classifier from the earlier chapter. The loss decreases steadily during training, and the sample predictions show that the model learns to distinguish between non-malignant and malignant cases.
+The model achieves 93% accuracy on the test set, matching the performance of our scikit-learn KNN classifier from the earlier chapter. The loss decreases steadily during training, and the sample predictions show that the model learns to distinguish between non-malignant and malignant cases.
 
 You can compare this PyTorch example to our similar classification example using the same data where we used the **Scikit-learn** library. The deep learning approach requires more code but gives us full control over the model architecture, training process, and the ability to scale to much larger and more complex problems.
 

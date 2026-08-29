@@ -173,23 +173,23 @@ Value function: [ 3.49  5.62  8.24 11.48 15.48]
 Iterations: 6
 ```
 
-Walking through **Example 1**, we create a 3×3 grid where each cell is a state (0 through 8). The agent can move up, right, down, or left. The transition matrix `P` has shape `(actions, states, states)` — for each action and current state, it specifies the probability of landing in each next state. Our grid is deterministic (probability of 1.0 for each move), and bumping into walls keeps the agent in place.
+Walking through **Example 1**, we create a 3×3 grid where each cell is a state (0 through 8). The agent can move up, right, down, or left. The transition matrix `P` has shape `(actions, states, states)`: for each action and current state, it specifies the probability of landing in each next state. Our grid is deterministic (probability of 1.0 for each move), and bumping into walls keeps the agent in place.
 
 The reward matrix `R` gives 10 for reaching the goal (bottom-right, state 8) and -5 for the trap (state 5, which is the middle-right cell). Value iteration converges in 5 iterations and produces a sensible policy: the arrows point around the trap toward the goal. The value function shows that states closer to the goal have higher values.
 
 I also ran **Policy Iteration** on the same grid. Both algorithms arrived at the same policy but through different means: value iteration improves value estimates until convergence, while policy iteration alternates between evaluating a fixed policy and improving it greedily.
 
-In **Example 2**, we use pymdptoolbox's built-in forest management problem. At each year, you choose to Wait (let the forest grow one age class) or Cut (harvest timber, resetting the forest to age 0). There is a 10% chance of fire each year that also resets the forest to age 0. With these parameters the optimal policy is to always Wait — the expected value of older forest outweighs the immediate reward of cutting.
+In **Example 2**, we use pymdptoolbox's built-in forest management problem. At each year, you choose to Wait (let the forest grow one age class) or Cut (harvest timber, resetting the forest to age 0). There is a 10% chance of fire each year that also resets the forest to age 0. With these parameters the optimal policy is to always Wait; the expected value of older forest outweighs the immediate reward of cutting.
 
-The key takeaway: MDPs give you a formal language to describe decision problems, and algorithms like value iteration and policy iteration compute optimal policies. In the next section, we will tackle environments where we do *not* know the transition probabilities in advance — which is where reinforcement learning comes in.
+The key takeaway: MDPs give you a formal language to describe decision problems, and algorithms like value iteration and policy iteration compute optimal policies. In the next section, we will tackle environments where we do *not* know the transition probabilities in advance, which is where reinforcement learning comes in.
 
 ## A Concrete Example: Q-Learning with Gymnasium
 
-When the transition and reward models are unknown, the agent must learn through trial and error. **Q-learning** is one of the simplest and most widely used model-free RL algorithms. It learns an action-value function Q(s,a) — the expected cumulative reward of taking action **a** in state **s** and following the optimal policy thereafter.
+When the transition and reward models are unknown, the agent must learn through trial and error. **Q-learning** is one of the simplest and most widely used model-free RL algorithms. It learns an action-value function Q(s,a): the expected cumulative reward of taking action **a** in state **s** and following the optimal policy thereafter.
 
 The Q-learning update rule is:
 
-Q(s,a) ← Q(s,a) + α [ r + γ · max_a' Q(s',a') — Q(s,a) ]
+Q(s,a) ← Q(s,a) + α [ r + γ · max_a' Q(s',a') − Q(s,a) ]
 
 Where:
 - α (alpha) is the learning rate
@@ -199,7 +199,7 @@ Where:
 
 The agent also needs to balance **exploration** (trying random actions to discover better strategies) against **exploitation** (using known good actions). We use an **epsilon-greedy** strategy: with probability ε, take a random action; otherwise take the action with the highest Q-value. Over time we decay ε so the agent explores less and exploits more.
 
-We will use [Gymnasium](https://gymnasium.farama.org/) (the maintained successor to OpenAI Gym) and its **FrozenLake** environment. In FrozenLake, the agent navigates a 4×4 grid of frozen and cracked ice to reach a goal without falling through. By default, the ice is slippery — your intended move only succeeds with 1/3 probability, and you slide perpendicular otherwise.
+We will use [Gymnasium](https://gymnasium.farama.org/) (the maintained successor to OpenAI Gym) and its **FrozenLake** environment. In FrozenLake, the agent navigates a 4×4 grid of frozen and cracked ice to reach a goal without falling through. By default, the ice is slippery; your intended move only succeeds with 1/3 probability, and you slide perpendicular otherwise.
 
 Listing of **frozen_lake_qlearning.py**:
 
@@ -378,11 +378,11 @@ best_next = np.max(Q[next_state])
 Q[state, action] += alpha * (reward + gamma * best_next - Q[state, action])
 ```
 
-This says: move Q(s,a) a small step (controlled by alpha) toward `r + γ·max_a' Q(s',a')`. The difference `r + γ·max Q - Q` is called the **temporal-difference error** — how much better or worse the outcome was than predicted.
+This says: move Q(s,a) a small step (controlled by alpha) toward `r + γ·max_a' Q(s',a')`. The difference `r + γ·max Q - Q` is called the **temporal-difference error**: how much better or worse the outcome was than predicted.
 
 Let's discuss the results:
 
-**Slippery version**: Achieves ~75% success rate after 10,000 episodes. This is about as good as tabular Q-learning gets on the slippery FrozenLake — the randomness of ice physics means some runs are doomed regardless of policy. The learned policy arrows point toward the goal, though the randomness makes the policy harder to interpret visually than the deterministic case. You can also see the success rate fluctuate (e.g., dropping to 0.50 at episode 6000) — this is normal for Q-learning on stochastic environments and reflects the exploration-exploitation trade-off.
+**Slippery version**: Achieves ~75% success rate after 10,000 episodes. This is about as good as tabular Q-learning gets on the slippery FrozenLake; the randomness of ice physics means some runs are doomed regardless of policy. The learned policy arrows point toward the goal, though the randomness makes the policy harder to interpret visually than the deterministic case. You can also see the success rate fluctuate (e.g., dropping to 0.50 at episode 6000); this is normal for Q-learning on stochastic environments and reflects the exploration-exploitation trade-off.
 
 **Deterministic version** (is_slippery=False): Converges to a 100% success rate within 1,000 episodes. Without slipping, the task reduces to a simple shortest-path problem and Q-learning finds it quickly.
 
@@ -395,7 +395,7 @@ Once you are comfortable with FrozenLake, Gymnasium offers many environments to 
 - **MountainCar-v0**: drive an underpowered car up a hill. Continuous observations, discrete actions. Classic example where exploration strategy matters deeply.
 - **LunarLander-v3**: land a spacecraft on a landing pad. 8 continuous observations, 4 discrete actions. More complex dynamics.
 
-For continuous observation spaces, you cannot use a lookup table — you need **Deep Q-Networks (DQN)** which use neural networks to approximate Q(s,a). That topic is beyond our scope here, but the Sutton/Barto book covers it well.
+For continuous observation spaces, you cannot use a lookup table; you need **Deep Q-Networks (DQN)** which use neural networks to approximate Q(s,a). That topic is beyond our scope here, but the Sutton/Barto book covers it well.
 
 {class: tip}
 When learning RL, start with tabular methods (Q-learning on discrete environments) before moving to deep RL. The concepts transfer directly, but debugging is far easier when you can inspect every Q-value in a table.
@@ -411,7 +411,7 @@ In this chapter we covered:
 
 If this chapter sparked your interest, I encourage you to work through the Coursera specialization by Martha and Adam White and the Sutton/Barto book. For Python-focused RL, the [Stable-Baselines3](https://stable-baselines3.readthedocs.io/) library provides reliable implementations of DQN, A2C, PPO, and other algorithms ready to use with Gymnasium environments.
 
-I tagged this chapter as optional material because I believe most readers will get more immediate value from mastering deep learning and pre-trained models. But if you find yourself working on sequential decision-making problems — robotics, game AI, resource allocation, dynamic pricing — the RL toolkit becomes indispensable.
+I tagged this chapter as optional material because I believe most readers will get more immediate value from mastering deep learning and pre-trained models. But if you find yourself working on sequential decision-making problems (robotics, game AI, resource allocation, dynamic pricing), the RL toolkit becomes indispensable.
 
 ## Optional Practice Problems
 

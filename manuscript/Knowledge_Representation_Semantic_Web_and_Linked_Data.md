@@ -1,13 +1,13 @@
 # Optional Material: A Deeper Dive Into Semantic Web and Linked Data
 
-In the previous chapter we used Python to query Wikidata and DBPedia with SPARQL and built a knowledge base in SQLite. Those examples gave you working code for practical knowledge representation tasks. This optional chapter provides the theoretical background behind those tools — if you understand the standards that underpin SPARQL endpoints, you will be able to write more sophisticated queries, design your own RDF schemas, and use reasoning to infer new knowledge from existing data.
+In the previous chapter we used Python to query Wikidata and DBPedia with SPARQL and built a knowledge base in SQLite. Those examples gave you working code for practical knowledge representation tasks. This optional chapter provides the theoretical background behind those tools; if you understand the standards that underpin SPARQL endpoints, you will be able to write more sophisticated queries, design your own RDF schemas, and use reasoning to infer new knowledge from existing data.
 
 Specifically, this chapter covers:
 
-- **RDF** — The data format behind Wikidata, DBPedia, and every SPARQL endpoint. Understanding RDF triples, namespaces, and serialization formats will help you design better queries and interpret results from the examples in the previous chapter.
-- **RDFS** — How to define sub-properties and class hierarchies so that a single SPARQL query can match related predicates automatically (e.g., querying for "containsPlace" also matches "containsCity" and "containsCountry").
-- **SPARQL in depth** — The query patterns, filters, OPTIONAL clauses, and ordering that let you write expressive queries against public knowledge graphs.
-- **OWL** — The Web Ontology Language, which extends RDFS with transitive properties, inverse properties, and description logic reasoning.
+- **RDF**: The data format behind Wikidata, DBPedia, and every SPARQL endpoint. Understanding RDF triples, namespaces, and serialization formats will help you design better queries and interpret results from the examples in the previous chapter.
+- **RDFS**: How to define sub-properties and class hierarchies so that a single SPARQL query can match related predicates automatically (e.g., querying for "containsPlace" also matches "containsCity" and "containsCountry").
+- **SPARQL in depth**: The query patterns, filters, OPTIONAL clauses, and ordering that let you write expressive queries against public knowledge graphs.
+- **OWL**: The Web Ontology Language, which extends RDFS with transitive properties, inverse properties, and description logic reasoning.
 
 This material is not required to use the Python examples from the previous chapter, but it will deepen your understanding and help you build more powerful knowledge representation applications.
 

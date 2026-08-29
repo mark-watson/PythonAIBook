@@ -50,7 +50,7 @@ image.save("generated_landscape.png")
 
 The first time you run this code, the model weights (about 1.1 GB) will be downloaded to **~/.cache/huggingface** in your home directory. Subsequent runs use the cached model.
 
-The code automatically detects available hardware: NVIDIA GPU (CUDA), Apple Silicon (MPS), or CPU. GPU acceleration dramatically speeds up image generation — from minutes on CPU to seconds on a modern GPU.
+The code automatically detects available hardware: NVIDIA GPU (CUDA), Apple Silicon (MPS), or CPU. GPU acceleration dramatically speeds up image generation, from minutes on CPU to seconds on a modern GPU.
 
 You can experiment with different prompts, and the `num_inference_steps` parameter controls the quality/speed tradeoff (higher = better quality, slower). Here is sample output running on Apple Silicon:
 

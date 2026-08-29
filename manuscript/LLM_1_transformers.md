@@ -4,9 +4,9 @@ The transformer architecture, introduced in the 2017 paper "Attention Is All You
 
 Transformers replaced this sequential processing with a mechanism called self-attention that allows every token in a sequence to attend to every other token simultaneously. This parallel processing made transformers dramatically faster to train on modern GPU hardware, and the attention mechanism proved remarkably effective at capturing the complex patterns in language. Within a few years, transformer-based models achieved state-of-the-art results across virtually every natural language processing benchmark, and the architecture has since been successfully applied to computer vision, protein folding, music generation, and many other domains.
 
-Large Language Models (LLMs) are transformer models trained on vast corpora of text — often trillions of tokens scraped from the internet, books, and code repositories. Through this training, LLMs develop an impressive ability to generate coherent text, answer questions, write code, reason about problems, and follow complex instructions. Models like Google's Gemini, Anthropic's Claude, OpenAI's GPT series, and Meta's Llama family have become indispensable tools for developers and knowledge workers.
+Large Language Models (LLMs) are transformer models trained on vast corpora of text, often trillions of tokens scraped from the internet, books, and code repositories. Through this training, LLMs develop an impressive ability to generate coherent text, answer questions, write code, reason about problems, and follow complex instructions. Models like Google's Gemini, Anthropic's Claude, OpenAI's GPT series, and Meta's Llama family have become indispensable tools for developers and knowledge workers.
 
-This chapter covers the core concepts behind transformers and LLMs. The practical work of using these models — calling cloud APIs and running models locally — is covered in the next two chapters.
+This chapter covers the core concepts behind transformers and LLMs. The practical work of using these models (calling cloud APIs and running models locally) is covered in the next two chapters.
 
 
 ## The Transformer Architecture
@@ -37,7 +37,7 @@ This mechanism allows the model to simultaneously capture multiple types of rela
 
 ### Positional Encoding
 
-Since the self-attention mechanism processes all tokens in parallel, it has no inherent notion of token order — the sentence "the cat sat on the mat" would produce the same attention scores as "mat the on sat cat the" without additional information. Positional encodings solve this by adding position information to each token's embedding before it enters the transformer layers.
+Since the self-attention mechanism processes all tokens in parallel, it has no inherent notion of token order; the sentence "the cat sat on the mat" would produce the same attention scores as "mat the on sat cat the" without additional information. Positional encodings solve this by adding position information to each token's embedding before it enters the transformer layers.
 
 The original transformer used fixed sinusoidal functions of different frequencies for positional encoding. Modern models like Llama use Rotary Position Embeddings (RoPE), which encode position information directly into the attention computation and generalize better to sequence lengths not seen during training.
 
@@ -45,10 +45,10 @@ The original transformer used fixed sinusoidal functions of different frequencie
 
 Each transformer layer consists of:
 
-1. **Multi-head self-attention** — tokens attend to each other
-2. **Layer normalization** — stabilizes training by normalizing activations
-3. **Feed-forward network** — a two-layer neural network applied independently to each token position, providing additional capacity for learning complex transformations
-4. **Residual connections** — the input to each sub-layer is added to its output, which helps gradients flow during training and allows deeper networks
+1. **Multi-head self-attention**: tokens attend to each other
+2. **Layer normalization**: stabilizes training by normalizing activations
+3. **Feed-forward network**: a two-layer neural network applied independently to each token position, providing additional capacity for learning complex transformations
+4. **Residual connections**: the input to each sub-layer is added to its output, which helps gradients flow during training and allows deeper networks
 
 A typical LLM stacks dozens of these layers. For example, GPT-3 has 96 layers, and Llama 3 70B has 80 layers.
 
@@ -65,7 +65,7 @@ In practice, three variants have emerged:
 
 ## Tokenization
 
-Before text can be processed by a transformer, it must be converted into a sequence of integers — a process called tokenization. The choice of tokenization strategy has significant practical implications for model performance, cost, and capability.
+Before text can be processed by a transformer, it must be converted into a sequence of integers, a process called tokenization. The choice of tokenization strategy has significant practical implications for model performance, cost, and capability.
 
 ### Why Not Just Use Characters or Words?
 
@@ -103,11 +103,11 @@ The path from the transformer architecture to modern LLMs involved three key dev
 
 The most striking trend in LLM development has been the dramatic scaling of model size and training data. The original transformer (2017) had 65 million parameters. GPT-2 (2019) had 1.5 billion. GPT-3 (2020) jumped to 175 billion. Current frontier models are estimated to have hundreds of billions to over a trillion parameters, trained on trillions of tokens of text.
 
-This scaling has revealed emergent capabilities — abilities that appear only once a model reaches a certain size. Small models can complete simple sentences; large models can write essays, debug code, solve math problems, and engage in multi-step reasoning. The precise mechanisms behind these emergent capabilities are an active area of research.
+This scaling has revealed emergent capabilities: abilities that appear only once a model reaches a certain size. Small models can complete simple sentences; large models can write essays, debug code, solve math problems, and engage in multi-step reasoning. The precise mechanisms behind these emergent capabilities are an active area of research.
 
 ### Pre-training and the Next Token Prediction Objective
 
-LLMs are pre-trained using a simple but powerful objective: predict the next token given all preceding tokens. The model reads vast amounts of text and learns to predict what comes next at each position. Despite the simplicity of this objective, it forces the model to learn grammar, facts, reasoning patterns, coding conventions, and much more — because predicting the next token accurately requires understanding the context deeply.
+LLMs are pre-trained using a simple but powerful objective: predict the next token given all preceding tokens. The model reads vast amounts of text and learns to predict what comes next at each position. Despite the simplicity of this objective, it forces the model to learn grammar, facts, reasoning patterns, coding conventions, and much more, because predicting the next token accurately requires understanding the context deeply.
 
 Pre-training is enormously expensive, typically requiring thousands of GPUs running for weeks or months, at a cost of millions to hundreds of millions of dollars. This is why only a handful of organizations train frontier models from scratch.
 
@@ -128,7 +128,7 @@ Modern LLMs exhibit several capabilities that emerge from their training:
 
 ### In-Context Learning
 
-LLMs can learn new tasks from examples provided in the prompt, without any changes to the model's weights. By showing the model a few input-output examples (few-shot prompting), it can generalize and apply the pattern to new inputs. This is remarkable because the model is not being retrained — it is performing a form of learning purely through the attention mechanism at inference time.
+LLMs can learn new tasks from examples provided in the prompt, without any changes to the model's weights. By showing the model a few input-output examples (few-shot prompting), it can generalize and apply the pattern to new inputs. This is remarkable because the model is not being retrained; it is performing a form of learning purely through the attention mechanism at inference time.
 
 ### Chain-of-Thought Reasoning
 
@@ -138,7 +138,7 @@ Modern "reasoning models" like OpenAI's o-series and Google's Gemini 2.5 have be
 
 ### Tool Use and Agents
 
-LLMs can be trained to use external tools — search engines, calculators, code interpreters, APIs — by generating structured function calls. This allows them to overcome their inherent limitations (such as lack of real-time information or difficulty with precise arithmetic) by delegating to specialized tools.
+LLMs can be trained to use external tools (search engines, calculators, code interpreters, APIs) by generating structured function calls. This allows them to overcome their inherent limitations (such as lack of real-time information or difficulty with precise arithmetic) by delegating to specialized tools.
 
 AI agents take this further by using LLMs as the reasoning core of autonomous systems that can plan multi-step tasks, execute actions, observe results, and adapt their approach. This is an active and rapidly evolving area of development.
 

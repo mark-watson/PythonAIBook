@@ -235,7 +235,7 @@ What do you do?
 Thanks for playing!
 ```
 
-Every time you play the game the example program generates a unique story. The model remembers your choices — if you befriend an NPC early on, they may reappear later. If you lose your map crossing a river, the model won't let you consult it later without some creative problem-solving.
+Every time you play the game the example program generates a unique story. The model remembers your choices; if you befriend an NPC early on, they may reappear later. If you lose your map crossing a river, the model won't let you consult it later without some creative problem-solving.
 
 ## Customizing Your Adventure
 

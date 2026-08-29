@@ -22,7 +22,7 @@ Combining these two technologies, knowledge can be represented as a graph of int
 
 ## Querying Wikidata with SPARQL and Python
 
-[Wikidata](https://www.wikidata.org/) is a free, open knowledge base maintained by the Wikimedia Foundation. It contains structured data about millions of entities — people, places, organizations, scientific concepts, and more — all accessible through a public SPARQL endpoint. Unlike DBPedia, which extracts structured data from Wikipedia infoboxes, Wikidata is a curated knowledge base where the data is entered and maintained directly.
+[Wikidata](https://www.wikidata.org/) is a free, open knowledge base maintained by the Wikimedia Foundation. It contains structured data about millions of entities (people, places, organizations, scientific concepts, and more), all accessible through a public SPARQL endpoint. Unlike DBPedia, which extracts structured data from Wikipedia infoboxes, Wikidata is a curated knowledge base where the data is entered and maintained directly.
 
 The Python **SPARQLWrapper** library makes it straightforward to query any SPARQL endpoint, including Wikidata:
 

@@ -1,6 +1,6 @@
 # Exploratory Data Analysis and Feature Engineering
 
-Before training any machine learning model, you need to understand your data. **Exploratory Data Analysis (EDA)** is the process of examining a dataset to summarize its main characteristics, find patterns, detect anomalies, and check assumptions. **Feature engineering** is the art of creating new input variables — or transforming existing ones — to improve model performance.
+Before training any machine learning model, you need to understand your data. **Exploratory Data Analysis (EDA)** is the process of examining a dataset to summarize its main characteristics, find patterns, detect anomalies, and check assumptions. **Feature engineering** is the art of creating new input variables, or transforming existing ones, to improve model performance.
 
 These steps often make the difference between a mediocre model and a good one. As the saying goes: "garbage in, garbage out."
 
@@ -69,7 +69,7 @@ max       15.00     52.00    141.91      34.07    35682.00   1243.33
 
 Notice the wide range differences: **Population** ranges from 3 to 35,682 while **AveBedrms** ranges from 0.33 to 34.07. This tells us we will need feature scaling before training most models.
 
-Also notice the extreme maximum values for **AveRooms** (141.91) and **AveOccup** (1,243.33) — these are likely outliers or data quality issues.
+Also notice the extreme maximum values for **AveRooms** (141.91) and **AveOccup** (1,243.33); these are likely outliers or data quality issues.
 
 ### Checking for Missing Values
 
@@ -98,7 +98,7 @@ Understanding which features correlate with the target helps guide feature selec
   AveOccup              -0.0237
 ```
 
-**MedInc** (median income) stands out with a correlation of +0.69 — by far the strongest predictor. This aligns with what we saw from the regression coefficients in the previous chapter. The other features have relatively weak linear correlations, suggesting that non-linear relationships or feature combinations might be more informative.
+**MedInc** (median income) stands out with a correlation of +0.69, by far the strongest predictor. This aligns with what we saw from the regression coefficients in the previous chapter. The other features have relatively weak linear correlations, suggesting that non-linear relationships or feature combinations might be more informative.
 
 ### Outlier Detection
 
@@ -119,7 +119,7 @@ Nearly 7% of **AveBedrms** values are outliers. In practice, you would investiga
 
 ## Feature Engineering
 
-Feature engineering is where domain knowledge meets data science. By creating new features that better represent the underlying patterns, we can significantly improve model performance — sometimes more than choosing a fancier algorithm.
+Feature engineering is where domain knowledge meets data science. By creating new features that better represent the underlying patterns, we can significantly improve model performance, sometimes more than choosing a fancier algorithm.
 
 ### Creating New Features
 
@@ -218,7 +218,7 @@ The ultimate test of feature engineering is whether it improves model performanc
   Engineered (14 features)        R² = 0.6622
 ```
 
-Our engineered features improved R² from 0.58 to 0.66 — a **15% improvement** in explained variance, using the exact same algorithm. This demonstrates why feature engineering is often more valuable than model selection for improving results.
+Our engineered features improved R² from 0.58 to 0.66, a **15% improvement** in explained variance, using the exact same algorithm. This demonstrates why feature engineering is often more valuable than model selection for improving results.
 
 
 ## EDA and Feature Engineering Wrap-up
