@@ -1142,8 +1142,8 @@ report `integrate: not supported` — exactly as designed.
 
 ## 10. Interpreting the Results
 
-The output is not merely "it ran without crashing." Read closely, it is a
-sequence of small mathematical arguments, each independently verified.
+The output a
+sequence of small mathematical arguments, each independently verified:
 
 **The `derivative check: OK` lines prove the symbolic differentiator agrees
 with numeric reality.** Every derivative — constant, power, product, chain
