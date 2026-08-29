@@ -1,5 +1,7 @@
 # Symbolic Math in Pure Python
 
+Dear reader, I have experimented with symbolic math problems since the early 1980s when I discovered the Reduce math system installed on my Xerox 1108 Lisp Machine. A few months ago I wrote a symbolic math chapter for my Common Lisp book. Here in this chapter, I implement useful symbolic math functionality in Python.
+
 ## 1. Why Symbolic Computation Matters
 
 A calculator can tell you that the derivative of `x^2` at the point `x = 0.8`
@@ -11,7 +13,7 @@ mathematics and **symbolic** mathematics.
   but every answer is approximate, valid only at a single point, and carries
   floating-point rounding error.
 - *Symbolic* computation operates on *expressions themselves*. It applies the
-  rules of algebra — the product rule, the chain rule, the power rule — as
+  rules of algebra (the product rule, the chain rule, the power rule) as
   transformations on expression trees, producing exact results such as
   `d/dx (x²) = 2x` and `∫ x² dx = x³/3`.
 
@@ -23,16 +25,16 @@ that data structure.**
 
 This chapter builds a miniature CAS from nothing but the Python standard
 library. The result differentiates and integrates a useful subset of
-elementary functions, simplifies the results algebraically, and — crucially —
+elementary functions, simplifies the results algebraically, and crucially
 *verifies its own answers* by comparing them against numeric finite-difference
 approximations. No `sympy`, no `numpy`, nothing to install.
 
 The whole system is four ingredients:
 
-1. A **representation** — expressions encoded as nested tuples.
-2. A **simplifier** — algebraic identities applied bottom-up.
-3. A **differentiator** and an **integrator** — recursive rule tables.
-4. A **verifier** — numeric evaluation checked against finite differences.
+1. A **representation** consists of expressions encoded as nested tuples.
+2. A **simplifier** object consists of algebraic identities applied bottom-up.
+3. A **differentiator** and an **integrator** are recursive rule tables.
+4. A **verifier** object is a numeric evaluation checked against finite differences.
 
 ### The central design choice: expressions as data
 
@@ -61,7 +63,7 @@ x^2 + 3*x   becomes
 
 Compare this to the numeric approach, where `x^2 + 3*x` would be compiled to a
 function that only accepts a numeric `x`. In the symbolic approach the tree
-itself is the object of study — you can ask "what is the derivative?" because
+itself is the object of study; for example you can ask "what is the derivative?" because
 the structure of the expression is right there in the tuple, ready to be
 pattern-matched.
 
@@ -69,7 +71,7 @@ One deliberately un-Pythonic choice will seem odd at first: we do **not**
 overload `+` and `*` on a `Symbol` class. Instead we construct expressions
 with small builder functions (`add`, `mul`, `pow`). This keeps every node a
 plain tuple, which makes the code self-contained, trivially serializable, and
-dead simple to read — three virtues that outweigh the loss of operator
+dead simple to read: three virtues that outweigh the loss of operator
 sugar in a teaching implementation.
 
 ### Why exact arithmetic via `fractions.Fraction`
@@ -92,7 +94,7 @@ With the tree defined, everything else is a recursive function that walks it:
 
 - `simplify(e)` rewrites a tree bottom-up: folds constant arithmetic, removes
   `x + 0` and `1·x` noise, and merges `x^a · x^b` into `x^(a+b)`.
-- `deriv(e, x)` applies the calculus rules — sum, product, power, chain rule —
+- `deriv(e, x)` applies the calculus rules (sum, product, power, chain rule)
   and chains into `simplify` to keep output tidy.
 - `integrate(e, x)` recognizes the limited family it can handle (polynomials,
   powers and trig/exp/log of linear arguments) and raises
@@ -109,7 +111,7 @@ explaining it.
 
 The file begins with a docstring that is also a grammar: a complete list of
 the six node shapes the whole program will ever construct. In a CAS this is
-the analogue of a language's grammar — every function that follows is simply a
+the analogue of a language's grammar where every function that follows is simply a
 case analysis over these tags.
 
 ```python
@@ -132,7 +134,7 @@ Only one import is needed. `Fraction` is the exact-rational workhorse; `math`
 is imported lazily later inside the numeric evaluator so that the symbolic
 core never touches floats.
 
-### Builder functions — the mini "DSL"
+### Builder functions: the mini "DSL"
 
 Because raw tuples are verbose, the program provides one small function per
 node type. These are the *only* constructors in the codebase, which means the

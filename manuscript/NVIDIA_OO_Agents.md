@@ -209,9 +209,9 @@ async def plan_trip(
 
 Two design choices in this method deserve attention. First, even though `recommend_destination` is instructed to return only a city name, the orchestrator defensively strips quotes, takes the first line, and falls back to the cheapest affordable option if the reply is not a known city. Real language model output is noisy, and a wrapper of a few lines is far cheaper than a corrupted downstream stage. Second, the `complete` call at the end is deliberately synchronous. It shows that the object oriented framework composes cleanly with plain HTTP style calls to the same endpoint; you do not have to route everything through the agent to benefit from it.
 
-## Complete file listing
+## Complete listing of `travel_planner_agent.py`:
 
-The full `travel_planner_agent.py`:
+Let’s wrap this example by listing the code in its entirety:
 
 ```python
 # travel_planner_agent.py - Trip Planner built with NVIDIA OO Agents (nooa)
@@ -372,6 +372,8 @@ async def main() -> None:
 if __name__ == "__main__":
     asyncio.run(main())
 ```
+
+We will run this example after building a `Makefile` to run it.
 
 ## The Makefile and PEP 723 script metadata
 
