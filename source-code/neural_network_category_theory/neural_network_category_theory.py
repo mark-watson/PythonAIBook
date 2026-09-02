@@ -29,16 +29,54 @@ Optimiser:     vanilla SGD
 Usage::
 
     uv run neural_network_category_theory.py
+    uv run neural_network_category_theory.py --lr 0.5 --epochs 5001 --seed 42
+    uv run neural_network_category_theory.py --help
 
 """
 
 from __future__ import annotations
 
+import argparse
 import math
 import random
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Callable
 
+__all__ = [
+    "InputVec",
+    "TargetVal",
+    "Prediction",
+    "LearningRate",
+    "LayerParams",
+    "LayerGrads",
+    "Model",
+    "NetworkContext",
+    "PullbackFn",
+    "sigmoid",
+    "sigmoid_deriv",
+    "dot",
+    "vec_mul",
+    "vec_add",
+    "scalar_vec_mul",
+    "mat_vec",
+    "outer",
+    "forward_lens_tracked",
+    "model_forward",
+    "mse_loss",
+    "mse_loss_grad",
+    "model_backward",
+    "update_layer",
+    "model_update",
+    "train_step",
+    "glorot_rand",
+    "make_layer",
+    "make_model",
+    "XOR_DATA",
+    "train",
+    "predict",
+    "predict_batch",
+    "evaluate",
+]
 
 # =============================================================================
 # 1.  TYPED WRAPPERS  (newtypes that encode categorical roles)
@@ -89,6 +127,10 @@ class LearningRate:
 
     v: float
 
+    def __post_init__(self) -> None:
+        if not math.isfinite(self.v) or self.v <= 0:
+            raise ValueError(f"LearningRate must be finite and > 0, got {self.v!r}")
+
 
 @dataclass
 class LayerParams:
@@ -107,6 +149,21 @@ class LayerParams:
 
     W: list[list[float]]
     b: list[float]
+
+    def __post_init__(self) -> None:
+        if len(self.W) != len(self.b):
+            raise ValueError(f"W rows ({len(self.W)}) must match b length ({len(self.b)})")
+        if self.W:
+            fan_in = len(self.W[0])
+            for i, row in enumerate(self.W):
+                if len(row) != fan_in:
+                    raise ValueError(f"W row {i} has length {len(row)}, expected {fan_in}")
+                for v in row:
+                    if not math.isfinite(v):
+                        raise ValueError(f"W[{i}] contains non-finite value {v!r}")
+            for v in self.b:
+                if not math.isfinite(v):
+                    raise ValueError(f"b contains non-finite value {v!r}")
 
 
 @dataclass
@@ -145,6 +202,38 @@ class Model:
     l2: LayerParams
     l3: LayerParams
 
+    def copy(self) -> Model:
+        """Return a deep copy of the model (weights are not shared)."""
+        return Model(
+            l1=LayerParams(W=[row[:] for row in self.l1.W], b=self.l1.b[:]),
+            l2=LayerParams(W=[row[:] for row in self.l2.W], b=self.l2.b[:]),
+            l3=LayerParams(W=[row[:] for row in self.l3.W], b=self.l3.b[:]),
+        )
+
+    def to_dict(self) -> dict[str, object]:
+        """Serialise to a plain dict (JSON-friendly)."""
+        return {
+            "l1": {"W": self.l1.W, "b": self.l1.b},
+            "l2": {"W": self.l2.W, "b": self.l2.b},
+            "l3": {"W": self.l3.W, "b": self.l3.b},
+        }
+
+    @staticmethod
+    def from_dict(d: dict[str, object]) -> Model:
+        """Deserialise from :meth:`to_dict` output."""
+        # Use explicit casts to satisfy strict type checking.
+        raw_l1 = d["l1"]
+        raw_l2 = d["l2"]
+        raw_l3 = d["l3"]
+        assert isinstance(raw_l1, dict)
+        assert isinstance(raw_l2, dict)
+        assert isinstance(raw_l3, dict)
+        return Model(
+            l1=LayerParams(W=list(raw_l1["W"]), b=list(raw_l1["b"])),  # type: ignore[arg-type]
+            l2=LayerParams(W=list(raw_l2["W"]), b=list(raw_l2["b"])),  # type: ignore[arg-type]
+            l3=LayerParams(W=list(raw_l3["W"]), b=list(raw_l3["b"])),  # type: ignore[arg-type]
+        )
+
 
 # =============================================================================
 # 2.  UTILITY MATH
@@ -152,8 +241,15 @@ class Model:
 
 
 def sigmoid(z: float) -> float:
-    """The logistic sigmoid activation function σ(z) = 1 / (1 + e^{-z})."""
-    return 1.0 / (1.0 + math.exp(-z))
+    """Logistic sigmoid σ(z) = 1 / (1 + e^{-z}), numerically stable.
+
+    Uses the standard trick to avoid overflow for large |z|.
+    """
+    if z >= 0:
+        return 1.0 / (1.0 + math.exp(-z))
+    # z < 0: rewrite as e^z / (1 + e^z) to avoid exp(-z) overflow
+    ez = math.exp(z)
+    return ez / (1.0 + ez)
 
 
 def sigmoid_deriv(sig_val: float) -> float:
@@ -165,18 +261,46 @@ def sigmoid_deriv(sig_val: float) -> float:
 
 
 def dot(ws: list[float], xs: list[float]) -> float:
-    """Standard vector dot product Σ wᵢ · xᵢ."""
-    return sum(w * x for w, x in zip(ws, xs))
+    """Vector dot product Σ wᵢ · xᵢ with shape checking.
+
+    Raises
+    ------
+    ValueError
+        If the vectors have different lengths.
+    """
+    if len(ws) != len(xs):
+        raise ValueError(f"dot: length mismatch {len(ws)} vs {len(xs)}")
+    # math.fsum gives higher precision than naive sum for many terms
+    return math.fsum(w * x for w, x in zip(ws, xs, strict=False))
 
 
 def vec_mul(xs: list[float], ys: list[float]) -> list[float]:
     """Hadamard (elementwise) product of two equal-length vectors."""
-    return [x * y for x, y in zip(xs, ys)]
+    if len(xs) != len(ys):
+        raise ValueError(f"vec_mul: length mismatch {len(xs)} vs {len(ys)}")
+    return [x * y for x, y in zip(xs, ys, strict=False)]
+
+
+def vec_add(xs: list[float], ys: list[float]) -> list[float]:
+    """Elementwise vector addition."""
+    if len(xs) != len(ys):
+        raise ValueError(f"vec_add: length mismatch {len(xs)} vs {len(ys)}")
+    return [x + y for x, y in zip(xs, ys, strict=False)]
 
 
 def scalar_vec_mul(s: float, xs: list[float]) -> list[float]:
     """Multiply every element of vector *xs* by scalar *s*."""
     return [s * x for x in xs]
+
+
+def mat_vec(M: list[list[float]], v: list[float]) -> list[float]:
+    """Matrix-vector product M·v.  M is (fan_out × fan_in), v is fan_in."""
+    return [dot(row, v) for row in M]
+
+
+def outer(delta: list[float], x: list[float]) -> list[list[float]]:
+    """Outer product δ ⊗ x — shape (len(delta), len(x))."""
+    return [[d * xi for xi in x] for d in delta]
 
 
 # =============================================================================
@@ -245,8 +369,10 @@ def forward_lens_tracked(
     """
     W = params.W
     b = params.b
+    if W and len(inputs) != len(W[0]):
+        raise ValueError(f"forward_lens_tracked: input dim {len(inputs)} != W fan_in {len(W[0])}")
     # Pre-activations: zᵢ = dot(Wᵢ, inputs) + bᵢ
-    zs = [dot(wi, inputs) + bi for wi, bi in zip(W, b)]
+    zs = [dot(wi, inputs) + bi for wi, bi in zip(W, b, strict=False)]
     # Post-activations: aᵢ = σ(zᵢ)
     acts = [sigmoid(z) for z in zs]
 
@@ -276,20 +402,22 @@ def forward_lens_tracked(
         dX : list[float]
             Gradient to propagate to the previous layer (dL/dxⱼ).
         """
+        if len(upstream_grad) != len(acts):
+            raise ValueError(
+                f"pullback: upstream_grad len {len(upstream_grad)} != acts len {len(acts)}"
+            )
         # δᵢ = upstream_gradᵢ · σ'(aᵢ)   — local error signal
-        delta = [u * sigmoid_deriv(a) for u, a in zip(upstream_grad, acts)]
+        delta = [u * sigmoid_deriv(a) for u, a in zip(upstream_grad, acts, strict=False)]
 
         # ∇Wᵢⱼ = δᵢ · xⱼ   (outer product δ ⊗ inputs)
-        dW = [[d * x for x in inputs] for d in delta]
+        dW = outer(delta, inputs)
 
         # ∇bᵢ = δᵢ
         db = list(delta)
 
         # ∇xⱼ = Σᵢ δᵢ · Wᵢⱼ   (Wᵀ · δ, transpose-multiply)
         n_inputs = len(inputs)
-        dX = [
-            sum(delta[i] * W[i][j] for i in range(len(delta))) for j in range(n_inputs)
-        ]
+        dX = [math.fsum(delta[i] * W[i][j] for i in range(len(delta))) for j in range(n_inputs)]
 
         return LayerGrads(dW=dW, db=db), dX
 
@@ -363,9 +491,7 @@ def model_forward(m: Model, xs: list[float]) -> tuple[Prediction, NetworkContext
     a3, pb3 = forward_lens_tracked(m.l3, a2)
     # Output layer has one neuron → a3 is a list of one element.
     y_hat = a3[0]
-    return Prediction(v=y_hat), NetworkContext(
-        pb1=pb1, pb2=pb2, pb3=pb3, final_act=y_hat
-    )
+    return Prediction(v=y_hat), NetworkContext(pb1=pb1, pb2=pb2, pb3=pb3, final_act=y_hat)
 
 
 # =============================================================================
@@ -450,9 +576,7 @@ def model_backward(
 #   u_η(θ) = θ − η · ∇θ
 
 
-def update_layer(
-    params: LayerParams, grads: LayerGrads, lr: LearningRate
-) -> LayerParams:
+def update_layer(params: LayerParams, grads: LayerGrads, lr: LearningRate) -> LayerParams:
     """Apply one SGD step to a single layer's parameters.
 
     Implements the elementwise update::
@@ -475,10 +599,11 @@ def update_layer(
         Updated parameters (a *new* object — the old one is not mutated).
     """
     eta = lr.v
-    new_W = [
-        [w - eta * dw for w, dw in zip(wi, dwi)] for wi, dwi in zip(params.W, grads.dW)
+    new_W = [  # noqa: E501
+        [w - eta * dw for w, dw in zip(wi, dwi, strict=False)]
+        for wi, dwi in zip(params.W, grads.dW, strict=False)
     ]
-    new_b = [bi - eta * dbi for bi, dbi in zip(params.b, grads.db)]
+    new_b = [bi - eta * dbi for bi, dbi in zip(params.b, grads.db, strict=False)]
     return LayerParams(W=new_W, b=new_b)
 
 
@@ -592,6 +717,8 @@ def glorot_rand(fan_in: int, fan_out: int) -> float:
     This keeps activations and gradients in a reasonable range at the start
     of training.
     """
+    if fan_in <= 0 or fan_out <= 0:
+        raise ValueError(f"fan_in and fan_out must be > 0, got {fan_in}, {fan_out}")
     limit = math.sqrt(6.0 / (fan_in + fan_out))
     return random.uniform(-limit, limit)
 
@@ -612,27 +739,45 @@ def make_layer(fan_in: int, fan_out: int) -> LayerParams:
         Weight matrix of shape (fan_out, fan_in) with Glorot-uniform values,
         and a zero bias vector of length fan_out.
     """
+    if fan_in <= 0 or fan_out <= 0:
+        raise ValueError(f"fan_in and fan_out must be > 0, got {fan_in}, {fan_out}")
     W = [[glorot_rand(fan_in, fan_out) for _ in range(fan_in)] for _ in range(fan_out)]
     b = [0.0] * fan_out
     return LayerParams(W=W, b=b)
 
 
-def make_model() -> Model:
-    """Build the full 2-hidden-layer network with random Glorot-uniform weights.
+def make_model(
+    arch: list[tuple[int, int]] | None = None,
+) -> Model:
+    """Build a 3-layer network with random Glorot-uniform weights.
 
-    Architecture::
-
-        input(2) → hidden1(3) → hidden2(3) → output(1)
+    Parameters
+    ----------
+    arch : list[tuple[int, int]] | None
+        Architecture as ``[(fan_in₁, fan_out₁), (fan_in₂, fan_out₂),
+        (fan_in₃, fan_out₃)]``.  Defaults to ``[(2,3), (3,3), (3,1)]``.
+        Must contain exactly 3 entries and consecutive layers must agree
+        on the shared dimension (``arch[i].fan_out == arch[i+1].fan_in``).
 
     Returns
     -------
     Model
         A freshly initialised :class:`Model`.
     """
+    if arch is None:
+        arch = [(2, 3), (3, 3), (3, 1)]
+    if len(arch) != 3:
+        raise ValueError(f"arch must have exactly 3 layers, got {len(arch)}")
+    for i in range(len(arch) - 1):
+        if arch[i][1] != arch[i + 1][0]:
+            raise ValueError(
+                f"arch mismatch: layer {i} fan_out {arch[i][1]} "
+                f"!= layer {i + 1} fan_in {arch[i + 1][0]}"
+            )
     return Model(
-        l1=make_layer(2, 3),  # Layer 1: 2 inputs  → 3 neurons
-        l2=make_layer(3, 3),  # Layer 2: 3 inputs  → 3 neurons
-        l3=make_layer(3, 1),  # Layer 3: 3 inputs  → 1 output
+        l1=make_layer(*arch[0]),
+        l2=make_layer(*arch[1]),
+        l3=make_layer(*arch[2]),
     )
 
 
@@ -655,6 +800,11 @@ def train(
     dataset: list[tuple[InputVec, TargetVal]],
     lr: float,
     epochs: int,
+    *,
+    verbose: bool = True,
+    log_every: int = 1000,
+    shuffle: bool = False,
+    seed: int | None = None,
 ) -> Model:
     """Run the full training loop (iterated endomorphism application).
 
@@ -675,24 +825,49 @@ def train(
     dataset : list[tuple[InputVec, TargetVal]]
         List of (input, target) pairs.
     lr : float
-        Learning-rate scalar η.
+        Learning-rate scalar η (must be finite and > 0).
     epochs : int
-        Number of full passes over the dataset.
+        Number of full passes over the dataset (must be >= 0).
+    verbose : bool
+        If True, print total loss every ``log_every`` epochs.
+    log_every : int
+        Logging interval in epochs (only when verbose).
+    shuffle : bool
+        If True, shuffle the dataset order each epoch (uses ``seed`` RNG).
+    seed : int | None
+        Seed for shuffle ordering.  Ignored when ``shuffle`` is False.
+        When set, shuffling is deterministic via a local RNG so the global
+        ``random`` state is not affected.
 
     Returns
     -------
     Model
         The trained model after ``epochs`` epochs.
     """
+    if not math.isfinite(lr) or lr <= 0:
+        raise ValueError(f"lr must be finite and > 0, got {lr!r}")
+    if epochs < 0:
+        raise ValueError(f"epochs must be >= 0, got {epochs!r}")
+    if log_every <= 0:
+        raise ValueError(f"log_every must be > 0, got {log_every!r}")
+    if not dataset:
+        raise ValueError("dataset must not be empty")
+
     learning_rate = LearningRate(v=lr)
     m = model
+    rng = random.Random(seed) if shuffle and seed is not None else random
 
     for epoch in range(epochs):
         total_loss = 0.0
-        for inp, tgt in dataset:
+        order = list(dataset)
+        if shuffle:
+            rng.shuffle(order)
+        else:
+            order = dataset
+        for inp, tgt in order:
             m, loss = train_step(m, list(inp.vals), tgt, learning_rate)
             total_loss += loss
-        if epoch % 1000 == 0:
+        if verbose and epoch % log_every == 0:
             print(f"Epoch {epoch:5d}  total-loss: {total_loss:.6f}")
 
     return m
@@ -722,23 +897,73 @@ def predict(m: Model, xs: list[float]) -> float:
     return pred.v
 
 
+def predict_batch(m: Model, batch: list[list[float]]) -> list[float]:
+    """Run inference over a batch of inputs."""
+    return [predict(m, xs) for xs in batch]
+
+
+def evaluate(
+    m: Model,
+    dataset: list[tuple[InputVec, TargetVal]],
+    threshold: float = 0.5,
+) -> dict[str, float]:
+    """Evaluate the model on a labelled dataset.
+
+    Returns
+    -------
+    dict with keys ``loss`` (sum MSE), ``accuracy`` (fraction correct),
+    and ``correct`` / ``total`` counts.  Classification uses ``threshold``
+    on the sigmoid output.
+    """
+    if not dataset:
+        raise ValueError("dataset must not be empty")
+    total_loss = 0.0
+    correct = 0
+    for inp, tgt in dataset:
+        y_hat = predict(m, list(inp.vals))
+        diff = y_hat - tgt.v
+        total_loss += diff * diff
+        pred_class = 1 if y_hat > threshold else 0
+        true_class = 1 if tgt.v > threshold else 0
+        if pred_class == true_class:
+            correct += 1
+    total = len(dataset)
+    return {
+        "loss": total_loss,
+        "accuracy": correct / total,
+        "correct": float(correct),
+        "total": float(total),
+    }
+
+
 # =============================================================================
 # 12.  DEMO
 # =============================================================================
 
 if __name__ == "__main__":
-    random.seed(42)
+    parser = argparse.ArgumentParser(
+        description="Category-theory 3-layer NN — XOR demo",
+    )
+    parser.add_argument("--lr", type=float, default=0.5, help="learning rate (default 0.5)")
+    parser.add_argument("--epochs", type=int, default=5001, help="epochs (default 5001)")
+    parser.add_argument("--seed", type=int, default=42, help="random seed (default 42)")
+    parser.add_argument(
+        "--no-shuffle", action="store_true", help="disable shuffling (shuffling off by default)"
+    )
+    args = parser.parse_args()
+
+    random.seed(args.seed)
 
     print("=== Category-Theory Neural Network (Python) ===")
     print("Architecture: input(2) → hidden1(3) → hidden2(3) → output(1)")
-    print("Problem:      XOR")
+    print(f"Problem:      XOR  (lr={args.lr}, epochs={args.epochs}, seed={args.seed})")
     print()
 
     # Build model
     init_model = make_model()
 
     # Train
-    trained_model = train(init_model, XOR_DATA, lr=0.5, epochs=5001)
+    trained_model = train(init_model, XOR_DATA, lr=args.lr, epochs=args.epochs, verbose=True)
 
     # Evaluate
     print()
@@ -748,10 +973,15 @@ if __name__ == "__main__":
         y_hat = predict(trained_model, xs)
         predicted_class = 1 if y_hat > 0.5 else 0
         print(
-            f"  Input: {xs}  Target: {tgt.v:.1f}  "
-            f"Prediction: {y_hat:.4f}  Class: {predicted_class}"
+            f"  Input: {xs}  Target: {tgt.v:.1f}  Prediction: {y_hat:.4f}  Class: {predicted_class}"
         )
 
+    metrics = evaluate(trained_model, XOR_DATA)
+    print()
+    print(  # noqa: E501
+        f"Loss: {metrics['loss']:.6f}  Accuracy: {metrics['accuracy']:.0%}  "
+        f"({int(metrics['correct'])}/{int(metrics['total'])})"
+    )
     print()
     print("=== Category-theory concepts demonstrated ===")
     print("  • Typed wrappers (InputVec, TargetVal, Prediction, LearningRate)")
@@ -759,6 +989,6 @@ if __name__ == "__main__":
     print("  • forward_lens_tracked returns (output, pullback_closure)")
     print("    modelling the categorical Lens pattern: P × X → Y × Ctx")
     print("  • backward pullback composition threads ∇Y back through")
-    print("    each layer in reverse, implementing f₁* ∘ f₂* ∘ f₃*.")
+    print("    each layer in reverse, implementing f1* ∘ f2* ∘ f3*.")
     print("  • model_update is an endomorphism u_η : Model → Model;")
     print("    training is iterated application of this arrow.")

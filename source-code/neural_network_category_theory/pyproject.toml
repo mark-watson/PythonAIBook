@@ -1,6 +1,8 @@
 [project]
 name = "neural-network-category-theory"
 version = "0.1.0"
+description = "Category-theory-inspired 3-layer neural network (pure stdlib, XOR demo)"
+readme = "README.md"
 requires-python = ">=3.14"
 dependencies = []
 
@@ -17,3 +19,14 @@ dev = [
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py314"
+
+[tool.ruff.lint]
+select = ["E", "F", "UP", "B", "SIM", "I"]
+ignore = []
+
+[tool.ruff.format]
+quote-style = "double"

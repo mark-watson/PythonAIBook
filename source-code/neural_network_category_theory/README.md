@@ -34,6 +34,8 @@ input(2)  →  hidden1(3)  →  hidden2(3)  →  output(1)
 
 ```bash
 uv run neural_network_category_theory.py
+uv run neural_network_category_theory.py --lr 0.5 --epochs 5001 --seed 42
+uv run neural_network_category_theory.py --help
 ```
 
 Expected output after ~5 000 epochs (learning rate 0.5):
@@ -58,14 +60,13 @@ Epoch  5000  total-loss: 0.002651
 | File | Description |
 |---|---|
 | `neural_network_category_theory.py` | Main implementation — all 12 sections |
-| `pyproject.toml` | `uv` project metadata |
-| `NOT_IN_BOOK.md` | Note about book inclusion status |
+| `pyproject.toml` | `uv` project metadata + ruff/pyrefly config |
 | `README.md` | This file |
 
 ## Requirements
 
-- Python ≥ 3.10 (uses `match`-free dataclasses + `from __future__ import annotations`)
-- No third-party libraries — stdlib only (`math`, `random`, `dataclasses`)
+- Python ≥ 3.14 (uses `from __future__ import annotations` + strict pyrefly)
+- No third-party libraries — stdlib only (`math`, `random`, `dataclasses`, `argparse`)
 - [`uv`](https://github.com/astral-sh/uv) for running the script
 
 ## Development workflow
