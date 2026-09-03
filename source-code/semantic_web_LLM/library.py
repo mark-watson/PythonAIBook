@@ -32,7 +32,7 @@ client = OpenAI(
     api_key=os.getenv("FIREWORKS_API_KEY"),
 )
 
-MODEL_ID = "accounts/fireworks/models/deepseek-v4-flash"
+MODEL_ID = "accounts/fireworks/models/deepseek-v4-flash-0731"
 
 # Descriptive User-Agent so SPARQL endpoints (especially Wikidata) do not
 # rate-limit us as an unidentified bot.
