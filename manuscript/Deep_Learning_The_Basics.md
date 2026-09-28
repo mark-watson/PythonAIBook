@@ -43,6 +43,8 @@ PyTorch is the most widely used deep learning framework in both research and ind
 We reuse the same CSV data files from our machine learning chapter. The data loading code converts the Pandas DataFrames to NumPy arrays, scales the features, then wraps everything in PyTorch tensors:
 
 ```python
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
 import torch
@@ -50,10 +52,14 @@ import torch.nn as nn
 from torch.utils.data import DataLoader, TensorDataset
 from sklearn.preprocessing import StandardScaler
 
+# The CSVs live beside the machine-learning example, one directory up.
+DATA_DIR = Path(__file__).resolve().parent.parent / "machine-learning"
+
+
 def load_data():
     """Load the cancer CSV files."""
-    train_df = pd.read_csv("../machine-learning/labeled_cancer_data.csv")
-    test_df = pd.read_csv("../machine-learning/labeled_test_data.csv")
+    train_df = pd.read_csv(DATA_DIR / "labeled_cancer_data.csv")
+    test_df = pd.read_csv(DATA_DIR / "labeled_test_data.csv")
 
     train = train_df.to_numpy()
     X_train = train[:, 0:9].astype(np.float32)

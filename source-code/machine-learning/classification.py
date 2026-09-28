@@ -4,20 +4,27 @@ from sklearn.metrics import classification_report, confusion_matrix
 
 from load_data import load_data
 
-(X_train, Y_train, X_test, Y_test) = load_data()
 
-# Remove mean and scale to unit variance:
-scaler = StandardScaler()
-X_train = scaler.fit_transform(X_train)
-X_test = scaler.transform(X_test)
+def main() -> None:
+    """Train a k-NN classifier on the cancer data and print the report."""
+    (X_train, Y_train, X_test, Y_test) = load_data()
 
-# Use the KNN classifier to fit data:
-classifier = KNeighborsClassifier(n_neighbors=5)
-classifier.fit(X_train, Y_train)
+    # Remove mean and scale to unit variance:
+    scaler = StandardScaler()
+    X_train = scaler.fit_transform(X_train)
+    X_test = scaler.transform(X_test)
 
-# Predict y data with classifier:
-y_predict = classifier.predict(X_test)
+    # Use the KNN classifier to fit data:
+    classifier = KNeighborsClassifier(n_neighbors=5)
+    classifier.fit(X_train, Y_train)
 
-# Print results:
-print(confusion_matrix(Y_test, y_predict))
-print(classification_report(Y_test, y_predict))
+    # Predict y data with classifier:
+    y_predict = classifier.predict(X_test)
+
+    # Print results:
+    print(confusion_matrix(Y_test, y_predict))
+    print(classification_report(Y_test, y_predict))
+
+
+if __name__ == "__main__":
+    main()

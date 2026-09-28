@@ -58,12 +58,18 @@ DataFrames are widely used in data science and machine learning projects for loa
 Listing of **load_data.py**:
 
 ```python
+from pathlib import Path
+
 import pandas as pd
+
+# The CSVs live next to this module, so the script works from any directory.
+DATA_DIR = Path(__file__).resolve().parent
 
 
 def load_data():
-    train_df = pd.read_csv("labeled_cancer_data.csv")
-    test_df = pd.read_csv("labeled_test_data.csv")
+    """Load the train/test CSVs and return (X_train, Y_train, X_test, Y_test)."""
+    train_df = pd.read_csv(DATA_DIR / "labeled_cancer_data.csv")
+    test_df = pd.read_csv(DATA_DIR / "labeled_test_data.csv")
 
     train = train_df.to_numpy()
     X_train = train[:, 0:9].astype(float)  # 9 input features
@@ -78,7 +84,7 @@ def load_data():
     return (X_train, Y_train, X_test, Y_test)
 ```
 
-In line 6 we read the CSV training data into a Pandas DataFrame. In line 9 we convert the DataFrame to a NumPy array using the `to_numpy()` method (preferred over the older `.values` property). In line 10 we copy all rows of data, skipping the last column (target classification we want to be able to predict) and converting all data to floating point numbers. In line 13 we copy just the last column of the training data array for use as the target classification.
+`load_data` reads the training and test CSVs into Pandas DataFrames, then uses `to_numpy()` to convert each one to a NumPy array (preferred over the older `.values` property). It takes columns 0 through 8 as the nine input features, converting them to floating point, and the last column as the target classification. `DATA_DIR` resolves the CSV paths from the module's own location, so the script works no matter which directory you run it from.
 
 ## Classification Models using Scikit-learn
 
@@ -103,23 +109,30 @@ from sklearn.metrics import classification_report, confusion_matrix
 
 from load_data import load_data
 
-(X_train, Y_train, X_test, Y_test) = load_data()
 
-# Remove mean and scale to unit variance:
-scaler = StandardScaler()
-X_train = scaler.fit_transform(X_train)
-X_test = scaler.transform(X_test)
+def main() -> None:
+    """Train a k-NN classifier on the cancer data and print the report."""
+    (X_train, Y_train, X_test, Y_test) = load_data()
 
-# Use the KNN classifier to fit data:
-classifier = KNeighborsClassifier(n_neighbors=5)
-classifier.fit(X_train, Y_train)
+    # Remove mean and scale to unit variance:
+    scaler = StandardScaler()
+    X_train = scaler.fit_transform(X_train)
+    X_test = scaler.transform(X_test)
 
-# Predict y data with classifier:
-y_predict = classifier.predict(X_test)
+    # Use the KNN classifier to fit data:
+    classifier = KNeighborsClassifier(n_neighbors=5)
+    classifier.fit(X_train, Y_train)
 
-# Print results:
-print(confusion_matrix(Y_test, y_predict))
-print(classification_report(Y_test, y_predict))
+    # Predict y data with classifier:
+    y_predict = classifier.predict(X_test)
+
+    # Print results:
+    print(confusion_matrix(Y_test, y_predict))
+    print(classification_report(Y_test, y_predict))
+
+
+if __name__ == "__main__":
+    main()
 ```
 
 Note that we fit the `StandardScaler` on the training data and then use the same fitted scaler to transform the test data. This is important: scaling the test data with parameters learned from the training set prevents data leakage and ensures a fair evaluation.

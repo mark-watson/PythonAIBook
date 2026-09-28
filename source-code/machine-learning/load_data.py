@@ -1,9 +1,15 @@
+from pathlib import Path
+
 import pandas as pd
+
+# The CSVs live next to this module, so the script works from any directory.
+DATA_DIR = Path(__file__).resolve().parent
 
 
 def load_data():
-    train_df = pd.read_csv("labeled_cancer_data.csv")
-    test_df = pd.read_csv("labeled_test_data.csv")
+    """Load the train/test CSVs and return (X_train, Y_train, X_test, Y_test)."""
+    train_df = pd.read_csv(DATA_DIR / "labeled_cancer_data.csv")
+    test_df = pd.read_csv(DATA_DIR / "labeled_test_data.csv")
 
     train = train_df.to_numpy()
     X_train = train[:, 0:9].astype(float)  # 9 input features

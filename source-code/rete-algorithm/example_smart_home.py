@@ -175,9 +175,8 @@ if __name__ == "__main__":
 
     print("\nTriggering AWAY mode...")
     # Change mode to away (by asserting new and retracting old)
-    for wme in list(engine.wm._facts.values()):
-        if isinstance(wme.fact, HouseMode):
-            engine.retract(wme)
+    for wme in list(engine.wmes(HouseMode)):
+        engine.retract(wme)
     engine.assert_fact(HouseMode(mode="away"))
 
     fired_away = engine.run()

@@ -6,6 +6,7 @@ Wisconsin Breast Cancer dataset (same data used in the
 scikit-learn chapter).
 """
 
+from pathlib import Path
 from typing import override
 
 import numpy as np
@@ -26,11 +27,15 @@ from sklearn.metrics import (
 # ── Data loading ──────────────────────────────────────
 
 
+# The CSVs live beside the machine-learning example, one directory up.
+DATA_DIR = Path(__file__).resolve().parent.parent / "machine-learning"
+
+
 def load_data():
     """Load the cancer CSV files from the
     machine-learning directory."""
-    train_df = pd.read_csv("../machine-learning/labeled_cancer_data.csv")
-    test_df = pd.read_csv("../machine-learning/labeled_test_data.csv")
+    train_df = pd.read_csv(DATA_DIR / "labeled_cancer_data.csv")
+    test_df = pd.read_csv(DATA_DIR / "labeled_test_data.csv")
 
     train = train_df.to_numpy()
     # First 9 columns are features

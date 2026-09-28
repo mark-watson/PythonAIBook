@@ -70,10 +70,10 @@ class Frame():
         for frm in self.objects:
             if isinstance(frm, (int, float)):
                 ret = ret + indent + '  ' + f"<Number {frm}>\n"
-            if isinstance(frm, str):
+            elif isinstance(frm, str):
                 ret = ret + indent + '  ' + f'<String "{frm}">\n'
-            if isinstance(frm, Frame):
-                ret = ret + frm.__str__()
+            elif isinstance(frm, Frame):
+                ret = ret + str(frm)
         return ret
 
 f1 = Frame()
@@ -94,11 +94,7 @@ class BookShelf():
         self.frames.append(a_frame)
     
     def search_text(self, search_string):
-        ret = []
-        for frm in self.frames:
-            if frm.__str__().index(search_string):
-                ret.append(frm)
-        return ret
+        return [frm for frm in self.frames if search_string in str(frm)]
     
 bookshelf = BookShelf()
 bookshelf.add_frame(f1)

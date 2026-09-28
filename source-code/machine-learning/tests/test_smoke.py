@@ -1,22 +1,18 @@
-"""Syntax smoke tests.
+"""Import smoke tests.
 
-Both scripts (`classification.py` and `load_data.py`) do their work at
-module top level — they call `pd.read_csv(...)` and print results when
-imported. So we `ast.parse` each script instead of importing it: this
-catches syntax errors without needing the CSV data present.
+Both scripts are import-safe: `classification.py` does its work inside
+`main()` behind an `if __name__ == "__main__":` guard, and `load_data.py`
+only defines a function. Importing them catches syntax and import-time
+errors without reading the CSV files or fitting a model.
 """
 
-import ast
-from pathlib import Path
-
-import pytest
-
-SCRIPTS = ["classification.py", "load_data.py"]
-
-ROOT = Path(__file__).resolve().parent.parent
+import classification
+import load_data
 
 
-@pytest.mark.parametrize("script", SCRIPTS)
-def test_script_parses(script: str) -> None:
-    source = (ROOT / script).read_text(encoding="utf-8")
-    ast.parse(source, filename=script)
+def test_classification_imports() -> None:
+    assert callable(classification.main)
+
+
+def test_load_data_is_callable() -> None:
+    assert callable(load_data.load_data)

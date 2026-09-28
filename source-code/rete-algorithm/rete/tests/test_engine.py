@@ -354,3 +354,43 @@ def test_retraction():
     fired = engine.run()
 
     assert fired == 0
+
+
+# ---------------------------------------------------------------------------
+# Test: public working-memory element access
+# ---------------------------------------------------------------------------
+
+
+def test_wmes_filters_by_type_and_allows_modify():
+    engine = ReteEngine()
+    engine.assert_fact(Patient(name="Alice", temperature=37.0))
+    engine.assert_fact(Diagnosis(patient="Alice", condition="flu"))
+
+    all_wmes = list(engine.wmes())
+    assert len(all_wmes) == 2
+
+    patient_wmes = list(engine.wmes(Patient))
+    assert len(patient_wmes) == 1
+    assert isinstance(patient_wmes[0].fact, Patient)
+
+    # A WME obtained from the public iterator can be modified in place.
+    engine.modify(patient_wmes[0], temperature=39.5)
+    temperatures = [p.temperature for p in engine.facts(Patient)]
+    assert temperatures == [39.5]
+
+
+def test_rule_context_wmes_lookup():
+    """A rule can reach facts outside its left-hand side through ctx.wmes()."""
+    engine = ReteEngine()
+    seen: list[float] = []
+
+    @engine.rule(Pat(Patient, name=Var("n")))
+    def note_temperature(ctx: RuleContext, n: Any) -> None:
+        for wme in ctx.wmes(Patient):
+            if isinstance(wme.fact, Patient):
+                seen.append(wme.fact.temperature)
+
+    engine.assert_fact(Patient(name="Alice", temperature=38.5))
+    engine.run()
+
+    assert seen == [38.5]

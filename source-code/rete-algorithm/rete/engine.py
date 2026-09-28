@@ -84,6 +84,16 @@ class WorkingMemory:
             if fact_type is None or isinstance(wme.fact, fact_type):
                 yield wme.fact
 
+    def wmes(self, fact_type: type | None = None) -> Iterator[WME]:
+        """Iterate over working-memory elements, optionally filtered by type.
+
+        Unlike :meth:`facts`, this yields the :class:`WME` wrappers, which
+        callers need in order to :meth:`retract` or :meth:`modify` a fact.
+        """
+        for wme in self._facts.values():
+            if fact_type is None or isinstance(wme.fact, fact_type):
+                yield wme
+
     def clear(self) -> None:
         """Retract every WME."""
         for wme in list(self._facts.values()):
@@ -269,6 +279,14 @@ class ReteEngine:
     def facts(self, fact_type: type | None = None) -> Iterator[Fact]:
         """Iterate over current facts in working memory."""
         return self.wm.facts(fact_type)
+
+    def wmes(self, fact_type: type | None = None) -> Iterator[WME]:
+        """Iterate over working-memory elements, optionally filtered by type.
+
+        Yields the :class:`WME` wrappers rather than the bare facts, so
+        callers can pass them to :meth:`retract` or :meth:`modify`.
+        """
+        return self.wm.wmes(fact_type)
 
     def conflict_set(self) -> list[Instantiation]:
         """Return the current conflict set (live reference)."""

@@ -15,7 +15,7 @@ class Frame:
     The nesting depth is tracked for indented pretty-printing.
     """
 
-    frame_counter = 0  # class-level counter for auto-naming unnamed frames
+    frame_counter: int = 0  # class-level counter for auto-naming unnamed frames
 
     def __init__(self, name: str = ""):
         Frame.frame_counter += 1
@@ -46,10 +46,10 @@ class Frame:
         for frm in self.objects:
             if isinstance(frm, (int, float)):
                 ret = ret + indent + "  " + f"<Number {frm}>\n"
-            if isinstance(frm, str):
+            elif isinstance(frm, str):
                 ret = ret + indent + "  " + f'<String "{frm}">\n'
-            if isinstance(frm, Frame):
-                ret = ret + frm.__str__()
+            elif isinstance(frm, Frame):
+                ret = ret + str(frm)
         return ret
 
 
@@ -68,11 +68,7 @@ class BookShelf:
 
     def search_text(self, search_string: str) -> list[Frame]:
         """Return all frames whose string representation contains search_string."""
-        ret: list[Frame] = []
-        for frm in self.frames:
-            if frm.__str__().index(search_string):
-                ret.append(frm)
-        return ret
+        return [frm for frm in self.frames if search_string in str(frm)]
 
 
 # --- Demo: build a small frame tree and search it ---

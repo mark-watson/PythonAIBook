@@ -120,9 +120,10 @@ def treat_patient(ctx: RuleContext, p_id: Any, b_id: Any, s_id: Any) -> None:
         elif isinstance(wme.fact, PatientStatus):
             ctx.modify(wme, status="treated")
 
-    # Locate and release the Bed and Staff associated with this assignment
-    # (Since Bed and Staff are not in the LHS of this rule, we queue updates inside working memory)
-    for wme in list(ctx._engine.wm._facts.values()):
+    # Locate and release the Bed and Staff associated with this assignment.
+    # They are not part of this rule's left-hand side, so look them up
+    # through the context's public working-memory iterator.
+    for wme in list(ctx.wmes()):
         if isinstance(wme.fact, Bed) and wme.fact.id == b_id:
             ctx.modify(wme, occupied=False)
         elif isinstance(wme.fact, Staff) and wme.fact.id == s_id:

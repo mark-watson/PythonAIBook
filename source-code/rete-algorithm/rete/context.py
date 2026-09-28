@@ -9,6 +9,7 @@ re-entrant network updates and matches OPS5 semantics.
 from __future__ import annotations
 
 import dataclasses
+from collections.abc import Iterator
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
@@ -75,6 +76,15 @@ class RuleContext:
     def print(self, msg: str) -> None:
         """Append *msg* to the engine's trace log."""
         self._trace_log.append(msg)
+
+    def wmes(self, fact_type: type | None = None) -> Iterator[WME]:
+        """Iterate the engine's working memory from inside a rule action.
+
+        Yields the :class:`WME` wrappers rather than the bare facts, so a
+        rule can look up a fact that is not part of its left-hand side and
+        then modify or retract it.
+        """
+        return self._engine.wm.wmes(fact_type)
 
     # ------------------------------------------------------------------
     # Internal — called by the engine after the action function returns

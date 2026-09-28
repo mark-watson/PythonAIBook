@@ -30,6 +30,16 @@ SQUARE_NAMES = [
 ]
 NAME_TO_SQUARE = {name: i for i, name in enumerate(SQUARE_NAMES)}
 
+# FEN uses lowercase piece letters; the color decides the final case.
+PIECE_TO_FEN_CHAR = {
+    PAWN: "p",
+    KNIGHT: "n",
+    BISHOP: "b",
+    ROOK: "r",
+    QUEEN: "q",
+    KING: "k",
+}
+
 # Precomputed lookup tables
 _knight_moves_list = [[] for _ in range(64)]
 _king_moves_list = [[] for _ in range(64)]
@@ -108,6 +118,12 @@ ZOBRIST_EP = [_rng.getrandbits(64) for _ in range(64)]
 
 
 class Move:
+    """A single chess move, including its capture, promotion, and special flags.
+
+    Equality is by origin square, destination square, and promotion piece,
+    which is what move-generation de-duplication and repetition tests need.
+    """
+
     __slots__ = (
         'from_square',
         'to_square',
@@ -121,6 +137,7 @@ class Move:
 
     def __init__(self, from_square, to_square, piece_moved, piece_captured=0, promotion=0,
                  is_en_passant=False, is_castling=False, is_double_push=False):
+        """Store the move's endpoints and flags; squares are 0-63 indices."""
         self.from_square = from_square
         self.to_square = to_square
         self.piece_moved = piece_moved
@@ -149,6 +166,10 @@ class Move:
         return (self.from_square == other.from_square and
                 self.to_square == other.to_square and
                 self.promotion == other.promotion)
+
+    def __hash__(self):
+        """Hash consistent with __eq__ so moves work in sets and dict keys."""
+        return hash((self.from_square, self.to_square, self.promotion))
 
 
 class BoardState:
@@ -266,10 +287,7 @@ class Board:
                         empty_count = 0
                     color = piece & COLOR_MASK
                     ptype = piece & TYPE_MASK
-                    char = {
-                        PAWN: 'p', KNIGHT: 'n', BISHOP: 'b',
-                        ROOK: 'r', QUEEN: 'q', KING: 'k'
-                    }[ptype]
+                    char = PIECE_TO_FEN_CHAR[ptype]
                     row_str += char.upper() if color == WHITE else char
             if empty_count > 0:
                 row_str += str(empty_count)
