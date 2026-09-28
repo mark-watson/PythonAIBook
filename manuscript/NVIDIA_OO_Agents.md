@@ -4,7 +4,7 @@ Most agent frameworks in circulation today share the same basic shape. You write
 
 NVIDIA's Object Oriented Agents framework, packaged as `nooa`, takes a different approach. An agent is a Python class. Its system prompt is the class docstring. Each of its capabilities is a method. Some of those methods are ordinary deterministic Python and behave as tools the language model may call. Other methods have `...` as their body, and the framework fills in the implementation at runtime by prompting the language model with the method's signature, docstring, and return type. State is just class fields with type annotations. There is no separate tool schema, no manual JSON glue, and no drift between what the prompt promises and what the code enforces.
 
-This chapter builds a complete example on top of that idea: a travel planner agent that recommends a destination, prices a trip against a budget, drafts a day by day itinerary, offers packing advice, and produces a structured trip plan. It runs on NVIDIA's free NIM inference endpoint using the same `NVIDIA_client.py` helper introduced in the previous chapter.
+This chapter builds a complete example on top of that idea: a travel planner agent that recommends a destination, prices a trip against a budget, drafts a day by day itinerary, offers packing advice, and produces a structured trip plan. It runs on NVIDIA's free NIM inference endpoint using the same `NVIDIA_client.py` helper introduced in the previous chapter **LLMs with Public APIs**.
 
 ## Why represent an agent as a class
 

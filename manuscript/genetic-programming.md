@@ -15,14 +15,173 @@ We build everything from first principles, with no NumPy and no GP framework, an
 
 Run time for each demo is under three seconds on a laptop, and every run is seeded and reproducible.
 
+This chapter assumes no prior exposure to genetic programming. We start with the ideas and the words, then build the engine, then run four complete problems with it. If you already know the field, skip ahead to "A tiny engine: `gp_core.py`"; everything before that section is background.
+
+## Where GP fits
+
+Machine learning usually answers two questions in order:
+
+1. **What shape should the model have?** A line, a polynomial, a decision tree, a neural network.
+2. **What numbers should that shape use?** Coefficients, weights, thresholds.
+
+Ordinary fitting answers only the second question. You choose the shape by hand, then a solver finds the numbers. It works spectacularly well when you already know the shape.
+
+Genetic programming attacks the first question. The model *is* the program, and evolution finds both its structure and whatever constants it contains. Nothing is differentiated. The training signal is a score you compute by running each candidate on examples, so any behavior you can simulate can be optimized, whether or not it is smooth or continuous.
+
+That matters most when the shape is the hard part:
+
+* You have data and no idea what function produced it.
+* You can simulate what you want to build, but you cannot write a differentiable loss for it.
+* The answer has to be readable by a person, not a matrix of weights.
+* The output is naturally discrete: a rule, a circuit, a regular expression, a schedule, a controller.
+
+The price is that GP is a *search*, and the space it searches is astronomically large. Consider the simplest possible setup: four binary operators and two terminals. A perfect binary tree four levels deep has seven internal nodes and eight leaves, so there are `4^7 * 2^8`, about 4.2 million, distinct programs of exactly that shape. At six levels the same count passes `10^28`. GP also has to consider every irregular shape up to its depth limit, and there is no list to iterate through: it samples, scores, and breeds.
+
+### The three ingredients
+
+Every evolutionary algorithm, GP included, needs three things:
+
+* **Variation.** Something must create new candidates (random initialization, crossover, mutation).
+* **Heredity.** Offspring must resemble their parents, or progress cannot accumulate (a tree is copied, then edited).
+* **Selection.** Something must favor better candidates, or the population wanders (fitness, tournaments, elitism).
+
+Remove any one of the three and the loop stops being evolution. Random search has variation but no heredity. Hill climbing has selection and heredity but almost no variation. GP has all three, applied to programs.
+
+### How GP differs from its neighbors
+
+| Method | What is optimized | Uses gradients | Typical output |
+|---|---|---|---|
+| Least squares / logistic regression | coefficients | yes | numbers |
+| Neural network training | weights | yes (backpropagation) | numbers |
+| Genetic algorithm | a fixed-length vector | no | numbers |
+| **Genetic programming** | **program structure** | **no** | **a readable program** |
+| Bayesian optimization | a few continuous settings | no | numbers |
+| Random or grid search | whatever you define | no | a sampled configuration |
+| Large language model | text, from pretraining | no (pretraining only) | code or prose |
+
+The last row deserves a sentence, because readers today will ask. A language model can propose a program from a description, but it has no loop that measures that program against your objective and improves it. GP has exactly that loop and no idea what your problem means. The two compose well: use a model to suggest a function set or seed the population, and let GP optimize against measurements. We return to that in "What GP is good at, and when not to reach for it".
+
+## The vocabulary of evolution
+
+GP borrows its words from biology. The mapping is loose but useful, and every GP paper and library uses these terms.
+
+| Word | Meaning in GP | In this chapter |
+|---|---|---|
+| individual, program | one candidate solution | one `Tree` |
+| population | the individuals alive at one time | a `list[Tree]` |
+| generation | one round of selection and reproduction | one pass of the `evolve()` loop |
+| genotype | the representation that is copied and varied | the tree itself |
+| phenotype | the behavior the genotype produces | the formula, circuit, regex, or plant |
+| gene, node | one part of the genotype | one `Tree` node |
+| fitness | a number saying how well an individual solves the problem | the `float` that `evolve()` minimizes |
+| fitness function | the procedure that computes fitness | the callable passed to `evolve()` |
+| fitness case | one test input, with its expected output | a data point, truth-table row, or example string |
+| selection | choosing which individuals reproduce | `tournament()` |
+| parent, offspring | who is copied, and the new individuals made from them | arguments and return values of `crossover()` |
+| crossover, recombination | mixing parts of two parents | `crossover()` |
+| mutation | a random change to one individual | `mutate_subtree`, `mutate_point`, `mutate_hoist` |
+| elitism | copying the best individuals forward unchanged | the `elitism=` argument |
+| diversity | how different the individuals are | not measured here; it is what selection pressure trades away |
+| convergence | the population becoming similar | visible as a flat `history` |
+| premature convergence | settling on a mediocre answer | example 1's 37 stagnant generations |
+| bloat | programs growing without getting better | fought with `PARSIMONY`, depth caps, and hoist mutation |
+
+The one distinction to internalize is genotype versus phenotype. In example 4 the genotype is a rule tree of a few dozen nodes and the phenotype is a plant drawn on a 61 by 31 grid. Two different genotypes can produce the same phenotype, and the evolved rule and the hidden rule in that chapter draw exactly the same plant. Selection only ever sees the phenotype.
+
+A note on signs: here "fitness" is a score we *minimize*, so lower is better. Many papers and libraries maximize it, so always check the convention before comparing numbers.
+
+## The shortest history of evolving programs
+
+None of this is new. People have been trying to make computers evolve code since the 1950s.
+
+### Before the name
+
+* In the 1950s, **Nils Aall Barricelli** ran some of the first computer simulations of evolution, letting numbers reproduce and compete on early machines.
+* In **1957**, **A. S. Fraser** simulated genetic systems on a digital computer, and in **1958** **Richard Friedberg** tried to evolve small programs by random mutation and selection. Both were ahead of their time and were largely forgotten for decades.
+* In **1962**, **Hans-Joachim Bremermann** wrote about optimization through evolution and recombination, the idea that a population of candidate solutions can search better than a single point.
+* Through the 1960s a parallel thread appeared in Germany: **evolution strategies**, from **Ingo Rechenberg** and **Hans-Paul Schwefel**, tuned real-valued engineering parameters by mutation and selection.
+
+### Three classical branches
+
+By the 1970s evolutionary computation had three schools that developed largely independently:
+
+* **Genetic algorithms**, from **John Holland**'s 1975 book *Adaptation in Natural and Artificial Systems*. Binary, fixed-length strings; crossover was the star; the theory was built around schemata and building blocks. GP grew out of this branch.
+* **Evolution strategies**, from Rechenberg and Schwefel: real vectors, self-adapting mutation step sizes, strong selection.
+* **Evolutionary programming**, from **Lawrence Fogel, Alvin Owens and Michael Walsh** (1966): finite-state machines evolved by mutation, with no crossover at first.
+
+The three differed in representation, in which operator they treated as primary, and in how much theory they carried, but they were running the same loop. Today "evolutionary computation" is the umbrella term for all of it, and researchers borrow freely across the branches.
+
+### From programs to genetic programming
+
+In **1985**, **N. Michael Cramer** published a representation for evolving simple sequential programs as trees, which is recognizably modern GP. The idea did not spread widely at the time.
+
+In **1992**, **John Koza** published *Genetic Programming: On the Programming of Computers by Means of Natural Selection*, and the field took off. Koza's contribution was not one algorithm but a whole program of work:
+
+* a clear tree representation with full, grow, and ramped half-and-half initialization;
+* the operator mix of subtree crossover and mutation that the field still uses;
+* a catalogue of benchmark problems, from symbolic regression (recovering the quartic polynomial `x^4 + x^3 + x^2 + x`) and Boolean multiplexers to the "artificial ant" that follows the Santa Fe trail;
+* and, in later books (Genetic Programming II in 1994, III in 1999, and IV in 2003), the argument that GP routinely produces *human-competitive* results, including designs that won patents.
+
+The infrastructure followed. The first European Workshop on Genetic Programming (EuroGP) was held in Paris in 1998, and GECCO, the main evolutionary computation conference, dates from the same period. Textbooks by **Banzhaf, Nordin, Keller and Francone** (1998) and **Langdon and Poli** (2002) turned the subject into a curriculum, and the free **Field Guide to Genetic Programming** (Poli, Langdon and McPhee, 2008) became the standard short introduction.
+
+### Where the field is now
+
+Three decades of work added representations (linear programs, grammars, graphs, stacks), theory (why bloat happens, when GP can be expected to converge), and engineering (strongly typed nodes, semantic operators, multi-objective selection, GPU evaluation). Symbolic regression, GP's oldest application, had a public moment in **2009**, when **Michael Schmidt and Hod Lipson** used it to rediscover physical laws from measurements. Today the standard tools are libraries such as **DEAP** and **gplearn**, and a growing line of work uses large language models to propose programs or seed populations for GP to optimize. The loop itself has not changed.
+
+| Year | Milestone |
+|---|---|
+| 1950s | Early evolutionary simulations (Barricelli) |
+| 1957-1958 | First attempts to evolve programs (Fraser, Friedberg) |
+| 1962 | Evolution and recombination as optimization (Bremermann) |
+| 1960s | Evolution strategies (Rechenberg, Schwefel) and evolutionary programming (Fogel, Owens, Walsh) |
+| 1975 | Genetic algorithms (Holland) |
+| 1985 | Tree-shaped programs evolved (Cramer) |
+| 1992 | Genetic programming named and popularized (Koza) |
+| 1994 | Genetic Programming II (reusable subroutines); linear GP |
+| 1998 | First EuroGP; grammatical evolution |
+| 1999-2003 | Genetic Programming III and IV; human-competitive results |
+| 2000s | Bloat theory; Cartesian, Push, and gene expression GP |
+| 2009 | Symbolic regression rediscovers physical laws (Schmidt and Lipson) |
+| 2010s | Semantic GP, multi-objective GP, mature Python libraries |
+| 2020s | GP combined with machine learning and language models |
+
 ## Why trees?
 
-A GP individual is an ordered rooted tree. Internal nodes are *functions* (with a fixed arity), leaves are *terminals* (variables and constants). Two properties make trees the right representation:
+A GP individual is an ordered rooted tree. Internal nodes are *functions* (with a fixed arity), leaves are *terminals* (variables and constants). This single choice of representation drives almost everything else in the field, so it is worth understanding in detail.
 
-1. **Closed under composition.** Every subtree is itself a valid program. You can cut a subtree from one tree and graft it into another at any node, and the offspring is guaranteed to be a syntactically valid program of the same species. A crossover of two floating-point vectors has no such guarantee; a crossover of two expression trees does. This is why GP inherits genetic algorithms' operators unchanged.
+### A tree is a program
+
+We write trees in *prefix notation*: a function name followed by its arguments. The tree
+
+```text
+            add
+          /     \
+        mul      sin
+       /   \       \
+      x    2.0      x
+```
+
+is written `(add (mul x 2.0) (sin x))`, which means `x * 2.0 + sin(x)`. Prefix form removes two endless sources of bugs: there are no precedence rules to remember, and no parentheses to balance when you splice subtrees. The arity of each function decides the shape, so a well-formed tree is unambiguous by construction, and a subtree is always a complete expression on its own.
+
+Two numbers describe a tree's size. *Size* is the number of nodes; the tree above has size 7. *Depth* (also called height) is the longest root-to-leaf path counted in nodes; the tree above has depth 3, from `add` down to `mul` and then `x`. Every practical GP run limits at least one of these, or programs grow without bound.
+
+### The properties that make trees work
+
+1. **Every subtree is a program.** You can cut a subtree from one tree and graft it into another at any node, and the offspring is guaranteed to be a syntactically valid program of the same species. A crossover of two floating-point vectors has no such guarantee; a crossover of two expression trees does. This is why GP can reuse genetic algorithms' operators unchanged.
 2. **Modularity.** Subtrees compute reusable chunks (`sin(x + x)` appears inside many better solutions). Selection can spread a good subtree through the population the way a good schema spreads in a genetic algorithm.
 
-There is a price, discussed later: trees can *grow*. Useless code costs nothing to keep, so GP populations tend toward bloat unless you apply pressure against size.
+### Closure and sufficiency
+
+Two properties of the function and terminal sets decide whether GP can solve a problem at all:
+
+* **Closure.** Every function must accept, as arguments, every value that any terminal or function can produce. If `div` raises on zero, or `sqrt` raises on a negative, one random tree can crash an entire generation. The standard fix is a *protected* operator: division that returns a safe value instead of raising, as in example 1. A function set that is not closed forces you to write error handling into every fitness function, and error handling inside a search loop is where subtle bugs live.
+* **Sufficiency.** The sets must be rich enough to express a solution. No amount of evolution will find `exp` in a function set that does not contain it. Example 1 proves the point by omitting `exp` and settling for a structural approximation of the damped oscillator.
+
+Those two words come up in every serious GP design review: "is the primitive set closed, and is it sufficient?" If the answer to either is no, fix the sets before you tune anything else.
+
+A third property is a matter of taste rather than correctness. GP does not care whether the functions are arithmetic, Boolean, string operations, or simulation calls. Mixing types (numbers and Booleans in the same tree) does need a *typed* representation, which is why strongly typed GP exists; see "The wider family of GP methods".
+
+There is a price for all of this, discussed later: trees can *grow*. Useless code costs nothing to keep, so GP populations tend toward bloat unless you apply pressure against size.
 
 ## The GP loop
 
@@ -39,8 +198,120 @@ Generational GP looks like this:
 
 Two design choices deserve names because you will meet them in every GP paper:
 
-* **Initialization, `full` vs `grow`.** The *full* method creates perfect trees where every root-to-leaf path has length exactly `D`. The *grow* method makes its own function-versus-terminal decision at every step, yielding irregular trees. Koza's standard recipe, called *half-and-half*, flips a coin between the two per tree.
+* **Initialization, `full` vs `grow`.** How the first random trees are shaped. There are four standard methods, described next.
 * **Fitness cases, not objectives.** GP does not optimize a model's parameters against a loss function you differentiated. It executes each candidate program on example inputs and scores the *behavior*. That is why GP applies to problems where no differentiable model exists at all: robot controllers, trading heuristics, regular expressions, growth rules.
+
+### Initialization: building the first generation
+
+GP starts from random programs, so the initialization method shapes the first generation and the diversity available to selection.
+
+* **Full.** Grow every branch to exactly the depth limit `D`, then place terminals. The result is a perfect tree: bushy, uniform, and often full of equivalent structures.
+* **Grow.** At each node, choose a function or a terminal. Branches end at their own depths, so the trees are irregular.
+* **Half-and-half.** Flip a coin per tree between full and grow. This is Koza's default, and it is what `gp_core.py` does when you pass `method="half"`.
+* **Ramped half-and-half.** Koza's refinement: choose a different depth limit for each tree, spread across the range from 2 to `D`. The ramp gives the population both tiny and large programs, which matters because a good solution may be shallow.
+
+Population size is a budget decision. This chapter uses 200 to 400 individuals; production runs commonly use thousands, and larger populations buy diversity at the cost of one fitness evaluation per individual per generation. If a run converges too fast, a bigger population is often more effective than a smaller tournament.
+
+### The reproduction cycle
+
+A generation is not one operation but a small pipeline:
+
+1. Rank the population by fitness.
+2. Copy the elite individuals forward unchanged.
+3. Fill the remaining slots by selecting two parents and applying crossover with high probability (typically 0.8 to 0.95), or cloning one parent otherwise.
+4. Apply mutation to the child with low probability (typically 0.01 to 0.2).
+5. Evaluate the children and repeat.
+
+Crossover is the primary operator because it combines working parts. Mutation is the backup: it supplies material that crossover cannot invent, and in later generations it is often the only operator still making progress once the population has converged. If a run stalls and the best fitness has not changed for many generations, raising the mutation rate or lowering the tournament size (both add variation) is usually the first thing to try.
+
+### One generation by hand
+
+A generation is easier to understand with a tiny example. Suppose the target is `y = 2x`, scored on two fitness cases: `x = 1` (want 2) and `x = 2` (want 4). Fitness is the total absolute error, so 0 is perfect. The function set is `{add, mul}` and the terminals are `{x, 1}`. Start with four individuals:
+
+| Individual | Formula | `x=1` | `x=2` | Fitness |
+|---|---|---|---|---|
+| P1 | `(add x x)` | 2 | 4 | 0 |
+| P2 | `(mul x x)` | 1 | 4 | 1 |
+| P3 | `(add x 1)` | 2 | 3 | 1 |
+| P4 | `x` | 1 | 2 | 3 |
+
+Now run one generation:
+
+1. **Elitism.** Copy P1, the best, into the next generation unchanged. The best fitness found so far can never be lost.
+2. **Select.** Hold a tournament for each remaining slot: draw two individuals at random, keep the fitter. Suppose the first tournament draws P1 and P3. P1 wins, because 0 beats 1.
+3. **Crossover.** Take P1 and P3 and swap one randomly chosen subtree. If the second argument of each is chosen, the `x` from P1 trades places with the `1` from P3. The children are `(add x 1)`, fitness 1, and `(add x x)`, fitness 0. Notice what happened: the perfect frame `(add x _)` from P3 and the variable `x` from P1 recombined into the perfect program. Crossover *moved* a building block; it did not invent one.
+4. **Mutate.** With low probability, change one node in a child. Point-mutating P4's leaf `x` into `1` gives the constant program `1`, fitness `|1 - 2| + |1 - 4| = 4`, which selection discards. Most mutations are neutral or harmful; occasionally one adds something new.
+
+After a few generations the population fills with programs that compute `2x` in several different ways. That redundancy is useful: it is the raw material for the next improvement. When the population collapses to copies of one program, the run can only drift. The engine in the next section automates every step above.
+
+## Selection: choosing who reproduces
+
+Selection converts fitness into reproductive opportunity, and its strength is the main dial on the whole search. Too little and the population wanders; too much and it converges on the first decent answer and stops exploring. A few standard schemes:
+
+* **Fitness-proportionate (roulette wheel).** Each individual gets a slice of the wheel proportional to its fitness. It is simple, but sensitive to scale, it needs nonnegative fitness, and it loses its grip when all fitnesses are nearly equal.
+* **Rank selection.** Sort by fitness and assign probabilities by rank, not by raw value. This removes the scale problem.
+* **Tournament selection.** Draw `k` individuals at random and keep the best. This is the default in most modern GP systems, including `gp_core.py`, because it needs no scaling, tolerates negative fitness, and is trivial to implement. The tournament size `k` is a direct selection-pressure dial: `k = 2` is mild, `k = 7` is strong, and `k` equal to the population size is nearly greedy.
+* **Truncation.** Keep only the top fraction. Very strong pressure, useful for quick experiments and dangerous for diversity.
+* **Lexicase and epsilon-lexicase.** Modern methods for problems with many test cases: each parent is chosen by filtering candidates on randomly ordered cases. They are excellent when no single scalar fitness captures the problem, as in program synthesis with dozens of unit tests.
+
+A useful intuition: with tournament size `k`, the best individual in a random group of `k` wins, so larger groups strongly favor the top of the population. In this chapter tournament sizes range from 5 to 7. That is high pressure, which is why example 1 converges by generation 2 and then coasts.
+
+Elitism is a separate, gentler kind of pressure: copy the best `e` individuals forward unchanged. It guarantees that the reported best-so-far never gets worse, which makes logs and stopping rules simpler. The cost is that it can slow the removal of bad building blocks. One or two elites in a population of a few hundred is typical.
+
+Selection pressure interacts with population size. A large population under strong pressure still holds diversity for a while; a small population under strong pressure collapses in a few generations. If you cannot afford a large population, lower the pressure.
+
+## Fitness: what GP is actually optimizing
+
+Fitness is the specification. The function set, the operators, and the parameters are all secondary; if the fitness function is wrong, the run will find a way to exploit it, and the exploit is what you will see at the end.
+
+Good fitness functions share four properties:
+
+* **Defined for every candidate.** Closure and protected operators keep the evaluator from raising. A fitness function that crashes throws away a whole generation's work.
+* **Fast.** Fitness is evaluated `population size * generations` times, often millions of times. A slow fitness function is the most common reason a GP run is unusable.
+* **Graded.** Prefer a ramp to a cliff. "Three rows wrong" is more informative than "not perfect", and example 3's prefix credit exists precisely to turn a cliff into a ramp.
+* **Faithful.** It must score the thing you actually want. If the fitness can be gamed, it will be. A regex that accepts every string is a perfect example of a fitness loophole.
+
+A short checklist for the fitness function itself:
+
+1. What is a perfect score, and what is the score of doing nothing?
+2. Can a degenerate answer score well? (Examples: a wildcard regex, an always-true circuit, a plant that paints nothing.)
+3. Is partial progress visible, or is the landscape a needle in a haystack? Parity is the classic hard case, discussed with example 2.
+4. Is the evaluation deterministic? If the simulator is stochastic, average several runs.
+5. Is it cheap enough to run millions of times?
+
+Two design patterns recur in this chapter:
+
+* **Error plus a size term.** Fitness = error + `lambda` * size. The error says "solve the problem"; the size term says "do not grow". Examples 1 and 3 both use it.
+* **Weighted example errors.** Give hard cases, or false accepts, more weight than easy ones. Example 3 charges full price for accepting a negative string and only partial credit for rejecting a positive one, because the degenerate pattern that accepts everything must stay expensive.
+
+### Fitness is not the goal
+
+The most important limitation is also the simplest: GP optimizes the fitness cases you give it, and stops there. It has no notion of the underlying problem. Example 3 evolves a pattern that satisfies all 19 example strings and then rejects `22:00`, a perfectly valid time. That is not a bug in the search; it is a bug in the specification. The cures are more cases, held-out validation cases, and a test suite the search never sees.
+
+Split your examples. Train on one part, validate on another, and only then report the third. If you cannot afford three splits, at least hold out a random fifth of the cases and check the winner against them. A GP result that improves on training data while getting worse on validation is overfitting, exactly as in any other model.
+
+## Bloat: why programs grow
+
+Left alone, GP populations get bigger. Programs keep working while accumulating subtrees that change nothing. This is called *bloat*, and it is the most reliable phenomenon in the field.
+
+Why does it happen? Several effects push the same way:
+
+* **Neutral drift.** A useless subtree does not change fitness, so selection cannot remove it. It rides along and accumulates.
+* **Hitchhiking.** A growing subtree attached to a useful one is copied along with it.
+* **Removal bias.** Deleting a random subtree is more likely to break a working program than adding one is, so the survivors tend to be larger.
+* **Recombination bias.** Crossover of two valid trees tends to produce trees at least as large as the smaller parent.
+
+Bloat is not free. Larger programs evaluate more slowly, are harder to read, and overfit noise more easily, because a big enough tree can memorize the fitness cases. A run that reports "solved" with a 5,000-node tree has usually found a lookup table, not an insight.
+
+The standard cures, in roughly increasing complexity:
+
+* **Hard limits.** A maximum depth or node count, enforced at initialization, at crossover, and at mutation. Crude, always available, and enough for the demos here.
+* **Parsimony pressure.** Add a penalty per node to fitness. Examples 1 and 3 do this. The weight matters: too small and it does nothing, too large and it fights accuracy.
+* **Multi-objective selection.** Treat size as a second objective and keep a Pareto front of accuracy-versus-size trade-offs. This is more principled than picking a penalty weight by hand, and it is what NSGA-II-based GP systems do.
+* **Hoist mutation.** Replace a node by one of its own descendants, which can only shrink the tree. It is a cheap local anti-bloat operator, used in examples 2, 3, and 4.
+* **Simplification and modules.** Algebraically simplify the winner, or let GP evolve reusable functions (automatically defined functions) so that repeated subtrees are named once.
+
+You do not need all of these. You do need at least one. A GP system with no size control will, sooner or later, hand you a program that is technically correct and practically useless.
 
 ## A tiny engine: `gp_core.py`
 
@@ -67,7 +338,7 @@ Study `all_nodes()`: it returns every node of a tree by reference together with 
 #   GP overview:    https://en.wikipedia.org/wiki/Genetic_programming
 #   Koza, J. (1992) "Genetic Programming: On the Programming of Computers
 #                   by Means of Natural Selection", MIT Press (full/grow
-#                   initialization, tournament selection)
+#                   initialization and the standard benchmark problems)
 #   Bloat:          https://en.wikipedia.org/wiki/Genetic_programming#Bloat
 
 
@@ -1889,6 +2160,107 @@ They are *not the same rule*. They grow the same set of cells on this grid. The 
 
 This is why GP papers insist on *behavioral* fitness evaluation and on validation examples: scoring the genotype (the rule text) would be a string-edit metric with no relationship to the plants, and scoring behavior on one example plant (as we do) is perfect only up to equivalence classes GP never sees through.
 
+## The wider family of GP methods
+
+Tree GP is the original form and still the most common, but it is one member of a family. Most variants exist to fix a specific weakness of plain tree GP, and knowing which one to reach for saves a lot of wasted tuning.
+
+| Variant | Idea | Fixes |
+|---|---|---|
+| Tree GP | programs are expression trees (this chapter) | the baseline |
+| Strongly typed GP | every node has a type, and crossover respects it | mixing numbers, Booleans, and other types |
+| Linear GP | programs are sequences of register-machine instructions | faster evaluation, easier constants |
+| Grammatical evolution | a list of integers is mapped through a grammar | guarantees syntax, supports any grammar |
+| Gene expression programming | a fixed-length chromosome decodes to expression trees | keeps a simple genome, gains tree flexibility |
+| Cartesian GP | programs are graphs of indexed nodes | circuits, neural networks, reusable structure |
+| PushGP | programs are stack code in a typed language | multiple data types, self-modifying programs |
+| Semantic GP | operators act on program behavior, not syntax | smoother landscapes for regression |
+| Multi-objective GP | optimizes accuracy and size together | principled bloat control |
+| Island and age-layered models | subpopulations exchange migrants, or ages are layered | premature convergence and diversity loss |
+
+A few of these deserve one sentence each:
+
+* **Strongly typed GP** (Montana, 1995) gives every node a type. Crossover only swaps subtrees of compatible types, so a Boolean can never be dropped into a numeric argument. If you want to evolve a program that mixes numbers, Booleans, and sequences, this is the variant you want.
+* **Linear GP** (Nordin, 1994) represents a program as a sequence of instructions for a simple register machine. Evaluation is a fast loop over a list, and constants are easier to handle than they are in trees.
+* **Grammatical evolution** (Ryan, Collins and O'Neill, 1998) keeps a fixed-length list of integers as the genotype and uses it to choose production rules from a grammar. The grammar guarantees that every decoded program is syntactically valid, which is a strong advantage when the target language has a strict syntax.
+* **Gene expression programming** (Ferreira, 2001) uses a fixed-length chromosome that decodes into expression trees, combining a simple genome with tree-shaped programs.
+* **Cartesian GP** (Miller and Thomson, 2000) evolves a directed graph of indexed nodes. It is a natural fit for circuits and neural networks, where reuse and fan-out matter more than tree structure.
+* **PushGP** (Spector and Robinson, 2002) evolves stack programs in the Push language, which supports several data types and even self-modifying code. It has produced strong results on program synthesis benchmarks.
+* **Semantic and geometric semantic GP** (Moraglio, Krawiec and Johnson, 2012) define operators that act on the vector of program outputs rather than on syntax. For regression problems this turns a rugged landscape into a smoother one and can speed convergence dramatically.
+* **Multi-objective GP** uses a Pareto-based algorithm such as NSGA-II (Deb et al., 2002) to keep a front of accuracy-versus-size trade-offs, which is a cleaner way to control bloat than a hand-tuned penalty.
+* **Island models and age-layered populations** (ALPS, Hornby, 2006) split the population into subpopulations that exchange a few migrants, or protect young individuals from competition with older ones. Both slow premature convergence and are standard in long runs.
+
+There are also hybrids. *Memetic* GP runs a local optimizer on the constants inside each tree. GP can seed a neural network's architecture, or a neural network can guide GP's operator choice. And a large language model can now propose an initial population or a function set for GP to optimize, which combines the model's broad prior knowledge with GP's exact, measurable search.
+
+## What GP is good at, and when not to reach for it
+
+GP is not a general replacement for machine learning. It is a specific tool for a specific situation, and it pays to know which situation you are in.
+
+### Where GP shines
+
+* **The structure is unknown.** You can write down the inputs, the outputs, and a way to score a candidate, but not the model.
+* **You can simulate the objective.** A physics engine, a circuit simulator, a parser, or a game gives you a behavioral score with no gradient.
+* **The answer must be readable.** A short formula, a gate netlist, or a regex can be reviewed by a domain expert in a way that a weight matrix cannot.
+* **Data is scarce.** GP can work from a small set of examples or a simulator, and it does not need millions of labeled points.
+* **You want several good answers.** A population gives you a set of diverse solutions, not one point estimate, which is useful when the final choice involves constraints the fitness did not encode.
+* **A few million evaluations are affordable.** That is the realistic currency of a GP run.
+
+### Where GP struggles
+
+* **Gradients are cheap.** If backpropagation or least squares applies, use it. GP will be slower and less accurate.
+* **Fitness is very expensive or very noisy.** Every candidate costs an evaluation, so a fitness function that takes minutes or returns a different answer each time is a serious obstacle. Surrogate models and averaging help, but only so much.
+* **The landscape is deceptive.** Parity is the standard example: the fraction of correct rows gives almost no signal until the program is nearly complete, so search is closer to guessing. Example 2 discusses this.
+* **You need guarantees.** GP is a stochastic search with no correctness proof. Safety-critical logic needs formal verification on top of whatever GP proposes.
+* **The solution needs long-range coordination.** Problems where many parts must be right simultaneously, with no partial credit, are hard for any local search.
+* **You cannot afford to repeat the run.** A single lucky seed is not evidence. If you cannot afford dozens of runs, you cannot say much about the method's reliability.
+
+### GP and its neighbors, honestly
+
+* **Versus neural networks.** Use networks for perception, high-dimensional input, and abundant data. Use GP for structure discovery, small data, and interpretable output. The two are complementary: a network can be a component inside a GP tree, or a fitness predictor.
+* **Versus reinforcement learning.** Reinforcement learning handles sequential decisions with delayed reward. GP can evolve a policy or a controller too, and it is often simpler when the policy can be written as a program and episodes are cheap.
+* **Versus program synthesis.** Constraint solvers and sketch-based synthesis are exact and fast when you have a formal specification. GP works from examples and a score, which is weaker but applies when no formal specification exists.
+* **Versus a large language model.** A language model proposes code from a description; GP optimizes code against measurements. Neither subsumes the other. Use the model to write candidate programs, the function set, or the test cases, and use GP to search the space the model suggests.
+
+### A note on stochasticity
+
+GP is a randomized search. One run that finds a good answer proves very little, and one run that fails proves even less. Report the median and the spread over at least a few dozen seeds, and look at the best-so-far curves rather than only the final number. Every demo in this chapter takes a `SEED` constant for exactly this reason; changing it is the first experiment you should run.
+
+## GP in the real world
+
+GP has been applied wherever a program can be scored. A short gallery of the areas where it has earned its keep:
+
+* **Symbolic regression and scientific discovery.** The oldest application is fitting a formula to data. Schmidt and Lipson's 2009 result went further and recovered conservation laws and equations of motion from sensor data with no model supplied in advance. Symbolic regression is now used in physics, chemistry, biology, and engineering to turn measurements into interpretable equations.
+* **Circuit design and evolvable hardware.** Koza's group evolved analog circuits that were patented as genuinely new designs, and GP has been used for filters, amplifiers, and digital logic. In the 1990s Adrian Thompson evolved a configuration for a field-programmable gate array that discriminated tones without a clock, exploiting the physical quirks of the chip in ways a human designer would not have tried.
+* **Antenna design.** Researchers at NASA used genetic programming to design spacecraft antennas with unusual shapes that met their performance specifications and flew on missions. This is a good example of a fitness function that is a physics simulation and a result that is a physical object.
+* **Robot controllers and behavior.** GP can evolve a control program directly from a simulated robot's behavior, including walking gaits and navigation strategies. The fitness is the simulation, so no dynamics model needs to be differentiable.
+* **Games and game AI.** Evolving heuristics and opponent strategies for board games and video games, and generating content such as levels or rules.
+* **Scheduling, routing, and logistics.** Job-shop scheduling, vehicle routing, and resource allocation, where the evolved program is a dispatch rule.
+* **Image and signal processing.** Evolving filters, feature extractors, and small classifiers, often as a preprocessing step in front of a conventional learner.
+* **Medicine and biology.** Classifying medical signals, finding candidate biomarkers, and modeling biological networks. Interpretability is often the reason to prefer a formula over a black box.
+* **Finance.** Trading rules and risk models, where overfitting is severe and walk-forward validation is mandatory.
+* **Program synthesis and testing.** Evolving small programs to satisfy input/output examples or a test suite, and generating test inputs that expose bugs.
+* **Quantum circuits.** Evolving gate sequences to prepare states or approximate operators on noisy hardware.
+
+Two patterns stand out. First, the fitness function is almost always a simulator or a scoring harness rather than a closed-form objective. Second, the useful answers tend to be small: a formula, a rule, a small circuit. GP's reputation was built on problems where the result is a structure a human can inspect, simplify, and then trust.
+
+## A practical checklist for your own runs
+
+The demos in this chapter are small enough to read in one sitting. A real project is bigger, and most failures come from skipping one of these steps.
+
+1. **Write the specification before the code.** Enumerate the inputs, the outputs, and what "good" means. If you cannot describe a perfect answer, GP cannot find one.
+2. **Pick a representation.** Tree GP is the default. Choose a variant only when you can name the weakness it fixes in your problem.
+3. **Design the primitive sets for closure and sufficiency.** Every function must accept every value; together the sets must be able to express a solution.
+4. **Design the fitness function deliberately.** Make it fast, graded, faithful, and guarded. Decide the score of doing nothing, and look for degenerate high scorers.
+5. **Establish a baseline.** Random search, a hand-written formula, or a simple learned model. If GP cannot beat the baseline, say so.
+6. **Seed and repeat.** Run at least 30 seeds before making a claim. Report the median, the spread, and the best-so-far curve.
+7. **Split your cases.** Train, validate, and hold out a test set. Check the winner on the test set before you believe it.
+8. **Bound the resources.** Depth and size caps, a timeout per evaluation, a node budget, and a wall-clock limit. Example 3 exists partly to show what happens without them.
+9. **Control bloat.** Parsimony pressure, multi-objective size, or hoist mutation. Choose one from the start, not after the trees explode.
+10. **Simplify and validate the winner.** Algebraically simplify it if you can, then test it on inputs the search never saw.
+11. **Inspect the winner for loopholes.** Ask whether the program is doing the task or exploiting the test set. Example 3's regex is the cautionary tale.
+12. **Consider a hybrid.** Local search for constants, a cached simulator, or a language model for the initial population can all help, and none of them changes the GP loop.
+
+One last piece of advice, easy to ignore: log more than fitness. Record tree sizes, the best program text, the number of evaluations, and the wall-clock time. When a run disappoints, those logs tell you whether the problem was the search, the fitness function, or the specification.
+
 ## Wrap up
 
 All four demos share one engine (`gp_core.py`, 381 lines) and differ only in what a tree means:
@@ -1911,3 +2283,74 @@ For larger work, use DEAP or gplearn. Their GP modules implement this same loop 
 5. **Selection pressure dial.** In example 4 replace tournament size 6 with 2, 10, and 30 (with `k=30` you get near-greedy selection). Plot generations-to-0 against tournament size. Explain the shape of that curve with one sentence about diversity.
 6. **Initialization methods.** Example 1 seeds its population with `method="half"`; examples 2-4 use `"grow"`. Rerun example 1 with `"full"`$ and with `"grow"` across five seeds each. Compare the generation-0 best MSE and the final size of the winner. Write the result in three sentences; the honest answer is "usually a little, and not reliably."
 7. **Validation split.** Modify example 3 to train on a random half of the positives and report fitness on the other half. The textbook regex `([01]\d|2[0-3]):[0-5]\d`$ should now beat the two-branch overfit. That single change is the difference between a demo and a system.
+8. **Paper GP.** Using the four-individual example in "One generation by hand", run two more generations with tournament size 2, a crossover rate of 1.0, and no mutation, keeping one elite. Record the population after each generation and explain why the average fitness falls even though no new program was designed.
+9. **Design a fitness function, then break it.** Pick a task you know well: valid email addresses, a bowling score, a pizza order. Write down the primitive sets and a fitness function, then find a degenerate program that scores well without solving the task. Every loophole you find is a lesson about specifications.
+10. **Watch the bloat.** Run example 1 with `PARSIMONY = 0.0` and print the winner's size each generation. How large does it get in 40 generations? Restore the penalty and compare the final size and MSE.
+11. **Turn the pressure dial.** Run example 1 with tournament sizes 2, 7, and 15 on the same `SEED`. Record the generation at which the best MSE first drops below 0.10, and the final size. Explain the differences in one paragraph about diversity.
+12. **Your own problem.** Choose a small task with a clear score: a text-formatting rule, a simple game strategy, a unit-conversion formula. Write down the terminals, the functions, and the fitness cases before you write any code, then reuse `gp_core.py` unchanged. Report what surprised you.
+
+## Glossary
+
+**ADF (automatically defined function).** A subtree that evolution reuses by name, so repeated structure is encoded once. A step beyond plain tree GP.
+
+**Allele.** The value stored at a gene. In tree GP, the symbol at a node: a function name or a terminal.
+
+**Bloat.** Growth in program size that does not improve fitness. See "Bloat: why programs grow".
+
+**Closure.** The property that every function accepts every value the primitive set can produce. Protected operators restore closure.
+
+**Crossover (recombination).** Building an offspring by exchanging parts of two parents; in tree GP, swapping two subtrees.
+
+**Elitism.** Copying the best individuals into the next generation unchanged.
+
+**Ephemeral Random Constant (ERC).** A new random constant drawn whenever a terminal leaf is created, so constants are re-invented every generation and tuned by selection.
+
+**Fitness.** The scalar score used by selection. This chapter minimizes it.
+
+**Fitness case.** One test input, with its expected output.
+
+**Function set.** The internal nodes available to a program, each with a fixed arity.
+
+**Generation.** One cycle of selection and reproduction.
+
+**Genotype.** The representation that is copied and varied (here, the tree). Compare phenotype.
+
+**Hoist mutation.** Replacing a node with one of its own descendants, which can only shrink the program.
+
+**Individual.** One candidate program.
+
+**Initialization.** How the first generation is built: full, grow, half-and-half, or ramped half-and-half.
+
+**Mutation.** A random change to one individual.
+
+**Parsimony pressure.** A fitness penalty proportional to program size, used to control bloat.
+
+**Phenotype.** The behavior a genotype produces: the formula, circuit, regex, or plant.
+
+**Population.** The set of individuals alive at one time.
+
+**Premature convergence.** Losing diversity and settling on a mediocre answer before the search has explored enough.
+
+**Protected operator.** A function that returns a safe value instead of raising, such as division that returns 1.0 for a near-zero denominator.
+
+**Selection pressure.** How strongly selection favors the best individuals. Tournament size is the usual dial.
+
+**Subtree.** A node together with all of its descendants; the unit of crossover and mutation.
+
+**Sufficiency.** The property that the primitive set can express a solution at all.
+
+**Terminal set.** The leaves available to a program: variables, constants, and generated constants.
+
+**Tournament selection.** Drawing `k` individuals at random and keeping the best.
+
+**Tree depth and size.** Depth is the longest root-to-leaf path, counted in nodes; size is the total node count.
+
+## Further reading
+
+- John R. Koza, *Genetic Programming: On the Programming of Computers by Means of Natural Selection*, MIT Press, 1992. The book that defined the field and the source of full/grow initialization and the standard benchmark problems.
+- Wolfgang Banzhaf, Peter Nordin, Robert E. Keller and Frank D. Francone, *Genetic Programming: An Introduction*, Morgan Kaufmann, 1998. A textbook that covers the representation and the main variants.
+- William B. Langdon and Riccardo Poli, *Foundations of Genetic Programming*, Springer, 2002. The theory: schemata, bloat, and convergence.
+- Riccardo Poli, William B. Langdon and Nicholas F. McPhee, *A Field Guide to Genetic Programming*, 2008, free online at https://www.gp-field-guide.org.uk/. The best single next read after this chapter.
+- The genetic programming bibliography, https://gpbib.pmacs.upenn.edu/, maintains the literature going back to the 1950s.
+- Michael Schmidt and Hod Lipson, "Distilling free-form natural laws from experimental data", *Science*, 2009. A landmark symbolic regression result that rediscovered physical laws from measurements.
+- For production work, use DEAP (https://deap.readthedocs.io) or gplearn (https://gplearn.readthedocs.io). Both implement this chapter's loop with typed trees, guarded operators, and multi-objective size control, so you can port any experiment by swapping `gp_core` calls for theirs.

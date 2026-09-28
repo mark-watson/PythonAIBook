@@ -21,6 +21,7 @@ LLM_semantic_web.md
 NVIDIA_OO_Agents.md
 Part4_symbolic_ai.md
 Symbolic_AI.md
+genetic-programming.md
 rete-expert-systems.md
 Chess.md
 Part5_knowledge_representation.md

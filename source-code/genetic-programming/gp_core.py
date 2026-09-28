@@ -12,7 +12,7 @@
 #   GP overview:    https://en.wikipedia.org/wiki/Genetic_programming
 #   Koza, J. (1992) "Genetic Programming: On the Programming of Computers
 #                   by Means of Natural Selection", MIT Press (full/grow
-#                   initialization, tournament selection)
+#                   initialization and the standard benchmark problems)
 #   Bloat:          https://en.wikipedia.org/wiki/Genetic_programming#Bloat
 
 
