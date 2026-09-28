@@ -1,0 +1,14 @@
+project-includes = [
+    "gp_core.py",
+    "example_1_symbolic_regression.py",
+    "example_2_boolean_logic.py",
+    "example_3_regex_synthesis.py",
+    "example_4_lsystem_plants.py",
+    "tests",
+]
+project-excludes = ["**/__pycache__", "**/*venv/**", "**/.*/**"]
+python-version = "3.14"
+preset = "strict"
+
+[errors]
+non-exhaustive-match = "error"
