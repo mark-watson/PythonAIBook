@@ -7,11 +7,11 @@
 #
 # This demo hides the true generating function -- a damped sine wave
 #     y(x) = 2 * exp(-x/3) * sin(2x) + noise
-# sampled at 40 points on [0, 5] -- and lets GP rediscover it. Note that
-# the function set below deliberately has NO `exp` primitive, so the
-# evolved formula cannot be an exact copy of the truth; GP must find an
-# equally good structural approximation. That is typical: symbolic
-# regression rewards "right shape", not "textbook answer".
+# sampled at 40 points on [0, 5] -- and asks GP to approximate it. The
+# function set below deliberately has NO `exp` primitive, so the evolved
+# formula cannot be an exact copy of the truth; GP must find an equally
+# good structural approximation. That is typical: symbolic regression
+# rewards "right shape", not "textbook answer".
 #
 # Two classic GP knobs are on display:
 #   * Parsimony pressure -- fitness = error + lambda * tree size, which
@@ -21,8 +21,10 @@
 #
 # References:
 #   Symbolic regression: https://en.wikipedia.org/wiki/Symbolic_regression
-#   Bloat in GP:         https://link.springer.com/chapter/10.1007/978-3-540-69181-0_14
-#   GP field guide:      https://cs.gmu.edu/~kic/pubs/gp-field-guide-part1.pdf
+#   Bloat control:       Luke & Panait (2006), "A Comparison of Bloat
+#                        Control Methods for Genetic Programming",
+#                        https://doi.org/10.1162/evco.2006.14.3.309
+#   GP field guide:      https://www.gp-field-guide.org.uk/
 
 from __future__ import annotations
 
@@ -41,6 +43,7 @@ from gp_core import (
 )
 
 SEED: Final = 7  # chosen so this run converges quickly and repeatably
+GENERATIONS: Final = 40
 
 # ---------------------------------------------------------------------------
 # The hidden ground truth and the data we are allowed to see.
@@ -62,8 +65,10 @@ def make_dataset(rng: random.Random) -> list[tuple[float, float]]:
 
 
 # ---------------------------------------------------------------------------
-# Function set: name -> (arity, evaluation). All operators are "protected":
-# they accept any float tuple and return a finite float.
+# Function set: name -> (arity, evaluation). The raw operators are partial:
+# sin overflows the domain at huge inputs, mul can overflow, div can divide
+# by zero. Division is protected here and evaluate() maps every non-finite
+# result to 0.0, so every random tree still yields a finite float.
 # ---------------------------------------------------------------------------
 
 ArityAndEval = tuple[int, Callable[[Sequence[float]], float]]
@@ -72,7 +77,7 @@ FUNCTIONS: Final[dict[str, ArityAndEval]] = {
     "add": (2, lambda a: a[0] + a[1]),
     "sub": (2, lambda a: a[0] - a[1]),
     "mul": (2, lambda a: a[0] * a[1]),
-    "div": (  # protected: |denominator| < 1e-10 -> numerator (identity-ish)
+    "div": (  # protected: |denominator| < 1e-10 -> 1.0
         2,
         lambda a: a[0] / a[1] if abs(a[1]) > 1e-10 else 1.0,
     ),
@@ -188,7 +193,8 @@ def main() -> None:
         return mutate_point(rng, tree, FUNCTION_ARITIES, terminals)
 
     def report(generation: int, penalty_fitness: float, best: Tree) -> None:
-        if generation % 5 and generation != 39:  # the run plateaus; print checkpoints
+        # The run plateaus early, so print checkpoints only.
+        if generation % 5 and generation != GENERATIONS - 1:
             return
         mse = sum((evaluate(best, x) - y) ** 2 for x, y in data) / len(data)
         print(f"gen {generation:3d}  best MSE {mse:8.5f}  size {best.size:3d}  {render(best)[:60]}")
@@ -201,7 +207,7 @@ def main() -> None:
         population,
         scoring,
         mutate,
-        generations=40,
+        generations=GENERATIONS,
         crossover_rate=0.8,
         mutation_rate=0.15,
         tournament_size=7,
@@ -211,13 +217,13 @@ def main() -> None:
     )
 
     mse = sum((evaluate(result.best, x) - y) ** 2 for x, y in data) / len(data)
-    rms_target = sum(y * y for _, y in data) / len(data)
+    signal_power = sum(y * y for _, y in data) / len(data)
     print(f"\nBest after {result.generations} generations:")
     print(f"  formula   y = {render(result.best)}")
     print(f"  nodes     {result.best.size}, depth {result.best.depth}")
     print(
-        f"  MSE {mse:.5f} vs signal power {rms_target:.5f}  "
-        f"(explains {100 * (1 - mse / rms_target):.1f}% of variance)"
+        f"  MSE {mse:.5f} vs signal power {signal_power:.5f}  "
+        f"(explains {100 * (1 - mse / signal_power):.1f}% of variance)"
     )
 
     print("\n     x      y*      y_hat   error")

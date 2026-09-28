@@ -16,19 +16,22 @@
 # positive is charged (1 - best_prefix_fraction) instead of a flat 1.0 --
 # how much of the string the pattern could match from the left. Accepting
 # a negative still costs a full 1.0, so the search cannot cheat by
-# emitting `.*`, while partial credit stops it from getting trapped in
-# plateaus like `(?:(?:[0-2]|:))+` (rejects everything, matches almost
-# nothing). A small size term breaks ties toward shorter, cleaner patterns.
+# accepting every string, while partial credit stops it from getting
+# trapped in plateaus like `(?:(?:[0-2]|:))+` (rejects everything, matches
+# almost nothing). A small size term breaks ties toward shorter, cleaner
+# patterns.
 #
 # The terminal alphabet is *pre-generalized*: it contains character-class
 # fragments like [0-3] and [4-9] alongside single literals, mimicking how
 # real GP-regex tools build patterns from library components.
 #
 # References:
-#   Forster & Sigurðsson, "Semantic Regex Search" (genprog-style regex
-#   synthesis): https://dl.acm.org/doi/10.1145/2908812.2908862
-#   Foster et al., "gentype" generalizations:
-#                   https://link.springer.com/chapter/10.1007/978-3-642-32954-4_6
+#   Bartoli, De Lorenzo, Medvet & Tarlao, "Playing Regex Golf with Genetic
+#   Programming" (GECCO 2014):
+#                   https://doi.org/10.1145/2576768.2598333
+#   Bartoli, De Lorenzo, Medvet & Tarlao, "On the Automatic Construction
+#   of Regular Expressions from Examples (GP vs. Humans 1-0)" (GECCO
+#   2016):          https://doi.org/10.1145/2908961.2930946
 #   Python re module:           https://docs.python.org/3/library/re.html
 
 from __future__ import annotations
@@ -41,7 +44,6 @@ from typing import Final
 from gp_core import (
     TerminalSampler,
     Tree,
-    all_nodes,
     evolve,
     mutate_hoist,
     mutate_point,
@@ -63,7 +65,7 @@ POSITIVE: Final[list[str]] = [
 ]
 NEGATIVE: Final[list[str]] = [
     "24:00",  # hour out of range
-    "29:00",  # hour out of range (also punishes the [0-5] dot-plateau)
+    "29:00",  # hour out of range (also punishes [0-5]-for-hours)
     "09:5",  # single-digit minutes
     "9:15",  # single-digit hour
     "0915",  # missing separator
@@ -92,6 +94,9 @@ PATTERN_OPS: Final[dict[str, int]] = {
     "plus": 1,  # one-or-more:    a+
 }
 
+# The quantifier operators, used by the anti-backtracking guard.
+QUANTIFIER_OPS: Final = frozenset({"opt", "star", "plus"})
+
 # Terminal alphabet -> regex fragment. Pre-generalized classes do most of
 # the "cleverness"; GP discovers WHERE they must appear. Deliberately NO
 # "." wildcard: with prefix credit below, `.` would grant every positive
@@ -101,7 +106,7 @@ TERMINAL_FRAGMENTS: Final[dict[str, str]] = {
     "h1": r"[0-1]",  # hour tens digit 0 or 1
     "h2": r"[0-2]",  # ... alternative tens constraint
     "h3": r"[0-3]",  # hour units digit when the tens digit is 2
-    "h9": r"[3-9]",  # hour tens digit when units is free
+    "h9": r"[3-9]",  # hour units digit paired with a 0/1 tens digit
     "m1": r"[0-5]",  # minute tens constraint
     "m9": r"[6-9]",  # minute tens digit that makes the time invalid
     "c": r":",  # the separator, as a literal
@@ -141,35 +146,42 @@ def terminals(rng: random.Random) -> TerminalSampler:
 # ---------------------------------------------------------------------------
 
 
-def count_quantifiers(tree: Tree) -> int:
-    """Number of star/plus/opt nodes in the tree."""
-    return sum(1 for node, _p, _i in all_nodes(tree) if node.name in ("opt", "star", "plus"))
+def quantifier_stats(tree: Tree) -> tuple[int, bool]:
+    """Return (number of quantifier nodes, whether any quantifier nests).
 
-
-def has_nested_quantifiers(tree: Tree) -> bool:
-    """True if any quantifier wraps another quantifier.
-
-    Nesting is what makes the backtracking `re` engine exponential even on
-    6-character strings: `(?:(?:(?:[0-5]*)*)+)*` can hang a CPU forever.
+    `nested` is True when a quantifier node has another quantifier anywhere
+    below it, the shape that makes the backtracking `re` engine exponential
+    even on 6-character strings: `(?:(?:(?:[0-5]*)*)+)*` can hang a CPU
+    forever. One post-order pass answers both questions.
     """
-    return any(
-        node.name in ("opt", "star", "plus") and count_quantifiers(node) > 1
-        for node, _p, _i in all_nodes(tree)
-    )
+    total = 1 if tree.name in QUANTIFIER_OPS else 0
+    nested = False
+    for child in tree.args:
+        child_total, child_nested = quantifier_stats(child)
+        total += child_total
+        if child_nested or (tree.name in QUANTIFIER_OPS and child_total):
+            nested = True
+    return total, nested
 
 
 def compile_tree(tree: Tree) -> str:
-    """Tree -> regex source string.
+    r"""Tree -> regex source string.
 
     Bloat guard: trees with more than `MAX_QUANTIFIERS` quantifier nodes,
     NESTED quantifiers, or an absurdly long source compile to a
-    never-matching pattern. Without this, degenerate candidates like
-    `.*.*.*.*.*.*.*` or `(?:(?:X+)*)+` make fitness evaluation take
+    never-matching pattern. Without this, degenerate candidates like the
+    greedy `(?:\d|:)+` or `(?:(?:[0-5]*)*)+` make fitness evaluation take
     exponential time on a six-character string -- a dramatic demonstration
     that fitness evaluation must stay computable. The exact solution here
     uses no quantifiers at all, so the guard only removes junk.
+
+    The guard is a heuristic, not a proof: a single quantifier over an
+    ambiguous alternation (for example one digit class followed by another)
+    can still backtrack. It is enough because these fitness cases are at
+    most six characters.
     """
-    if count_quantifiers(tree) > MAX_QUANTIFIERS or has_nested_quantifiers(tree):
+    count, nested = quantifier_stats(tree)
+    if count > MAX_QUANTIFIERS or nested:
         return NEVER_MATCHES
     source = _compile_node(tree)
     return source if len(source) <= MAX_SOURCE_LEN else NEVER_MATCHES
@@ -178,8 +190,10 @@ def compile_tree(tree: Tree) -> str:
 def _compile_node(tree: Tree) -> str:
     if tree.is_leaf:
         return TERMINAL_FRAGMENTS.get(tree.name, re.escape(tree.name))
+    arity = PATTERN_OPS.get(tree.name)
+    if arity is None:  # defensive: unknown function
+        return NEVER_MATCHES
     kids = [_compile_node(child) for child in tree.args]
-    arity = PATTERN_OPS[tree.name]
     if len(kids) != arity:  # defensive: malformed tree
         return NEVER_MATCHES
     match tree.name:
@@ -232,12 +246,13 @@ def matches(tree: Tree, text: str) -> bool:
 
 
 def fitness(tree: Tree) -> float:
-    """Weighted example error + tiny pressure toward short patterns.
+    r"""Weighted example error + tiny pressure toward short patterns.
 
     Rejecting a positive costs (1 - prefix_credit); accepting a negative
     costs its full weight -- see module docstring for why this mix keeps
-    both degenerate strategies (`.*` and the never-matching pattern) bad
-    while still giving the search somewhere to climb.
+    both degenerate strategies (the greedy `(?:\d|:)+` and the
+    never-matching pattern) bad while still giving the search somewhere to
+    climb.
     """
     error = 0.0
     for text in POSITIVE:
@@ -280,7 +295,7 @@ def main() -> None:
             return mutate_subtree(rng, tree, FUNCTION_ARITIES, sampler, max_depth=4)
         if roll < 0.85:
             return mutate_point(rng, tree, FUNCTION_ARITIES, sampler)
-        return mutate_hoist(tree, rng)
+        return mutate_hoist(rng, tree)
 
     def report(generation: int, best_fitness: float, best: Tree) -> None:
         accepted = sum(1 for s in POSITIVE if matches(best, s))

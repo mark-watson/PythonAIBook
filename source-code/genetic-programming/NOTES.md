@@ -83,6 +83,42 @@ the current code.
     `non-exhaustive-match` check forced a `case _` branch in
     `example_3._compile_node()`.
 
+14. **gp_core: `result.generations` was off by one on the early-stop path.**
+    The loop breaks before reproduction at the generation where the target
+    is first reported, so an early stop at generation `g` had run `g`
+    reproduction rounds but reported `g + 1`. Example 2's log ended at
+    `gen 8` while the summary claimed "generation 9", and example 4's said
+    "after 14 generations" for a run whose last logged generation was 13.
+    Fix: count completed rounds explicitly, so the summary agrees with the
+    reporter. (The seeded search itself is unchanged.)
+
+15. **gp_core: unvalidated arguments produced confusing failures.**
+    `generations=-1` raised `UnboundLocalError` (the loop variable was
+    never bound), an empty population and `tournament_size=0` raised
+    `min() iterable argument is empty`, an unknown or misspelled `method`
+    silently behaved like `"full"`, and `min_depth > max_depth` silently
+    violated the documented depth floor. Fix: explicit `ValueError`s at
+    the top of `random_tree()`, `tournament()`, and `evolve()`.
+
+16. **gp_core: `mutate_hoist` took `(tree, rng)` while every other entry
+    point took `rng` first.** Easy to call in the wrong order. Fix:
+    reordered to `mutate_hoist(rng, tree)` and updated the examples and
+    tests.
+
+17. **example_3: `_compile_node` indexed the function table before its own
+    defensive arity check**, so a hand-corrupted tree raised `KeyError`
+    instead of compiling to the never-matching guard. Fix: look the arity
+    up with `.get()` and return `NEVER_MATCHES` for an unknown function.
+
+18. **Reference list was wrong.** `gp_core.py` cited Koza's 1992 book as
+    "Genetic Programming on Protein"; example 1's bloat DOI, the GP field
+    guide URL, example 2's parity DOI, both example 3 regex DOIs, and
+    example 4's L-system DOI did not resolve to the papers they claimed
+    (some do not resolve at all, others point at unrelated work). Fix:
+    replaced them with verified citations (Luke & Panait 2006, Langdon &
+    Poli 1998, Bartoli et al. 2014 and 2016, Jacob 1994, and the field
+    guide's own site).
+
 ## Known limitations of the current code (not bugs, but real)
 
 * **Example 1 plateaus at the undamped oscillator.** The function set has
@@ -100,9 +136,18 @@ the current code.
   `[F+F]F[F-F]FF[f[+]]` draws the same cells as `F[+F]F[-F]F` on a discrete
   grid (the `f`/`[+]` stubs paint nothing visible). Fitness sees cells, not
   rules: genotypically different, phenotypically identical.
-* **`evolve()` early-stops on the all-time best, not the current
-  generation's best**, so `result.generations` can lag one generation
-  behind the improvement. Harmless for these demos.
+* **`evolve()`'s `max_depth` is a crossover cap, not a global one.**
+  Mutation replaces one random subtree and bounds only that replacement,
+  so a mutated child can still be deeper than `max_depth`. The demos live
+  with it because the initial-population and mutation-depth limits keep
+  trees small in practice; a production engine would re-check depth after
+  mutation.
+* **Example 3's quantifier guard is a heuristic, not a proof.** It blocks
+  nested quantifiers and more than `MAX_QUANTIFIERS` of them, but a single
+  quantifier over an ambiguous alternation (for example two overlapping
+  digit classes) can still backtrack. The six-character fitness cases keep
+  that bounded; longer inputs would need a different guard or a non
+  backtracking regex engine.
 * **Bloat guards are problem-specific.** `MAX_EXPANSION` (ex 4),
   `MAX_QUANTIFIERS` (ex 3), `PARSIMONY` (ex 1) and `max_depth` (all) are
   hand-tuned per problem. A different target may need different values.

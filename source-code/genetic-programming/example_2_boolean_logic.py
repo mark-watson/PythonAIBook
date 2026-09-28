@@ -13,8 +13,9 @@
 #            AND (at least one of the two redundant sensors agrees)
 #
 # Inputs: K1, K2 = operator keys; F = fault flag (active high);
-#         S1, S2 = redundant sensors. Sensors may be 1 bit OUT OF SYNC
-#         (the redundant pair is allowed to disagree exactly once).
+#         S1, S2 = redundant sensors. The interlock needs only ONE of the
+#         redundant sensors to agree, so the pair is free to disagree on
+#         any row and ENABLE still fires.
 # Hand-writing the gate netlist for this is error-prone; GP rediscovers a
 # correct netlist from 32 example rows in seconds.
 #
@@ -27,8 +28,12 @@
 #     GP optimizes what a program DOES, never how it LOOKS.
 #
 # References:
-#   Koza GP (Boolean problems): https://dl.acm.org/doi/10.5555/128739
-#   Parity difficulty in GP:   https://link.springer.com/chapter/10.1007/3-540-58484-6_254
+#   Koza, J. (1992) "Genetic Programming: On the Programming of Computers
+#                   by Means of Natural Selection", MIT Press (Boolean
+#                   problems)
+#   Parity difficulty in GP: Langdon & Poli (1998), "Why Building Blocks
+#                   Don't Work on Parity Problems", CSRP-98-17:
+#                   http://web4.cs.ucl.ac.uk/staff/W.Langdon/csrp-98-17/eq.html
 #   Logic synthesis:           https://en.wikipedia.org/wiki/Logic_synthesis
 
 from __future__ import annotations
@@ -61,6 +66,12 @@ def specification(row: Sequence[bool]) -> bool:
 
 TRUTH_TABLE: Final[list[tuple[tuple[bool, ...], bool]]] = [
     (row, specification(row)) for row in itertools.product((False, True), repeat=len(INPUTS))
+]
+
+# The same cases keyed by input name, built once so fitness() does not
+# rebuild a dict for every candidate. Evaluating a tree is the hot path.
+CASES: Final[list[tuple[Mapping[str, bool], bool]]] = [
+    (dict(zip(INPUTS, row, strict=True)), expected) for row, expected in TRUTH_TABLE
 ]
 
 # Gate-level function set. NOT is unary; AND/OR binary. (NAND-only synthesis
@@ -103,10 +114,10 @@ def evaluate(tree: Tree, row: Mapping[str, bool]) -> bool:
 def fitness(tree: Tree) -> float:
     """Fraction of truth-table rows the circuit gets WRONG (0.0 = perfect)."""
     wrong = 0
-    for row, expected in TRUTH_TABLE:
-        if evaluate(tree, dict(zip(INPUTS, row, strict=True))) != expected:
+    for row, expected in CASES:
+        if evaluate(tree, row) != expected:
             wrong += 1
-    return float(wrong) / len(TRUTH_TABLE)
+    return float(wrong) / len(CASES)
 
 
 def render(tree: Tree) -> str:
@@ -146,11 +157,11 @@ def main() -> None:
             return mutate_subtree(rng, tree, FUNCTION_ARITIES, sampler, max_depth=4)
         if roll < 0.9:
             return mutate_point(rng, tree, FUNCTION_ARITIES, sampler)
-        return mutate_hoist(tree, rng)
+        return mutate_hoist(rng, tree)
 
     def report(generation: int, best_fitness: float, best: Tree) -> None:
         print(
-            f"gen {generation:3d}  wrong rows {int(best_fitness * len(TRUTH_TABLE)):2d}/32  "
+            f"gen {generation:3d}  wrong rows {round(best_fitness * len(CASES)):2d}/32  "
             f"size {best.size:3d}  {render(best)[:58]}"
         )
 
@@ -179,25 +190,18 @@ def main() -> None:
     print(f"  ENABLE = {render(result.best)}")
 
     # Double-check: re-evaluate EVERY row against the discovered netlist.
-    failures = [
-        row
-        for row, expected in TRUTH_TABLE
-        if evaluate(result.best, dict(zip(INPUTS, row, strict=True))) != expected
-    ]
-    print(f"  verification: {len(TRUTH_TABLE) - len(failures)}/{len(TRUTH_TABLE)} rows correct")
+    failures = [row for row, expected in CASES if evaluate(result.best, row) != expected]
+    print(f"  verification: {len(CASES) - len(failures)}/{len(CASES)} rows correct")
 
     print("\n  truth table (1 = ENABLE):")
     header = "  " + " ".join(f"{name:>2}" for name in INPUTS) + " | spec | evolved"
     print(header)
     print("  " + "-" * (len(header) - 2))
-    for row, expected in TRUTH_TABLE:
-        got = evaluate(result.best, dict(zip(INPUTS, row, strict=True)))
+    for row, expected in CASES:
+        got = evaluate(result.best, row)
         mark = "  " if got == expected else " <-- MISMATCH"
-        print(
-            "  "
-            + " ".join(f"{int(v):>2}" for v in row)
-            + f" |  {int(expected)}  |   {int(got)}{mark}"
-        )
+        bits = " ".join(f"{int(row[name]):>2}" for name in INPUTS)
+        print(f"  {bits} |  {int(expected)}  |   {int(got)}{mark}")
 
 
 if __name__ == "__main__":

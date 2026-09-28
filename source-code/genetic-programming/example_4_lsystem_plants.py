@@ -10,7 +10,8 @@
 # Task: we show GP a target plant -- grown by a known rule we keep secret --
 # and evolve replacement rules F -> ... until the evolved plant's occupied
 # cells overlap the target's cells. The fitness is the JACCARD DISTANCE of
-# the two cell sets: 1.0 means "shares no cell", 0.0 means "pixel-perfect".
+# the two cell sets: 0.0 means "pixel-perfect" and higher is worse. Every
+# candidate paints the shared start cell, so the distance stays below 1.0.
 # Because every candidate is rendered to the same grid, the landscape is
 # surprisingly smooth: rules that grow "taller, then bushier, then leaning
 # left" climb the fitness staircase gradually.
@@ -24,7 +25,8 @@
 # References:
 #   L-systems:       https://en.wikipedia.org/wiki/L-system
 #   Prusinkiewicz & Lindenmayer, "The Algorithmic Beauty of Plants"
-#   GP on L-systems: https://link.springer.com/chapter/10.1007/3-540-58484-6_246
+#   Jacob, C. (1994) "Genetic L-System Programming", PPSN III:
+#                    https://doi.org/10.1007/3-540-58484-6_277
 
 from __future__ import annotations
 
@@ -103,7 +105,6 @@ def render_grid(string: str) -> set[tuple[int, int]]:
             angle = math.radians(heading)
             x += math.cos(angle)
             y -= math.sin(angle)  # image rows grow downward
-            heading = heading % 360.0
             cell = (int(round(x)), int(round(y)))
             if 0 <= cell[0] < GRID_W and 0 <= cell[1] < GRID_H:
                 cells.add(cell)
@@ -128,16 +129,19 @@ TARGET_CELLS: Final[set[tuple[int, int]]] = render_grid(expand(TARGET_RULE))
 
 
 def jaccard_distance(tree: Tree) -> float:
-    """1 - |overlap| / |union| of painted cells against the target plant."""
+    """1 - |overlap| / |union| of painted cells against the target plant.
+
+    The turtle always paints its start cell, so both sets are non-empty and
+    the result is 0.0 for a pixel-perfect plant.
+    """
     cells = render_grid(expand(rule_text(tree)))
-    if not cells and not TARGET_CELLS:
-        return 0.0
     union = len(cells | TARGET_CELLS)
-    return 1.0 - len(cells & TARGET_CELLS) / union if union else 1.0
+    return 1.0 - len(cells & TARGET_CELLS) / union
 
 
 def print_plant(cells: set[tuple[int, int]], label: str) -> None:
-    print(label)
+    """Print one plant as an ASCII grid under a heading."""
+    print(f"\n{label}")
     for row in range(GRID_H):
         print("  " + "".join("#" if (col, row) in cells else "." for col in range(GRID_W)))
 
@@ -168,7 +172,7 @@ def main() -> None:
             return mutate_subtree(rng, tree, FUNCTION_ARITIES, sampler, max_depth=3)
         if roll < 0.85:
             return mutate_point(rng, tree, FUNCTION_ARITIES, sampler)
-        return mutate_hoist(tree, rng)
+        return mutate_hoist(rng, tree)
 
     def report(generation: int, best_fitness: float, best: Tree) -> None:
         print(f"gen {generation:3d}  jaccard {best_fitness:6.3f}  rule F -> {rule_text(best)[:30]}")
@@ -198,10 +202,8 @@ def main() -> None:
         f"(pixel-perfect: {result.best_fitness == 0.0})"
     )
 
-    print("\nTARGET PLANT (the hidden rule's phenotype):")
-    print_plant(TARGET_CELLS, "")
-    print("\nEVOLVED PLANT (GP's rule phenotype):")
-    print_plant(render_grid(expand(rule_text(result.best))), "")
+    print_plant(TARGET_CELLS, "TARGET PLANT (the hidden rule's phenotype):")
+    print_plant(render_grid(expand(rule_text(result.best))), "EVOLVED PLANT (GP's rule phenotype):")
 
 
 if __name__ == "__main__":

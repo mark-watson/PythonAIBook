@@ -84,7 +84,7 @@ def test_mutations_preserve_validity() -> None:
         for mutant in (
             mutate_subtree(rng, tree, FUNCS, sampler, max_depth=3),
             mutate_point(rng, tree, FUNCS, sampler),
-            mutate_hoist(tree, rng),
+            mutate_hoist(rng, tree),
         ):
             check_valid(mutant, FUNCS)
 
@@ -95,6 +95,79 @@ def test_tournament_picks_the_best_when_k_is_full() -> None:
     fitnesses = [float((i - 4) ** 2) for i in range(10)]  # min at index 4
     for _ in range(20):
         assert tournament(rng, fitnesses, population, k=10).name == "t4"
+
+
+def test_tournament_rejects_bad_arguments() -> None:
+    rng = random.Random(3)
+    population = [Tree("x")]
+    with pytest.raises(ValueError):
+        tournament(rng, [0.0], [], k=3)
+    with pytest.raises(ValueError):
+        tournament(rng, [0.0], population, k=0)
+
+
+def test_random_tree_rejects_bad_configuration() -> None:
+    rng = random.Random(0)
+    sampler = sequence_sampler(rng, TERMS)
+    with pytest.raises(ValueError, match="initialization method"):
+        random_tree(rng, FUNCS, sampler, max_depth=5, method="groww")
+    with pytest.raises(ValueError, match="max_depth"):
+        random_tree(rng, FUNCS, sampler, max_depth=0)
+    with pytest.raises(ValueError, match="min_depth"):
+        random_tree(rng, FUNCS, sampler, max_depth=3, min_depth=6)
+
+
+def test_evolve_rejects_bad_arguments() -> None:
+    rng = random.Random(4)
+    population = [Tree("x")]
+
+    def zero(_tree: Tree) -> float:
+        return 0.0
+
+    def identity(tree: Tree) -> Tree:
+        return tree
+
+    with pytest.raises(ValueError, match="must not be empty"):
+        evolve(rng, [], zero, identity, generations=3)
+    with pytest.raises(ValueError, match="generations"):
+        evolve(rng, population, zero, identity, generations=-1)
+    with pytest.raises(ValueError, match="tournament_size"):
+        evolve(rng, population, zero, identity, generations=3, tournament_size=0)
+    with pytest.raises(ValueError, match="elitism"):
+        evolve(rng, population, zero, identity, generations=3, elitism=-1)
+
+
+def test_evolve_generations_counts_completed_rounds() -> None:
+    """An early stop during generation g reports g, matching the reporter."""
+    rng = random.Random(11)
+    seen: list[int] = []
+    result = evolve(
+        rng,
+        [Tree("bad")],
+        lambda tree: 0.0 if tree.name == "good" else 1.0,
+        lambda _tree: Tree("good"),
+        generations=10,
+        crossover_rate=0.0,
+        mutation_rate=1.0,
+        elitism=0,
+        target=0.0,
+        reporter=lambda generation, _fit, _tree: seen.append(generation),
+    )
+    assert result.solved
+    assert seen == [0, 1]  # reported at generation 1, so one round ran
+    assert result.generations == 1
+
+    # A run that exhausts its budget reports the whole budget.
+    full = evolve(
+        rng,
+        [Tree(f"t{i}") for i in range(6)],
+        lambda tree: float(6 - len(tree.name)),
+        lambda tree: tree.copy(),
+        generations=3,
+        elitism=2,
+    )
+    assert full.generations == 3
+    assert not full.solved
 
 
 def test_evolve_finds_exact_match_on_tiny_search_space() -> None:

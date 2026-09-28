@@ -10,9 +10,10 @@
 #
 # References:
 #   GP overview:    https://en.wikipedia.org/wiki/Genetic_programming
-#   Koza, J. (1992) "Genetic Programming on Protein" (full/grow init,
-#                   tournament selection)
-#   Parsimony:      https://en.wikipedia.org/wiki/Parsimony_pressure
+#   Koza, J. (1992) "Genetic Programming: On the Programming of Computers
+#                   by Means of Natural Selection", MIT Press (full/grow
+#                   initialization, tournament selection)
+#   Bloat:          https://en.wikipedia.org/wiki/Genetic_programming#Bloat
 
 
 from __future__ import annotations
@@ -83,18 +84,21 @@ def sequence_sampler(rng: random.Random, symbols: Sequence[str]) -> TerminalSamp
 
 
 def all_nodes(tree: Tree) -> list[tuple[Tree, Tree | None, int]]:
-    """Preorder listing of (node, parent, index-in-parent) triples.
+    """Listing of (node, parent, index-in-parent) triples, root first.
 
     Nodes are returned *by reference* so callers can splice subtrees in
-    place. The root's parent is None and its index is -1.
+    place. The root's parent is None and its index is -1. Every operator
+    needs only each node together with its parent and index, so the exact
+    visit order (depth-first, siblings right-to-left) is a nicety, not a
+    contract.
     """
     out: list[tuple[Tree, Tree | None, int]] = [(tree, None, -1)]
     stack: list[Tree] = [tree]
     while stack:
         node = stack.pop()
-        # Push children in reverse so the preorder listing stays left-first.
-        # Operators only need every node reachable with its parent, so the
-        # exact visit order is a nicety, not a contract.
+        # Appending while iterating backwards lists each parent's children
+        # right-to-left, and pushes the leftmost child last so the walk
+        # itself continues left-to-right.
         for index in range(len(node.args) - 1, -1, -1):
             child = node.args[index]
             out.append((child, node, index))
@@ -121,10 +125,16 @@ def random_tree(
         method     -- "full" (perfect trees), "grow" (mixed shapes) or
                       "half" (coin flip between the two, Koza's default)
 
-    The "grow" method picks a random node type at each step, weighting
-    functions and terminals equally at depths where both are allowed,
-    which produces the irregular trees GP is known for.
+    The "grow" method stops a branch with probability 0.4 once the minimum
+    depth is reached, so branches end at different depths and the tree comes
+    out irregular -- the shape GP is known for.
     """
+    if method not in ("full", "grow", "half"):
+        raise ValueError(f"unknown initialization method {method!r}")
+    if max_depth < 1:
+        raise ValueError(f"max_depth must be at least 1, got {max_depth}")
+    if min_depth > max_depth:
+        raise ValueError(f"min_depth {min_depth} exceeds max_depth {max_depth}")
     if method == "half":
         method = "full" if rng.random() < 0.5 else "grow"
 
@@ -192,7 +202,11 @@ def mutate_subtree(
     terminals: TerminalSampler,
     max_depth: int = 4,
 ) -> Tree:
-    """Subtree mutation: replace one random node's subtree with fresh randoms."""
+    """Subtree mutation: replace one random node's subtree with fresh randoms.
+
+    The replacement subtree respects `max_depth`, but the whole tree can
+    still end up deeper than the original where the graft happened.
+    """
     child = tree.copy()
     node, _parent, _index = rng.choice(all_nodes(child))
     new = random_tree(rng, functions, terminals, max_depth=max_depth, method="grow")
@@ -220,7 +234,7 @@ def mutate_point(
     return child
 
 
-def mutate_hoist(tree: Tree, rng: random.Random) -> Tree:
+def mutate_hoist(rng: random.Random, tree: Tree) -> Tree:
     """Hoist mutation: replace a node by one of its own descendants, pruning
     the surrounding context. A cheap anti-bloat operator."""
     child = tree.copy()
@@ -241,13 +255,21 @@ def tournament(
     random, return the one with the LOWEST fitness. Indices refer into the
     parallel `fitnesses` and `population` sequences."""
     n = len(population)
+    if n == 0:
+        raise ValueError("cannot select from an empty population")
+    if k < 1:
+        raise ValueError(f"tournament size must be at least 1, got {k}")
     contenders = rng.sample(range(n), min(k, n))
     return population[min(contenders, key=fitnesses.__getitem__)]
 
 
 @dataclass
 class EvolutionResult:
-    """Outcome of one evolve() run."""
+    """Outcome of one evolve() run.
+
+    `history[i]` is the best-so-far fitness reported at the start of
+    generation `i`, and the final entry repeats `best_fitness`.
+    """
 
     best: Tree
     best_fitness: float
@@ -275,8 +297,8 @@ def evolve(
 
     Each generation: rank the population, optionally stop at `target`,
     carry the best `elitism` trees unchanged, then fill the rest of the
-    next generation by tournament-selected subtree crossover with
-    post-hoc subtree mutation (B-like reproduction, one child survives).
+    next generation by tournament-selected crossover, mutating each child
+    with probability `mutation_rate`.
 
     Parameters:
         rng             -- seeded random source
@@ -287,14 +309,28 @@ def evolve(
         crossover_rate  -- probability of crossover per child (else clone)
         mutation_rate   -- probability of mutating each crossed/cloned child
         tournament_size -- k for selection tournaments
-        elitism         -- number of best trees copied unchanged each gen
-        max_depth       -- depth cap enforced on crossover and on all children
+        elitism         -- number of best trees copied unchanged each gen;
+                           an elitism at or above the population size leaves
+                           no room for children, so nothing evolves
+        max_depth       -- depth cap enforced on crossover; mutators apply
+                           their own (relative) limits, so a mutated child
+                           can still exceed this value
         target          -- stop early once best fitness <= target
         reporter        -- called as reporter(generation, best_fitness, best_tree)
 
     Returns:
-        EvolutionResult with the best tree ever seen.
+        EvolutionResult with the best tree ever seen. `generations` counts
+        the reproduction rounds actually completed, so an early stop at
+        generation `g` reports `g`, not `g + 1`.
     """
+    if not population:
+        raise ValueError("population must not be empty")
+    if generations < 0:
+        raise ValueError("generations must not be negative")
+    if tournament_size < 1:
+        raise ValueError("tournament_size must be at least 1")
+    if elitism < 0:
+        raise ValueError("elitism must not be negative")
     n = len(population)
     fitnesses = [fitness(tree) for tree in population]
     best_index = min(range(n), key=fitnesses.__getitem__)
@@ -306,6 +342,7 @@ def evolve(
         solved=False,
     )
 
+    completed = 0
     for generation in range(generations):
         result.history.append(best_overall[0])
         if reporter is not None:
@@ -335,8 +372,9 @@ def evolve(
                 fitnesses[gen_best_index],
                 population[gen_best_index].copy(),
             )
+        completed = generation + 1
 
-    result.generations = generation + 1 if generations else 0
+    result.generations = completed
     result.best = best_overall[1]
     result.best_fitness = best_overall[0]
     result.history.append(result.best_fitness)

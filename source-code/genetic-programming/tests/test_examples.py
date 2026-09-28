@@ -109,6 +109,32 @@ def test_ex3_greedy_pattern_is_punished() -> None:
     assert error == pytest.approx(8.0 + ex3.SIZE_PRESSURE * greedy.size)
 
 
+def test_ex3_quantifier_guard_blocks_backtracking_bombs() -> None:
+    nested = _t("star", _t("plus", _t("star", _t("D"))))
+    assert ex3.compile_tree(nested) == ex3.NEVER_MATCHES
+    assert ex3.quantifier_stats(nested) == (3, True)
+
+    many = _t("cat", _t("opt", _t("D")), _t("opt", _t("D")))
+    many = _t("cat", many, _t("cat", _t("opt", _t("D")), _t("opt", _t("D"))))
+    many = _t("cat", many, _t("opt", _t("D")))
+    assert ex3.quantifier_stats(many)[0] == ex3.MAX_QUANTIFIERS + 1
+    assert ex3.compile_tree(many) == ex3.NEVER_MATCHES
+
+    # Four non-nested quantifiers are still allowed through the guard.
+    allowed = _t(
+        "cat",
+        _t("opt", _t("D")),
+        _t("cat", _t("star", _t("D")), _t("cat", _t("plus", _t("D")), _t("opt", _t("D")))),
+    )
+    assert ex3.quantifier_stats(allowed) == (ex3.MAX_QUANTIFIERS, False)
+    assert ex3.compile_tree(allowed) != ex3.NEVER_MATCHES
+
+
+def test_ex3_unknown_function_does_not_raise() -> None:
+    # Defensive path: a hand-corrupted tree compiles to the never-match guard.
+    assert ex3.compile_tree(_t("zip", _t("D"), _t("D"))) == ex3.NEVER_MATCHES
+
+
 # --- Example 4: L-system rule evolution -------------------------------------
 
 
