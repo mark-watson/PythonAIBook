@@ -77,6 +77,7 @@ daily_revenue =
 WHERE
   sales_events.quantity > 0          -- exclude returns
   GROUP BY DATE(sales_events.event_ts), sales_events.store_id
+```
 
 ## Grain
 
@@ -103,10 +104,15 @@ We define the dependencies in `pyproject.toml` using `uv`:
 [project]
 name = "openknowledge-format"
 version = "0.1.0"
-requires-python = ">=3.12"
+requires-python = ">=3.14"
 dependencies = [
-    "ollama>=0.6.1",
+    "litelm",
 ]
+
+# litelm is the shared LLM interface for every example in the book; it routes
+# the "ollama/..." model to the local server.
+[tool.uv.sources]
+litelm = { path = "../litelm", editable = true }
 ```
 
 ### The OKF Parser and Loader
@@ -232,10 +238,10 @@ Our method for search is a simple bag of matching words approach. For a producti
 
 ### The LLM Consumption Agent
 
-To build a consumption agent, we wrap the search catalog and hook it up to the local Ollama service. We prompt the model to restrict its answers to the contexts provided, requiring it to cite the concept ID:
+To build a consumption agent, we wrap the search catalog and hook it up to the local Ollama service through litelm, the uniform interface used throughout this book. The model name `ollama/gemma4:e2b-it-qat` is the only local-specific part. We prompt the model to restrict its answers to the contexts provided, requiring it to cite the concept ID:
 
 ```python
-import ollama
+import litelm
 
 class OKFAgent:
     SYSTEM_PROMPT = """\
@@ -249,7 +255,7 @@ when referring to specific assets. If the context does not contain the
 information, state that clearly instead of guessing.
 """
 
-    def __init__(self, bundle: KnowledgeBundle, model: str = "gemma4:e2b-it-qat"):
+    def __init__(self, bundle: KnowledgeBundle, model: str = "ollama/gemma4:e2b-it-qat"):
         self.bundle = bundle
         self.model = model
 
@@ -263,14 +269,16 @@ information, state that clearly instead of guessing.
         context = self._build_context(question)
         user_message = f"## Knowledge Context\n\n{context}\n\n---\n\n## Question\n\n{question}"
 
-        response = ollama.chat(
-            model=self.model,
+        response = litelm.completion(
+            self.model,
             messages=[
                 {"role": "system", "content": self.SYSTEM_PROMPT},
                 {"role": "user", "content": user_message},
-            ]
+            ],
         )
-        return response.message.content
+        content = response.content
+        assert content is not None
+        return content
 ```
 
 Dear reader, this example code is meant to get you started: `hack away` or `vibe code` your own applications.
@@ -324,7 +332,7 @@ Contents    : 6 concepts (3× Database Table, 2× Metric, 1× Playbook)
   metrics/daily_revenue  —  Daily Revenue
 
 ======================================================================
-  LLM Q&A  (model: gemma4:e2b-it-qat)
+  LLM Q&A  (model: ollama/gemma4:e2b-it-qat)
 ======================================================================
 
 Q1: How is daily revenue calculated and what tables does it use?
@@ -432,7 +440,7 @@ The Open Knowledge Format represents a pragmatic bridge between two paradigms: t
 ### Reader Projects and Exercises
 
 * **Project 1: Automatic OKF Generators.** Write a Python pipeline script that inspects a PostgreSQL or BigQuery schema, extracts the column names and comments, and automatically generates or updates the frontmatter and schema tables in `bundle/tables/<table_name>.md`.
-* **Project 2: Vector Search for OKF Bundles.** Replace the simple substring-matching index in `KnowledgeBundle.search()` with a vector database. Write a script to generate text embeddings for each concept using an Ollama embedding model (like `nomic-embed-text`) and perform semantic retrieval instead of keyword search.
+* **Project 2: Vector Search for OKF Bundles.** Replace the simple substring-matching index in `KnowledgeBundle.search()` with a vector database. Write a script to generate text embeddings for each concept using an Ollama embedding model (litelm exposes one as `litelm.embedding("ollama/nomic-embed-text", [text])`) and perform semantic retrieval instead of keyword search.
 * **Project 3: Git Hook Validator.** Build a pre-commit Git hook that validates OKF bundles. The hook should check that every markdown file contains valid YAML frontmatter, contains the required `type` field, and verify that any links to other concepts (`[text](../path/to/concept.md)`) represent actual files existing in the bundle.
 
 ## Optional Practice Problems

@@ -56,32 +56,32 @@ Some recommended models to start with:
 
 ## Using Ollama from Python
 
-The **ollama** Python SDK provides a clean interface to the local Ollama service.
+As in the previous chapter, we drive the model through **litelm**, the small uniform interface used throughout this book. The local server is simply another provider: `ollama/llama3.2:3b` names the model, and switching to a cloud model means changing that string rather than the code.
 
 ```bash
-uv pip install ollama
+uv sync   # installs litelm (editable from ../litelm) and the chapter's dependencies
 ```
 
 ### Basic Text Generation
 
-The simplest use of the Ollama SDK: send a prompt and print the response:
+The simplest use of litelm: send a prompt and print the response:
 
 ```python
-# ollama_text.py - Basic text generation with a local model
+# ollama_text.py - Basic text generation with a local Ollama model
 
-import ollama
+import litelm
 
-response = ollama.chat(
-    model="llama3.2:3b",
-    messages=[
-        {"role": "user", "content": "Briefly explain what a neural network is."}
-    ]
+MODEL = "ollama/llama3.2:3b"
+
+response = litelm.completion(
+    MODEL,
+    messages=[{"role": "user", "content": "Briefly explain what a neural network is."}],
 )
 
-print(response.message.content)
+print(response.content)
 ```
 
-This is similar in structure to the cloud API examples from the previous chapter, but the request never leaves your machine.
+This is the same shape as the cloud examples from the previous chapter — a model string, a message list, and a `Response` — but the request never leaves your machine.
 
 ### Streaming Responses
 
@@ -90,22 +90,23 @@ For interactive applications, streaming lets users see output as it's generated 
 ```python
 # ollama_streaming.py - Streaming responses for real-time output
 
-import ollama
+import litelm
 
-stream = ollama.chat(
-    model="llama3.2:3b",
-    messages=[
-        {"role": "user", "content": "Write a short poem about programming."}
-    ],
-    stream=True
+MODEL = "ollama/llama3.2:3b"
+
+stream = litelm.completion(
+    MODEL,
+    messages=[{"role": "user", "content": "Write a short poem about programming."}],
+    stream=True,
 )
 
+# Print each chunk as it arrives, without newlines between chunks
 for chunk in stream:
-    print(chunk.message.content, end="", flush=True)
+    print(chunk.text, end="", flush=True)
 print()  # final newline
 ```
 
-Each chunk contains a small piece of the response. The **flush=True** argument ensures text appears immediately rather than being buffered.
+Each chunk carries an incremental piece of the response in **chunk.text**. The **flush=True** argument ensures text appears immediately rather than being buffered.
 
 
 ## Reasoning with Local Models
@@ -123,21 +124,19 @@ Here is an example that extracts both the reasoning trace and the final answer:
 ```python
 # ollama_reasoning.py - Chain-of-thought reasoning with DeepSeek-R1
 
-import ollama
-import json
+import litelm
 
-def reason_about(question: str, model: str = "deepseek-r1:7b") -> dict:
+
+def reason_about(question: str, model: str = "ollama/deepseek-r1:7b") -> dict[str, str]:
     """Ask a question and extract both reasoning and final answer."""
-    response = ollama.chat(
-        model=model,
-        messages=[
-            {"role": "user", "content": question}
-        ]
+    response = litelm.completion(
+        model, messages=[{"role": "user", "content": question}]
     )
-    content = response.message.content
+    content = response.content or ""
 
-    # DeepSeek-R1 wraps reasoning in <think>...</think> tags
-    reasoning = ""
+    # A separate reasoning field if the provider sent one, otherwise the
+    # <think>...</think> block DeepSeek-R1 leaves inline.
+    reasoning = response.reasoning or ""
     answer = content
     if "<think>" in content and "</think>" in content:
         reasoning = content.split("<think>")[1].split("</think>")[0].strip()
@@ -163,7 +162,13 @@ print("=== Answer ===")
 print(result["answer"])
 ```
 
-The model's reasoning trace shows each step of its thinking, making the output more transparent and debuggable than a black-box answer. This is especially valuable for math, logic, and planning tasks.
+The code checks two places for the reasoning trace. Models served by Ollama
+usually leave it inline in the content as a `<think>...</think>` block, which we
+split out by hand; providers that return the trace as a separate field populate
+**response.reasoning**, and litelm surfaces that for you. Checking both is the
+portable habit: the model's reasoning shows each step of its thinking, making
+the output more transparent and debuggable than a black-box answer. This is
+especially valuable for math, logic, and planning tasks.
 
 
 ## Conversation Memory with Ollama
@@ -175,22 +180,23 @@ Here is an example that maintains a conversation with memory across multiple exc
 ```python
 # ollama_memory.py - Conversation with persistent memory
 
-import ollama
+import litelm
+
 
 class LocalAssistant:
     """A simple conversational assistant that maintains message history."""
 
-    def __init__(self, model: str = "llama3.2:3b", system_prompt: str = ""):
+    def __init__(self, model: str = "ollama/llama3.2:3b", system_prompt: str = ""):
         self.model = model
-        self.messages = []
+        self.messages: list[litelm.Message] = []
         if system_prompt:
             self.messages.append({"role": "system", "content": system_prompt})
 
     def chat(self, user_message: str) -> str:
         """Send a message and get a response, maintaining conversation history."""
         self.messages.append({"role": "user", "content": user_message})
-        response = ollama.chat(model=self.model, messages=self.messages)
-        reply = response.message.content
+        response = litelm.completion(self.model, self.messages)
+        reply = response.content or ""
         self.messages.append({"role": "assistant", "content": reply})
         return reply
 
@@ -202,7 +208,7 @@ class LocalAssistant:
 # Create an assistant with a specific personality
 assistant = LocalAssistant(
     system_prompt="You are a concise technical writing assistant. "
-                  "Keep answers under 3 sentences."
+    "Keep answers under 3 sentences."
 )
 
 # Multi-turn conversation — the model remembers prior context
@@ -233,14 +239,25 @@ Here is an example that demonstrates the speedup:
 ```python
 # ollama_caching.py - Prompt caching benchmark
 
-import requests
+import secrets
 import time
 
-OLLAMA_URL = "http://localhost:11434/api/generate"
-MODEL = "llama3.2:3b"
+import litelm
+
+MODEL = "ollama/llama3.2:3b"
+
+# keep_alive is an Ollama extension to the OpenAI-compatible body: it holds the
+# model (and therefore the cached prompt prefix) in memory between requests.
+OLLAMA_EXTRAS: dict[str, str] = {"keep_alive": "60m"}
+
+# A per-run nonce keeps the first request genuinely cold: this exact prefix has
+# never been through the server before, so only the second request can hit the
+# cache.
+_RUN_NONCE = secrets.token_hex(8)
 
 # A long static context that stays the same across queries
-CONTEXT = """
+CONTEXT = f"[run {_RUN_NONCE}]\n" + (
+    """
 The Python programming language was created by Guido van Rossum and first
 released in 1991. Python's design philosophy emphasizes code readability
 with its notable use of significant whitespace. Python is dynamically typed
@@ -252,27 +269,35 @@ It is widely used in web development, data science, machine learning,
 automation, and scientific computing. The language's large standard library
 and extensive ecosystem of third-party packages make it suitable for a
 wide range of applications.
-""" * 20  # repeat to create a substantial context
+"""
+    * 20
+)  # repeat to create a substantial context
 
 
 def timed_query(question: str, label: str) -> float:
-    """Send a query with the shared context and measure prompt processing time."""
-    payload = {
-        "model": MODEL,
-        "keep_alive": "60m",  # keep model and cache in memory
-        "prompt": f"{CONTEXT}\n\nQuestion: {question}",
-        "stream": False,
-        "options": {"num_ctx": 4096}
-    }
+    """Send a query with the shared context; report tokens and return the time."""
     start = time.time()
-    resp = requests.post(OLLAMA_URL, json=payload)
+    response = litelm.completion(
+        MODEL,
+        f"{CONTEXT}\n\nQuestion: {question}",
+        extra=OLLAMA_EXTRAS,
+    )
     elapsed = time.time() - start
-    data = resp.json()
 
-    # prompt_eval_duration is in nanoseconds
-    eval_ms = data.get("prompt_eval_duration", 0) / 1_000_000
-    print(f"[{label}] Wall time: {elapsed:.2f}s | Prompt eval: {eval_ms:.0f}ms")
-    return eval_ms
+    usage = response.usage
+    prompt = usage.prompt_tokens if usage else None
+    cached = usage.cached_tokens if usage else None
+    if prompt is None:
+        print(f"[{label}] Wall time: {elapsed:.2f}s | token counts not reported")
+    elif cached is None:
+        print(f"[{label}] Wall time: {elapsed:.2f}s | {prompt} prompt tokens")
+    else:
+        share = cached / prompt if prompt else 0.0
+        print(
+            f"[{label}] Wall time: {elapsed:.2f}s | "
+            f"{prompt} prompt tokens, {cached} cached ({share:.0%})"
+        )
+    return elapsed
 
 
 # First request: cold start, processes the full context
@@ -282,14 +307,23 @@ time_a = timed_query("When was Python created?", "Cold start")
 time_b = timed_query("What paradigms does Python support?", "Cache hit")
 
 if time_a > 0 and time_b > 0:
-    print(f"\nSpeedup: {time_a / time_b:.1f}x faster on cached prompt")
+    print(f"\nWall-clock speedup on the warm request: {time_a / time_b:.1f}x")
+```
+
+A run looks like this: the cold request reports roughly 2,500 prompt tokens with
+almost none cached, and the second reports the same prompt with nearly all of it
+cached:
+
+```
+[Cold start] Wall time: 1.44s | 2507 prompt tokens, 19 cached (1%)
+[Cache hit] Wall time: 0.56s | 2510 prompt tokens, 2497 cached (99%)
 ```
 
 The key settings for prompt caching:
 
-- **keep_alive**: Set to a long duration (e.g., "60m") so the model and its KV cache stay in memory between requests.
-- **Identical prefix**: The cached portion must be exactly the same. If even one character of the context changes, the cache is invalidated.
-- **Consistent num_ctx**: The context window size must match between requests.
+- **keep_alive**: passed through litelm's `extra`, this Ollama extension keeps the model and its KV cache in memory between requests. A long duration like `"60m"` avoids paying the load cost again.
+- **Identical prefix**: the cached portion must match exactly. If even one character of the context changes, the cache is invalidated — which is also why the example prepends a fresh nonce on each run, so the first request really is cold.
+- **Measure the hit, don't guess it**: the OpenAI-compatible endpoint does not report `prompt_eval_duration`, but it does report tokens. litelm surfaces them as `response.usage.cached_tokens`, so the cache hit can be read directly rather than inferred from noisy wall-clock timings.
 
 Prompt caching is especially valuable for applications like document Q&A, where you load a long document once and then answer many questions about it.
 
@@ -306,26 +340,28 @@ Here is the sample image we will use for this example:
 Here is an example of asking a vision model to describe an image:
 
 ```python
-# image_to_text_description.py - Generating detailed image descriptions using a vision model
+# image_to_text_description.py - Vision model describing a local image
 
-import ollama
+import litelm
 
 # Specify the path to the image file to be analyzed
-image_path = 'ticket.png'
+image_path = "ticket.png"
 
 # Send the image to the vision-capable model for a detailed description
-response = ollama.chat(
-    model='qwen3.5:0.8b', # Ensure you use a vision-capable model
-    messages=[{
-        'role': 'user',
-        'content': 'Describe this image in detail',
-        'images': [image_path]
-    }],
-    think=False # Suppresses the <think> reasoning block
+response = litelm.completion(
+    "ollama/qwen3.5:0.8b",  # Ensure you use a vision-capable model
+    messages=[
+        {
+            "role": "user",
+            "content": "Describe this image in detail",
+            "images": [image_path],
+        }
+    ],
+    extra={"think": False},  # Suppresses the <think> reasoning block
 )
 
 # Print the model's descriptive analysis of the image
-print(response.message.content)
+print(response.content)
 ```
 
 Here is abbreviated output from running this example:
@@ -355,34 +391,45 @@ for scanning at the venue.
 Even this small 0.8B-parameter vision model extracts detailed structured information from the ticket image: event details, pricing, seating, and layout elements. This simple capability makes it easy to add image understanding to your local applications without needing complex computer vision pipelines.
 
 
-## OpenAI-Compatible API
+## One Client for Every Provider
 
-Ollama exposes an OpenAI-compatible API endpoint, which means you can use the standard **openai** Python library to talk to local models. This is useful if you want to write code that can switch between cloud and local models by changing only the base URL:
+Ollama exposes an OpenAI-compatible API endpoint — the same protocol litelm speaks to every provider. The local server is therefore not a special case; it is simply the `ollama` provider, and the code below runs unchanged against a cloud API:
 
 ```python
-# ollama_openai_compat.py - Using local Ollama with the OpenAI SDK
+# ollama_openai_compat.py - One OpenAI-compatible client for every provider
 
-from openai import OpenAI
+import os
 
-# Point the OpenAI client at the local Ollama server
-client = OpenAI(
-    base_url="http://localhost:11434/v1",
-    api_key="not-needed"  # Ollama doesn't require authentication locally
-)
+import litelm
 
-response = client.chat.completions.create(
-    model="llama3.2:3b",
+MODEL = os.environ.get("LITELM_MODEL", "ollama/llama3.2:3b")
+
+response = litelm.completion(
+    MODEL,
     messages=[
         {"role": "system", "content": "You are a helpful assistant."},
-        {"role": "user", "content": "What is the difference between a list and a tuple in Python?"}
+        {
+            "role": "user",
+            "content": "What is the difference between a list and a tuple in Python?",
+        },
     ],
-    temperature=0.7
+    temperature=0.7,
 )
 
-print(response.choices[0].message.content)
+print(f"model: {MODEL}")
+print(response.content)
 ```
 
-This compatibility layer means you can prototype with local models and then switch to OpenAI, Gemini, or another provider by changing the client configuration; the rest of your code stays the same.
+Set **LITELM_MODEL** to a cloud model to send the same request elsewhere:
+
+```bash
+LITELM_MODEL=fireworks-ai/accounts/fireworks/models/deepseek-v4p1-flash \
+    uv run python ollama_openai_compat.py
+```
+
+That one-variable switch is the whole point of routing every example through
+litelm: you can prototype against a local model and move to a hosted one — for
+speed, capability, or a larger context window — without rewriting the code.
 
 
 ## Alternative Tools for Running Local Models
@@ -439,6 +486,6 @@ Here are some exercises to help you apply the concepts from this chapter and ext
 - **Key Concepts**: Vision model prompting, structured output format directives, output parsing with JSON.
 
 ### 4. Multi-Model Answer Verification (Hard)
-- **Objective**: Create a Python script that implements a multi-model validation pipeline. First, use [reason_about](file:///Users/markwatson/GITHUB/PythonAIBook/source-code/llm_local_models/ollama_reasoning.py#L18) from [ollama_reasoning.py](file:///Users/markwatson/GITHUB/PythonAIBook/source-code/llm_local_models/ollama_reasoning.py) with `deepseek-r1:7b` to solve a logic puzzle (such as a word riddle or math problem). Then, extract the `<think>` reasoning trace and final answer. Finally, query a smaller general-purpose model like `llama3.2:3b` using the Ollama API, passing it both the original question and the reasoning trace, and ask it to verify whether the final answer is logically correct based on the reasoning trace.
+- **Objective**: Create a Python script that implements a multi-model validation pipeline. First, use [reason_about](file:///Users/markwatson/GITHUB/PythonAIBook/source-code/llm_local_models/ollama_reasoning.py#L18) from [ollama_reasoning.py](file:///Users/markwatson/GITHUB/PythonAIBook/source-code/llm_local_models/ollama_reasoning.py) with `ollama/deepseek-r1:7b` to solve a logic puzzle (such as a word riddle or math problem). Then, extract the `<think>` reasoning trace and final answer. Finally, query a smaller general-purpose model like `ollama/llama3.2:3b` with litelm, passing it both the original question and the reasoning trace, and ask it to verify whether the final answer is logically correct based on the reasoning trace.
 - **Key Concepts**: Multi-model collaboration, chain-of-thought verification, automated self-correction/grading.
 

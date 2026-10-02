@@ -58,14 +58,16 @@ The system prompt is the most important part of any LLM-powered application. Whe
 
 ## The Game Engine
 
-The Python code is straightforward. It sets up the API client, loads the story, and runs a game loop. Here is the complete program:
+The Python code is straightforward. It loads the story, calls the model through litelm, and runs a game loop. Here is the complete program:
 
 ```python
 # game.py  Text Adventure Game powered by Fireworks.ai LLMs
 
-import os
 import sys
-from openai import OpenAI
+
+import litelm
+
+MODEL = "fireworks-ai/accounts/fireworks/models/deepseek-v4p1-flash"
 
 
 def load_story() -> str:
@@ -74,46 +76,30 @@ def load_story() -> str:
         with open("story.txt", "r") as f:
             return f.read()
     except FileNotFoundError:
-        print("Error: story.txt not found.")
+        print(
+            "Error: story.txt not found. Please create story.txt with your adventure setting."
+        )
         sys.exit(1)
 
 
-def build_client() -> OpenAI:
-    """Create a Fireworks.ai OpenAI-compatible client."""
-    api_key = os.getenv("FIREWORKS_API_KEY")
-    if not api_key:
-        print("Error: FIREWORKS_API_KEY environment variable not set.")
-        print("Set it with: export FIREWORKS_API_KEY='your-api-key'")
-        sys.exit(1)
-    return OpenAI(
-        base_url="https://api.fireworks.ai/inference/v1",
-        api_key=api_key,
-    )
-
-
-MODEL = "accounts/fireworks/models/deepseek-v4-flash"
-
-
-def get_ai_response(client: OpenAI, messages: list[dict]) -> str:
+def get_ai_response(messages: list[litelm.Message]) -> str:
     """Send conversation history to the model and return its reply."""
-    response = client.chat.completions.create(
-        model=MODEL,
-        messages=messages,
-    )
-    return response.choices[0].message.content
+    response = litelm.completion(MODEL, messages)
+    content = response.content
+    assert content is not None, "Model returned empty response"
+    return content
 
 
 def main():
     story_text = load_story()
-    client = build_client()
 
-    messages = [
+    messages: list[litelm.Message] = [
         {"role": "system", "content": story_text},
     ]
 
     print("=" * 60)
     print("  TEXT ADVENTURE GAME")
-    print("  Powered by Fireworks.ai — deepseek-v4-flash")
+    print("  Powered by Fireworks.ai — deepseek-v4p1-flash")
     print("=" * 60)
     print()
     print("Commands: /help  /restart  /quit")
@@ -121,7 +107,11 @@ def main():
 
     # Get the opening scene
     messages.append({"role": "user", "content": "Start the adventure."})
-    reply = get_ai_response(client, messages)
+    try:
+        reply = get_ai_response(messages)
+    except litelm.LitelmError as e:
+        print(f"Error connecting to Fireworks.ai: {e}")
+        sys.exit(1)
     messages.append({"role": "assistant", "content": reply})
     print(reply)
 
@@ -143,7 +133,11 @@ def main():
                     {"role": "system", "content": story_text},
                     {"role": "user", "content": "Start the adventure."},
                 ]
-                reply = get_ai_response(client, messages)
+                try:
+                    reply = get_ai_response(messages)
+                except litelm.LitelmError as e:
+                    print(f"Error: {e}")
+                    break
                 messages.append({"role": "assistant", "content": reply})
                 print("\n--- Restarted ---\n")
                 print(reply)
@@ -157,7 +151,13 @@ def main():
                 continue
 
         messages.append({"role": "user", "content": user_input})
-        reply = get_ai_response(client, messages)
+        try:
+            reply = get_ai_response(messages)
+        except litelm.LitelmError as e:
+            print(f"Error: {e}")
+            print("Try again or type /quit to exit.")
+            messages.pop()  # Remove the failed user message
+            continue
         messages.append({"role": "assistant", "content": reply})
         print()
         print(reply)
@@ -169,9 +169,9 @@ if __name__ == "__main__":
 
 ### Walking Through the Code
 
-**The client setup** uses Fireworks.ai's OpenAI-compatible endpoint. We covered this pattern in the LLM Public APIs chapter, the only difference from standard OpenAI is the `base_url` pointing to Fireworks' servers. We read the API key from the `FIREWORKS_API_KEY` environment variable and exit with a helpful message if it isn't set.
+**The LLM call** goes through litelm, the uniform interface we met in the previous two chapters. The model string `fireworks-ai/accounts/fireworks/models/deepseek-v4p1-flash` is the only Fireworks-specific part of the program: litelm finds the endpoint and reads `FIREWORKS_API_KEY` for us. A missing key or a failed request surfaces as a `litelm.LitelmError`, which the game catches and reports instead of crashing.
 
-**The model** is DeepSeek V4 Flash, which is fast and inexpensive. Fast responses are important qualities when a player is waiting for the next scene. I prototyped this example using a local model running on Ollama and the game play was not much fun because the responses were very slow. You can substitute any OpenAI-compatible model by changing the `MODEL` constant.
+**The model** is DeepSeek V4 Flash, which is fast and inexpensive. Fast responses are important qualities when a player is waiting for the next scene. I prototyped this example using a local model running on Ollama and the game play was not much fun because the responses were very slow. You can substitute any model litelm can reach by changing the `MODEL` constant — including the local `ollama/llama3.2:3b` from the previous chapter.
 
 **The conversation history** is a Python list of dictionaries, each with a `role` and `content`. The system message goes in first to set the ground rules. The opening scene is generated by sending `"Start the adventure."` as the first user message. After that, every player input and model response is appended to the list.
 
@@ -179,7 +179,7 @@ if __name__ == "__main__":
 
 **Restarting** works by resetting the message list to just the system prompt and a fresh `"Start the adventure."` so the model generates a completely new opening scene and the adventure begins again.
 
-**Error handling** wraps the API calls in try/except blocks. If a request fails, we print the error and give the player a chance to continue rather than crashing out of the game.
+**Error handling** wraps the API calls in try/except blocks that catch `litelm.LitelmError` (the library's base exception). If a request fails, we print the error and give the player a chance to continue rather than crashing out of the game.
 
 ## Playing the Game
 
@@ -189,7 +189,7 @@ Here is an example session to give you a feel for how the game plays:
 $ uv run game.py 
 ============================================================
   TEXT ADVENTURE GAME
-  Powered by Fireworks.ai — deepseek-v4-flash
+  Powered by Fireworks.ai — deepseek-v4p1-flash
 ============================================================
 
 Commands: /help  /restart  /quit

@@ -28,7 +28,7 @@ import requests
 # litelm routes a "fireworks-ai/..." model to
 # https://api.fireworks.ai/inference/v1 and reads FIREWORKS_API_KEY, so there
 # is no client object to build here — just the model id.
-MODEL_ID = "fireworks-ai/accounts/fireworks/models/deepseek-v4p1-flash-0731"
+MODEL_ID = "fireworks-ai/accounts/fireworks/models/deepseek-v4p1-flash"
 
 # Descriptive User-Agent so SPARQL endpoints (especially Wikidata) do not
 # rate-limit us as an unidentified bot.

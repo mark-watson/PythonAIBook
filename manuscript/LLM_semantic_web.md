@@ -143,7 +143,7 @@ The code in this directory is split across four files:
 
 | File | Purpose |
 |------|---------|
-| `library.py` | Shared utilities: LLM client, entity extraction, answer synthesis, SPARQL query execution, CLI helper |
+| `library.py` | Shared utilities: LLM access via litelm, entity extraction, answer synthesis, SPARQL query execution, CLI helper |
 | `DBPedia.py` | DBpedia-specific templates, property mappings, enrichment, and answer pipeline |
 | `Wikidata.py` | Wikidata-specific templates, property mappings, enrichment, and answer pipeline |
 | `DBPedia_and_Wikidata.py` | Federated example that queries both knowledge bases and merges results |
@@ -155,7 +155,7 @@ Each of the three example scripts implements the same four-stage pipeline:
 3. **SPARQL retrieval** - The program constructs and executes SPARQL queries against one or more knowledge bases, gathering descriptions and structured facts.
 4. **Answer synthesis** - An LLM synthesizes the retrieved facts into a natural-language answer.
 
-The shared `library.py` handles the parts that are identical across all three scripts: the Fireworks.ai LLM client, the entity-extraction prompt, the answer-synthesis prompt, and the SPARQL HTTP transport. The KB-specific scripts handle the parts that differ: SPARQL query templates, property mappings, and enrichment logic.
+The shared `library.py` handles the parts that are identical across all three scripts: the litelm calls to Fireworks.ai, the entity-extraction prompt, the answer-synthesis prompt, and the SPARQL HTTP transport. The KB-specific scripts handle the parts that differ: SPARQL query templates, property mappings, and enrichment logic.
 
 ## The Semantic Web and RDF
 
@@ -256,26 +256,22 @@ Wikidata queries often use the `wikibase:label` service to resolve Q-numbers to 
 
 The `library.py` module contains all the code that is identical across the three example scripts. Let us walk through each piece.
 
-### Fireworks.ai Client Setup
+### LLM Setup
 
-The program uses the OpenAI Python SDK to talk to Fireworks.ai, which provides an OpenAI-compatible API. This means we can use the familiar `client.chat.completions.create` interface with a different `base_url`:
+The program talks to Fireworks.ai through **litelm**, the uniform interface used throughout this book. litelm already knows the Fireworks endpoint and reads the API key, so there is no client object to build here — only the model name:
 
 ```python
-import os
 import json
 import re
+
 import requests
-from openai import OpenAI
 
-client = OpenAI(
-    base_url="https://api.fireworks.ai/inference/v1",
-    api_key=os.getenv("FIREWORKS_API_KEY"),
-)
+import litelm
 
-MODEL_ID = "accounts/fireworks/models/deepseek-v4-flash"
+MODEL_ID = "fireworks-ai/accounts/fireworks/models/deepseek-v4p1-flash"
 ```
 
-The API key is read from the `FIREWORKS_API_KEY` environment variable. If it is not set, the client receives `None`, and the first LLM call raises an authentication error. The `MODEL_ID` constant identifies which model to use; we picked `deepseek-v4-flash` for its speed and low cost, which matters because the program makes up to three LLM calls per question.
+The API key is read from the `FIREWORKS_API_KEY` environment variable on the first call; if it is not set, litelm raises a `LitelmError` that names the variable rather than letting the request fail obscurely. The `MODEL_ID` constant identifies which model to use — note the `fireworks-ai/` provider prefix, which is how litelm routes the call. The rest of the id contains slashes of its own, and litelm preserves them. We picked `deepseek-v4p1-flash` for its speed and low cost, which matters because the program makes up to three LLM calls per question.
 
 A descriptive `User-Agent` string is defined so that SPARQL endpoints (especially Wikidata) do not reject our queries as unidentified bot traffic:
 
@@ -292,15 +288,16 @@ Every LLM call in the program follows the same pattern, so we factor it into a s
 
 ```python
 def llm_complete(prompt: str, max_tokens: int = 3000,
-                 temperature: float = 0) -> str:
+                 temperature: float = 0.0) -> str:
     """Send a single user message to the Fireworks.ai LLM and return the text."""
-    response = client.chat.completions.create(
-        model=MODEL_ID,
+    response = litelm.completion(
+        MODEL_ID,
         messages=[{"role": "user", "content": prompt}],
         max_tokens=max_tokens,
         temperature=temperature,
     )
-    return response.choices[0].message.content.strip()
+    content = response.content
+    return content.strip() if content else ""
 ```
 
 The `temperature=0` default makes the model deterministic, which is important for entity extraction: we want the same question to produce the same entities every time. Callers that want more creative output (such as answer synthesis) can override the temperature.
@@ -1095,7 +1092,7 @@ The project uses `uv` for dependency management. Install dependencies with:
 uv sync
 ```
 
-This reads `pyproject.toml` and creates a virtual environment with `openai` and `requests`.
+This reads `pyproject.toml` and creates a virtual environment with `litelm` (installed editable from `../litelm`) and `requests`.
 
 ### Configuration
 
@@ -1178,7 +1175,7 @@ The example outputs shown at the beginning of this chapter are the results of th
 
 ## Troubleshooting
 
-**`FIREWORKS_API_KEY` not set** - The script passes `None` to the OpenAI client, which raises an authentication error on the first LLM call. Make sure you have exported the variable in the shell where you run the script.
+**`FIREWORKS_API_KEY` not set** - litelm raises a `LitelmError` naming the missing environment variable when the first LLM call is made. Make sure you have exported the variable in the shell where you run the script.
 
 **Wikidata returns HTTP 429 (Too Many Requests)** - Wikidata's public endpoint aggressively rate-limits queries. The `SPARQL_DELAY` constant in `Wikidata.py` inserts a pause between queries, but if you still get 429 errors, increase the delay or wait a minute before retrying.
 

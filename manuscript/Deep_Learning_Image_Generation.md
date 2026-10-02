@@ -12,7 +12,7 @@ I have never used deep learning image generation at work but I have fun experime
 The requirements for this chapter are:
 
 ```bash
-uv add torch diffusers transformers accelerate google-genai Pillow
+uv sync   # torch, diffusers, transformers, accelerate, Pillow, and litelm
 ```
 
 The examples for this chapter are in the directory **source-code/deep_learning_image_generation**.
@@ -75,47 +75,41 @@ The text prompt is converted to an embedding vector using a text encoder (CLIP),
 
 ## Image Generation Using Google's Imagen API
 
-While running models locally gives you full control and privacy, cloud-based image generation APIs offer higher quality results with virtually no setup. Google's **Imagen 4** model is accessible through the Gemini API using the **google-genai** SDK.
+While running models locally gives you full control and privacy, cloud-based image generation APIs offer higher quality results with virtually no setup. Google's **Imagen 4** model is accessible through the Gemini API, and we reach it with litelm's `generate_image` entry point — no provider SDK, and no image library, since litelm decodes the returned bytes for us.
 
 The entire example is remarkably concise:
 
 ```python
-import io
 import os
+from pathlib import Path
 
-from google import genai
-from google.genai import types
-from PIL import Image
+import litelm
 
-client = genai.Client(
-    api_key=os.getenv("GOOGLE_API_KEY")
-)
+MODEL = "gemini/imagen-4.0-fast-generate-001"
 
-prompt = (
-    "a serene mountain landscape at sunset,"
-    " oil painting style"
-)
-print(f"Generating image for prompt: '{prompt}'")
 
-response = client.models.generate_images(
-    model="imagen-4.0-fast-generate-001",
-    prompt=prompt,
-    config=types.GenerateImagesConfig(
-        number_of_images=1,
-    ),
-)
+def main():
+    if not os.getenv("GOOGLE_API_KEY"):
+        raise SystemExit("Set GOOGLE_API_KEY environment variable")
 
-for generated_image in response.generated_images:
-    image = Image.open(
-        io.BytesIO(generated_image.image.image_bytes)
-    )
-    image.save("gemini_generated_landscape.png")
-    print("Image saved to: gemini_generated_landscape.png")
+    prompt = "a serene mountain landscape at sunset, oil painting style"
+    print(f"Generating image for prompt: '{prompt}'")
+
+    images = litelm.generate_image(MODEL, prompt, number_of_images=1)
+
+    for generated_image in images:
+        output_path = Path(f"gemini_generated_landscape.{generated_image.suffix}")
+        generated_image.save(output_path)
+        print(f"Image saved to: {output_path}")
+
+
+if __name__ == "__main__":
+    main()
 ```
 
-Compared to the local Stable Diffusion approach, the Gemini API example requires no GPU, no multi-gigabyte model downloads, and no hardware-specific configuration. You just need a `GOOGLE_API_KEY` (available free from [Google AI Studio](https://aistudio.google.com/)).
+Compared to the local Stable Diffusion approach, the Imagen example requires no GPU, no multi-gigabyte model downloads, and no hardware-specific configuration. You just need a `GOOGLE_API_KEY` (available free from [Google AI Studio](https://aistudio.google.com/)).
 
-The `generate_images` method returns image data as raw bytes, which we decode using PIL's `Image.open` with an `io.BytesIO` wrapper. The Imagen 4 model family includes three variants: **Fast** (optimized for speed), **Standard** (balanced), and **Ultra** (maximum fidelity up to 2K resolution). We use the Fast variant here since it produces good results with low latency.
+`generate_image` has no OpenAI-compatible equivalent to fall back on — text-to-image is not part of that protocol — so litelm calls the provider's own API for it. Each result is a `GeneratedImage` holding the decoded bytes and their MIME type; `image.suffix` gives the matching file extension, and `image.save(path)` writes the file. The Imagen 4 model family includes three variants: **Fast** (optimized for speed), **Standard** (balanced), and **Ultra** (maximum fidelity up to 2K resolution). We use the Fast variant here since it produces good results with low latency.
 
 Here is sample output:
 
