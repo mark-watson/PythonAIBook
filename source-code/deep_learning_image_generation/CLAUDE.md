@@ -1,6 +1,6 @@
 # deep_learning_image_generation
 
-Two text-to-image generation demos: one local (Stable Diffusion via HuggingFace `diffusers`) and one cloud (Google Imagen 4, reached through the book's shared [`litelm`](../litelm) `generate_image()` entry point rather than an SDK). Uses a uv-based dev workflow with strict pyrefly typing, ruff formatting/linting, pytest, and two Claude Code hooks that gate every edit and every turn end.
+Two text-to-image generation demos: one local (Stable Diffusion via HuggingFace `diffusers`) and one cloud (Google Imagen 4, reached through [`litellm`](https://github.com/BerriAI/litellm)'s `image_generation()` entry point rather than an SDK). Uses a uv-based dev workflow with strict pyrefly typing, ruff formatting/linting, pytest, and two Claude Code hooks that gate every edit and every turn end.
 
 ## Quick start
 
@@ -14,7 +14,7 @@ just check   # fmt-check + lint + typecheck + test
 ```
 deep_learning_image_generation/
 ├── image_generation.py           # Stable Diffusion (segmind/tiny-sd) — runs locally
-├── gemini_image_generation.py    # Google Imagen 4 via litelm.generate_image
+├── gemini_image_generation.py    # Google Imagen 4 via litellm.image_generation
 ├── tests/
 │   ├── conftest.py               # sys.path shim
 │   └── test_smoke.py             # import-only smoke tests (no network / no downloads)
@@ -50,7 +50,7 @@ Run `just check` manually at any time to verify the whole project.
 ## Typing discipline
 
 - `pyrefly.toml` is on `preset = "strict"` with `python-version = "3.14"`.
-- The local script is mostly `diffusers` glue; annotation errors there typically come from `diffusers` type stubs. The cloud script is four lines around `litelm.generate_image`, which is fully annotated and installed editable from `../litelm`.
+- The local script is mostly `diffusers` glue; annotation errors there typically come from `diffusers` type stubs. The cloud script is a few lines around `litellm.image_generation`, whose results are `ImageObject` values with optional `b64_json` / `url` fields.
 - Config keys are **hyphenated** (`python-version`, not `python_version`).
 - Unknown error-kind keys in `[errors]` silently break the config — add them one at a time.
 
@@ -58,4 +58,4 @@ Run `just check` manually at any time to verify the whole project.
 
 - Tests import both scripts via the `tests/conftest.py` `sys.path` shim.
 - `test_smoke.py` is import-only — it does **not** download model weights or call the Gemini API. Both scripts guard their real work behind `if __name__ == "__main__":`.
-- If you want to smoke-test the pipeline itself, mock `DiffusionPipeline.from_pretrained` and `litelm.generate_image` — actually calling either is prohibitively slow / expensive for CI.
+- If you want to smoke-test the pipeline itself, mock `DiffusionPipeline.from_pretrained` and `litellm.image_generation` — actually calling either is prohibitively slow / expensive for CI.

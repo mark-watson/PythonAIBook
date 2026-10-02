@@ -4,8 +4,8 @@
 CLI entry points behind `if __name__ == "__main__":`, so importing them
 here does not fire SPARQL queries or Fireworks LLM calls.
 
-`library.py` runs no top-level side effects (module-level code just
-defines the Fireworks client from env vars).
+`library.py` runs no top-level side effects (litellm reads
+`FIREWORKS_API_KEY` lazily, on the first completion call).
 """
 
 

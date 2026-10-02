@@ -3,13 +3,12 @@ name = "llm-local-models"
 version = "0.1.0"
 requires-python = ">=3.14"
 dependencies = [
-    "litelm",
+    "litellm",
 ]
 
-# litelm is the shared LLM interface for every example in the book. The local
-# editable install means edits to ../litelm take effect here immediately.
-[tool.uv.sources]
-litelm = { path = "../litelm", editable = true }
+# litellm is the shared LLM interface for every example in the book; it is
+# installed from PyPI and reaches Ollama through the "ollama_chat/" prefix.
+# https://github.com/BerriAI/litellm
 
 [dependency-groups]
 dev = [

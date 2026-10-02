@@ -6,17 +6,18 @@
 # Requirements: uv sync; ollama pull llama3.2:3b
 # Run: uv run python ollama_streaming.py
 
-import litelm
+import litellm
 
-MODEL = "ollama/llama3.2:3b"
+MODEL = "ollama_chat/llama3.2:3b"
 
-stream = litelm.completion(
-    MODEL,
+stream = litellm.completion(
+    model=MODEL,
     messages=[{"role": "user", "content": "Write a short poem about programming."}],
     stream=True,
 )
+assert isinstance(stream, litellm.CustomStreamWrapper), "Expected a streaming response"
 
 # Print each chunk as it arrives, without newlines between chunks
 for chunk in stream:
-    print(chunk.text, end="", flush=True)
+    print(chunk.choices[0].delta.content or "", end="", flush=True)
 print()  # final newline

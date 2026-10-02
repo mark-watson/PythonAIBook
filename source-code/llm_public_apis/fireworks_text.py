@@ -3,18 +3,18 @@
 # Demonstrates the simplest possible use of the Fireworks API:
 # send a text prompt, receive a generated response.
 # Fireworks speaks the OpenAI-compatible chat completions protocol, which is
-# the protocol litelm uses for every provider.
+# the protocol litellm uses for every provider.
 #
 # Requirements: uv sync
 # Environment: export FIREWORKS_API_KEY="your-api-key"
 # Run: uv run python fireworks_text.py
 
-import litelm
+import litellm
 
-MODEL = "fireworks-ai/accounts/fireworks/models/deepseek-v4p1-flash"
+MODEL = "fireworks_ai/accounts/fireworks/models/deepseek-v4p1-flash"
 
-response = litelm.completion(
-    MODEL,
+response = litellm.completion(
+    model=MODEL,
     messages=[
         {
             "role": "user",
@@ -23,4 +23,5 @@ response = litelm.completion(
     ],
 )
 
-print(response.content)
+assert isinstance(response, litellm.ModelResponse)
+print(response.choices[0].message.content)

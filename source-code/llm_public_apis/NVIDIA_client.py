@@ -6,33 +6,50 @@
 #
 # The endpoint and model id stay exported because the sibling
 # ../NVIDIA_Object_Oriented_Agents example builds its own litellm client from
-# them; litelm routes the HTTP calls here.
+# them; litellm routes the HTTP calls here.
 #
 # Requirements: uv sync
 # Environment: export NVIDIA_API_KEY="your-api-key"
 #   Sign up and obtain a free key at: https://build.nvidia.com
 
-import litelm
+import os
+from typing import Any
 
-PROVIDER = "nvidia"
+import litellm
+
+PROVIDER = "nvidia_nim"
 DEFAULT_MODEL = "meta/llama-3.1-8b-instruct"
-_BASE_URL = litelm.find_provider(PROVIDER).base_url
+_BASE_URL = "https://integrate.api.nvidia.com/v1"
 
 
 def model_id(model: str) -> str:
-    """litelm model string for an NVIDIA NIM model id."""
+    """litellm model string for an NVIDIA NIM model id."""
     return f"{PROVIDER}/{model}"
 
 
 def complete(prompt: str, model: str = DEFAULT_MODEL) -> str:
     """Single-turn prompt → reply."""
-    return litelm.ask(model_id(model), prompt)
+    response = litellm.completion(
+        model=model_id(model),
+        messages=[{"role": "user", "content": prompt}],
+        api_key=os.getenv("NVIDIA_API_KEY"),
+    )
+    assert isinstance(response, litellm.ModelResponse)
+    content = response.choices[0].message.content
+    if content is None:
+        raise RuntimeError("Empty response from model")
+    return content
 
 
-def chat(messages: list[litelm.Message], model: str = DEFAULT_MODEL) -> str:
+def chat(messages: list[dict[str, Any]], model: str = DEFAULT_MODEL) -> str:
     """Multi-turn conversation history → next assistant reply."""
-    response = litelm.completion(model_id(model), messages)
-    content = response.content
+    response = litellm.completion(
+        model=model_id(model),
+        messages=messages,
+        api_key=os.getenv("NVIDIA_API_KEY"),
+    )
+    assert isinstance(response, litellm.ModelResponse)
+    content = response.choices[0].message.content
     if content is None:
         raise RuntimeError("Empty response from model")
     return content
@@ -41,7 +58,7 @@ def chat(messages: list[litelm.Message], model: str = DEFAULT_MODEL) -> str:
 if __name__ == "__main__":
     print(complete("Briefly explain what a transformer model is in AI."))
 
-    history: list[litelm.Message] = []
+    history: list[dict[str, Any]] = []
     for turn in [
         "What is the capital of France?",
         "What is its population?",

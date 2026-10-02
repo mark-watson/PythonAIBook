@@ -12,12 +12,12 @@
 #   4. Uses Ollama (gemma4:e2b-it-qat) as the LLM "consumption agent" —
 #      it receives the relevant concept bodies as context and answers
 #      natural-language questions about the data assets. The call goes through
-#      litelm, the book's uniform LLM interface, so the model string carries an
-#      "ollama/" provider prefix.
+#      litellm (https://github.com/BerriAI/litellm), which routes the model
+#      string by its "ollama_chat/" provider prefix.
 #
 # Run: uv run okf_explorer.py
 #
-# Requirements: ollama + model pulled locally (uv sync installs litelm):
+# Requirements: ollama + model pulled locally (uv sync installs litellm):
 #   ollama pull gemma4:e2b-it-qat
 
 import re
@@ -25,15 +25,17 @@ import sys
 import textwrap
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import cast
 
-import litelm
+import litellm
+from litellm.types.utils import ModelResponse
 
 # ---------------------------------------------------------------------------
 # OKF data model
 # ---------------------------------------------------------------------------
 
 RESERVED_FILENAMES = {"index.md", "log.md"}
-MODEL = "ollama/gemma4:e2b-it-qat"
+MODEL = "ollama_chat/gemma4:e2b-it-qat"
 BUNDLE_DIR = Path(__file__).parent / "bundle"
 
 
@@ -265,16 +267,20 @@ class OKFAgent:
 
 {question}"""
 
-        response = litelm.completion(
-            self.model,
-            messages=[
-                {"role": "system", "content": self.SYSTEM_PROMPT},
-                {"role": "user", "content": user_message},
-            ],
+        # litellm types the return as ModelResponse | CustomStreamWrapper;
+        # without stream=True this call always yields a ModelResponse.
+        response = cast(
+            ModelResponse,
+            litellm.completion(
+                model=self.model,
+                messages=[
+                    {"role": "system", "content": self.SYSTEM_PROMPT},
+                    {"role": "user", "content": user_message},
+                ],
+            ),
         )
-        content = response.content
-        assert content is not None
-        return content
+        content = response.choices[0].message.content
+        return content or ""
 
 
 # ---------------------------------------------------------------------------

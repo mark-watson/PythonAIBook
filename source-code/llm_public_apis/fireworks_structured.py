@@ -10,9 +10,9 @@
 
 import json
 
-import litelm
+import litellm
 
-MODEL = "fireworks-ai/accounts/fireworks/models/deepseek-v4p1-flash"
+MODEL = "fireworks_ai/accounts/fireworks/models/deepseek-v4p1-flash"
 
 prompt = """Extract the following information from the text below and return
 it as a JSON object with keys: "name", "company", "role", "years_experience".
@@ -21,14 +21,15 @@ Text: "Jane Smith has been working as a Senior Data Scientist at Acme Corp
 for the past 7 years. She specializes in NLP and recommendation systems."
 """
 
-response = litelm.completion(
-    MODEL,
+response = litellm.completion(
+    model=MODEL,
     messages=[{"role": "user", "content": prompt}],
     temperature=0.0,
 )
 
 # Parse the JSON from the response (strip any markdown code fences)
-content = response.content or ""
+assert isinstance(response, litellm.ModelResponse)
+content = response.choices[0].message.content or ""
 raw = content.strip().removeprefix("```json").removesuffix("```").strip()
 result = json.loads(raw)
 print(json.dumps(result, indent=2))

@@ -5,10 +5,10 @@
 # computations from the first request, so the second prompt is almost
 # entirely a cache hit.
 #
-# litelm exposes the provider's token accounting, so the hit is measured in
-# tokens (Usage.cached_tokens) instead of being guessed from wall-clock time.
-# Ollama's native API also reports prompt_eval_duration; the OpenAI-compatible
-# endpoint litelm speaks reports cached prompt tokens instead.
+# Ollama's native API reports prompt_eval_duration and cached-prompt tokens,
+# but litellm's response usage does not surface them, so the hit is measured
+# here in wall-clock time: the warm request reuses the cached prefix and
+# therefore returns noticeably faster than the cold one.
 #
 # Inspired by the prompt_caching examples in "Ollama in Action" but uses a
 # self-contained context (no external data files) and a different benchmark
@@ -20,13 +20,13 @@
 import secrets
 import time
 
-import litelm
+import litellm
 
-MODEL = "ollama/llama3.2:3b"
+MODEL = "ollama_chat/llama3.2:3b"
 
 # keep_alive is an Ollama extension to the OpenAI-compatible body: it holds the
 # model (and therefore the cached prompt prefix) in memory between requests.
-OLLAMA_EXTRAS: dict[str, str] = {"keep_alive": "60m"}
+OLLAMA_KEEP_ALIVE = "60m"
 
 # A per-run nonce keeps the first request genuinely cold: this exact prefix has
 # never been through the server before, so only the second request can hit the
@@ -53,28 +53,26 @@ wide range of applications.
 
 
 def timed_query(question: str, label: str) -> float:
-    """Send a query with the shared context; report tokens and return the time."""
+    """Send a query with the shared context; report the wall time it took."""
     start = time.time()
-    response = litelm.completion(
-        MODEL,
-        f"{CONTEXT}\n\nQuestion: {question}",
-        extra=OLLAMA_EXTRAS,
+    response = litellm.completion(
+        model=MODEL,
+        messages=[{"role": "user", "content": f"{CONTEXT}\n\nQuestion: {question}"}],
+        keep_alive=OLLAMA_KEEP_ALIVE,
     )
     elapsed = time.time() - start
+    assert isinstance(response, litellm.ModelResponse), (
+        "Expected a non-streaming response"
+    )
 
-    usage = response.usage
+    # litellm's ModelResponse carries a usage object at runtime, but the class
+    # itself does not declare the attribute, so read it defensively.
+    usage = getattr(response, "usage", None)
     prompt = usage.prompt_tokens if usage else None
-    cached = usage.cached_tokens if usage else None
     if prompt is None:
         print(f"[{label}] Wall time: {elapsed:.2f}s | token counts not reported")
-    elif cached is None:
-        print(f"[{label}] Wall time: {elapsed:.2f}s | {prompt} prompt tokens")
     else:
-        share = cached / prompt if prompt else 0.0
-        print(
-            f"[{label}] Wall time: {elapsed:.2f}s | "
-            f"{prompt} prompt tokens, {cached} cached ({share:.0%})"
-        )
+        print(f"[{label}] Wall time: {elapsed:.2f}s | {prompt} prompt tokens")
     return elapsed
 
 

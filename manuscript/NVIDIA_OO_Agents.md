@@ -4,7 +4,7 @@ Most agent frameworks in circulation today share the same basic shape. You write
 
 NVIDIA's Object Oriented Agents framework, packaged as `nooa`, takes a different approach. An agent is a Python class. Its system prompt is the class docstring. Each of its capabilities is a method. Some of those methods are ordinary deterministic Python and behave as tools the language model may call. Other methods have `...` as their body, and the framework fills in the implementation at runtime by prompting the language model with the method's signature, docstring, and return type. State is just class fields with type annotations. There is no separate tool schema, no manual JSON glue, and no drift between what the prompt promises and what the code enforces.
 
-This chapter builds a complete example on top of that idea: a travel planner agent that recommends a destination, prices a trip against a budget, drafts a day by day itinerary, offers packing advice, and produces a structured trip plan. It runs on NVIDIA's free NIM inference endpoint using the same `NVIDIA_client.py` helper introduced in the previous chapter **LLMs with Public APIs** — a helper that is now itself a thin wrapper over litelm.
+This chapter builds a complete example on top of that idea: a travel planner agent that recommends a destination, prices a trip against a budget, drafts a day by day itinerary, offers packing advice, and produces a structured trip plan. It runs on NVIDIA's free NIM inference endpoint using the same `NVIDIA_client.py` helper introduced in the previous chapter **LLMs with Public APIs** — a helper that is now itself a thin wrapper over [**litellm**](https://github.com/BerriAI/litellm), the open source library that puts a single OpenAI-format interface in front of more than a hundred model providers.
 
 ## Why represent an agent as a class
 
@@ -73,19 +73,16 @@ class TravelPlan(BaseModel):
     local_phrase: str
 ```
 
-Notice `Itinerary` wraps a `list[DayPlan]`. This is a small defensive choice. Structured output from language models works most reliably when the top level type is a single object, so `draft_itinerary` returns `Itinerary` and the orchestrator unwraps `.days` before packing them into the final `TravelPlan`. The `Field(ge=1)` and `Field(ge=0)` constraints let Pydantic reject nonsensical outputs like a day zero or a negative cost.
+Notice `Itinerary` wraps a `list[DayPlan]`. The generative method itself returns `list[DayPlan]`, and the orchestrator wraps that list in an `Itinerary` before reading `.days` back out to pack into the final `TravelPlan`. This is a small defensive choice: structured output from language models works most reliably when the top level type is a single object. The `Field(ge=1)` and `Field(ge=0)` constraints let Pydantic reject nonsensical outputs like a day zero or a negative cost.
 
 ## Configuring the language model
 
-`nooa` uses the `litellm` library under the hood, so it can point at any OpenAI compatible endpoint by combining the `openai/<model>` prefix with an `api_base` and `api_key`. Reusing the constants from the previous chapter's `NVIDIA_client.py` file — which are themselves read from litelm's provider registry — the model client is:
+`nooa` drives its own litellm client, so it can point at any OpenAI compatible endpoint by combining the `openai/<model>` prefix with an `api_base` and an `api_key`. The sibling `NVIDIA_client.py` from the previous chapter wraps litellm as well: it hardcodes `_BASE_URL = "https://integrate.api.nvidia.com/v1"`, passes `api_key=os.getenv("NVIDIA_API_KEY")` on every call — litellm's NIM provider would otherwise look for the key under `NVIDIA_NIM_API_KEY` — and builds its request model string as `nvidia_nim/` plus the model id, so a call through that helper goes out as `nvidia_nim/meta/llama-3.1-8b-instruct` while its `DEFAULT_MODEL` constant stays the bare `meta/llama-3.1-8b-instruct`. Both constants are exported, and this chapter reuses them:
 
 ```python
+import os
+import sys
 from pathlib import Path
-
-# litelm must be importable before NVIDIA_client, which reads its provider
-# registry for the NVIDIA endpoint.
-_LITELM = Path(__file__).resolve().parent.parent / "litelm"
-sys.path.insert(0, str(_LITELM))
 
 # Reuse endpoint + model from the sibling NVIDIA_client demo
 _SIBLING = Path(__file__).resolve().parent.parent / "llm_public_apis"
@@ -95,6 +92,13 @@ from NVIDIA_client import DEFAULT_MODEL, _BASE_URL, complete  # noqa: E402
 from nooa import Agent  # noqa: E402
 from nooa.unifiedllm.registry import get_llm_client  # noqa: E402
 
+
+if not os.getenv("NVIDIA_API_KEY"):
+    raise SystemExit("Set NVIDIA_API_KEY first (free key at https://build.nvidia.com)")
+
+# nooa builds its own litellm client; litellm's "openai/" prefix means "any
+# OpenAI-compatible endpoint", so combining it with NVIDIA_client's constants
+# routes every call to NVIDIA NIM.
 llm = get_llm_client(
     f"openai/{DEFAULT_MODEL}",
     api_base=_BASE_URL,
@@ -102,9 +106,9 @@ llm = get_llm_client(
 )
 ```
 
-litelm is imported by path rather than declared in the PEP 723 header: it has no runtime dependencies, and this directory is capped below the Python version its package metadata requires, so a declared dependency would fail to resolve. It only has to be on `sys.path` before `NVIDIA_client` is imported.
+`NVIDIA_client.py` is a plain file in a sibling directory rather than an installed package, so the script puts `../llm_public_apis` on `sys.path` before importing from it. litellm itself is an ordinary PyPI dependency that `uv` installs like any other, so there is no in-repo library to import by path.
 
-This `llm` object is then passed to the class definition itself with `class TravelPlannerAgent(Agent, llm=llm):`. Every generative method on the class will use this client. Because we are importing `_BASE_URL` and `DEFAULT_MODEL` from the earlier chapter's file, swapping models is a one line change in one place — and the endpoint itself is declared once for the whole book, in litelm's registry.
+This `llm` object is then passed to the class definition itself with `class TravelPlannerAgent(Agent, llm=llm):`. Every generative method on the class will use this client. Because we are importing `_BASE_URL` and `DEFAULT_MODEL` from the earlier chapter's file, swapping models is a one line change in one place — and the endpoint is declared once, in `NVIDIA_client.py`.
 
 ## The agent class, method by method
 
@@ -166,7 +170,7 @@ async def recommend_destination(
     no punctuation, no explanation."""
     ...
 
-async def draft_itinerary(self, city: str, nights: int) -> Itinerary:
+async def draft_itinerary(self, city: str, nights: int) -> list[DayPlan]:
     """Produce a `nights + 1` day itinerary for `city`. Use `get_vibe`
     for local flavor. Number days starting at 1. Each day should have
     a theme plus morning/afternoon/evening activities."""
@@ -198,9 +202,13 @@ async def plan_trip(
         city = affordable[0] if affordable else next(iter(DESTINATIONS))
 
     cost = self.estimate_cost(city, nights)
-    itinerary = await self.draft_itinerary(city, nights)
+    itinerary = Itinerary(days=await self.draft_itinerary(city, nights))
     tip = await self.packing_tip(city)
 
+    # Bonus flourish: one direct sync call through the sibling
+    # NVIDIA_client, which is backed by litellm. Demonstrates that the OO
+    # agent framework composes cleanly with plain litellm calls to the same
+    # model.
     phrase = complete(
         f"Give ONE short local greeting phrase a traveller could use in "
         f"{city}, {self.get_country(city)}, with a phonetic pronunciation "
@@ -219,7 +227,7 @@ async def plan_trip(
     )
 ```
 
-Two design choices in this method deserve attention. First, even though `recommend_destination` is instructed to return only a city name, the orchestrator defensively strips quotes, takes the first line, and falls back to the cheapest affordable option if the reply is not a known city. Real language model output is noisy, and a wrapper of a few lines is far cheaper than a corrupted downstream stage. Second, the `complete` call at the end is deliberately synchronous. It shows that the object oriented framework composes cleanly with plain litelm calls to the same model; you do not have to route everything through the agent to benefit from it.
+Two design choices in this method deserve attention. First, even though `recommend_destination` is instructed to return only a city name, the orchestrator defensively strips quotes, takes the first line, and falls back to the cheapest affordable option if the reply is not a known city. Real language model output is noisy, and a wrapper of a few lines is far cheaper than a corrupted downstream stage. Second, the `complete` call at the end is deliberately synchronous. It shows that the object oriented framework composes cleanly with the kind of plain litellm call the `NVIDIA_client` helper makes to the same model; you do not have to route everything through the agent to benefit from it.
 
 ## Complete listing of `travel_planner_agent.py`:
 
@@ -231,15 +239,11 @@ Let’s wrap this example by listing the code in its entirety:
 # /// script
 # requires-python = ">=3.10"
 # dependencies = [
-#   "nooa",
+#   "nooa @ git+https://github.com/NVIDIA-NeMo/labs-OO-Agents",
 #   "openai>=1.0",
 #   "pydantic>=2",
 # ]
 # ///
-#
-# litelm (../litelm) is imported by path rather than declared above: it has no
-# runtime dependencies, and this directory is capped below the Python version
-# its package metadata requires.
 
 import asyncio
 import os
@@ -247,11 +251,6 @@ import sys
 from pathlib import Path
 
 from pydantic import BaseModel, Field
-
-# litelm must be importable before NVIDIA_client, which reads its provider
-# registry for the NVIDIA endpoint.
-_LITELM = Path(__file__).resolve().parent.parent / "litelm"
-sys.path.insert(0, str(_LITELM))
 
 # Reuse endpoint + model from the sibling NVIDIA_client demo
 _SIBLING = Path(__file__).resolve().parent.parent / "llm_public_apis"
@@ -265,6 +264,9 @@ from nooa.unifiedllm.registry import get_llm_client  # noqa: E402
 if not os.getenv("NVIDIA_API_KEY"):
     raise SystemExit("Set NVIDIA_API_KEY first (free key at https://build.nvidia.com)")
 
+# nooa builds its own litellm client; litellm's "openai/" prefix means "any
+# OpenAI-compatible endpoint", so combining it with NVIDIA_client's constants
+# routes every call to NVIDIA NIM.
 llm = get_llm_client(
     f"openai/{DEFAULT_MODEL}",
     api_base=_BASE_URL,
@@ -272,6 +274,7 @@ llm = get_llm_client(
 )
 
 
+# ── Mock "destination database" - edit freely to add your own cities ──────
 DESTINATIONS: dict[str, dict[str, object]] = {
     "Kyoto":     {"country": "Japan",    "flight": 1400, "hotel_night": 180, "vibe": "zen temples, bamboo forests, matcha rituals"},
     "Reykjavik": {"country": "Iceland",  "flight":  650, "hotel_night": 220, "vibe": "geothermal lagoons, aurora borealis, glacier hikes"},
@@ -311,6 +314,9 @@ class TravelPlannerAgent(Agent, llm=llm):
     facts. Prefer destinations whose vibe genuinely matches the traveller's
     stated interests."""
 
+    # ── Deterministic "tool" methods (regular Python, no `...`) ──────────
+    #    The LLM can call any of these on `self` while it works.
+
     def list_destinations(self) -> list[str]:
         """Every city you can plan a trip to."""
         return list(DESTINATIONS.keys())
@@ -326,33 +332,42 @@ class TravelPlannerAgent(Agent, llm=llm):
     def estimate_cost(self, city: str, nights: int) -> float:
         """Round-trip flight + nights * hotel, in USD."""
         d = DESTINATIONS[city]
-        return float(d["flight"]) + float(d["hotel_night"]) * nights
+        return float(d["flight"]) + float(d["hotel_night"]) * nights  # pyright: ignore[reportArgumentType]
 
     def cheapest_within(self, budget: float, nights: int) -> list[str]:
         """Cities whose total (flight + nights * hotel) is <= budget."""
         return [c for c in DESTINATIONS if self.estimate_cost(c, nights) <= budget]
+
+    # ── LLM-driven generation methods (body is `...`) ────────────────────
+    #    Signature + docstring become the contract; the framework generates
+    #    the implementation at call time using the configured `llm`.
 
     async def recommend_destination(
         self, interests: str, budget: float, nights: int
     ) -> str:
         """Pick the SINGLE best city for `interests` within `budget` for
         `nights` nights. First call `cheapest_within` to filter, then
-        compare `get_vibe` for each candidate. Return only the city name."""
+        compare `get_vibe` for each candidate. Return only the city name -
+        no punctuation, no explanation."""
         ...
 
-    async def draft_itinerary(self, city: str, nights: int) -> Itinerary:
+    async def draft_itinerary(self, city: str, nights: int) -> list[DayPlan]:
         """Produce a `nights + 1` day itinerary for `city`. Use `get_vibe`
-        for local flavor. Number days starting at 1."""
+        for local flavor. Number days starting at 1. Each day should have
+        a theme plus morning/afternoon/evening activities."""
         ...
 
     async def packing_tip(self, city: str) -> str:
         """One vivid sentence of packing advice tailored to `city`."""
         ...
 
+    # ── Orchestrator: plain async Python that composes the above ─────────
+
     async def plan_trip(
         self, interests: str, budget: float, nights: int
     ) -> TravelPlan:
-        """End-to-end: choose city, cost it, itinerary, packing tip, phrase."""
+        """End-to-end: choose city -> cost it -> itinerary -> packing tip
+        -> a local greeting phrase (via a direct NVIDIA_client call)."""
         raw = (await self.recommend_destination(interests, budget, nights)).strip()
         city = raw.strip('"').splitlines()[0].strip()
         if city not in DESTINATIONS:
@@ -360,9 +375,13 @@ class TravelPlannerAgent(Agent, llm=llm):
             city = affordable[0] if affordable else next(iter(DESTINATIONS))
 
         cost = self.estimate_cost(city, nights)
-        itinerary = await self.draft_itinerary(city, nights)
+        itinerary = Itinerary(days=await self.draft_itinerary(city, nights))
         tip = await self.packing_tip(city)
 
+        # Bonus flourish: one direct sync call through the sibling
+        # NVIDIA_client, which is backed by litellm. Demonstrates that the OO
+        # agent framework composes cleanly with plain litellm calls to the same
+        # model.
         phrase = complete(
             f"Give ONE short local greeting phrase a traveller could use in "
             f"{city}, {self.get_country(city)}, with a phonetic pronunciation "
@@ -399,7 +418,7 @@ We will run this example after building a `Makefile` to run it.
 
 ## The Makefile and PEP 723 script metadata
 
-The block near the top of the file with `# /// script` is a PEP 723 header. It tells `uv` which Python version and which packages the script needs. Because of this header, `uv run travel_planner_agent.py` will create an ephemeral virtual environment on first run, install `nooa`, `openai`, and `pydantic` into it, and cache the environment for subsequent runs. No `pyproject.toml` is needed and no `uv sync` step is required. litelm is deliberately not in that list — it is imported from the sibling `../litelm` directory by the two `sys.path` lines, which keeps the dependency-free library out of the resolver.
+The block near the top of the file with `# /// script` is a PEP 723 header. It tells `uv` which Python version and which packages the script needs. Because of this header, `uv run travel_planner_agent.py` will create an ephemeral virtual environment on first run, install `nooa`, `openai`, and `pydantic` into it, and cache the environment for subsequent runs. No `pyproject.toml` is needed and no `uv sync` step is required. The sibling helper is not in that list because it is not a package: the script only needs `../llm_public_apis/NVIDIA_client.py` on `sys.path`, which the `sys.path` line above the import takes care of, and litellm itself arrives as a dependency of `nooa`.
 
 The `Makefile` uses this feature directly:
 
@@ -493,13 +512,13 @@ The `destination` is Cusco. The traveler's stated interests were "hiking, ancien
 
 The itinerary is seven `DayPlan` objects, matching `nights + 1 = 7`. Every day has `theme`, `morning`, `afternoon`, and `evening` populated as strings. This is the Pydantic contract at work. If the model had returned a day with a missing field or an integer where a string was expected, `nooa` would have raised or retried, and the caller would never see a half formed record.
 
-The `local_phrase` came from the direct `complete` call rather than from the agent. This is important because it shows that you can freely mix framework calls and low level calls. The agent's own methods go through `nooa`'s litellm client; `complete` goes through litelm; both hit the same NVIDIA NIM endpoint using the same `NVIDIA_API_KEY`.
+The `local_phrase` came from the direct `complete` call rather than from the agent. This is important because it shows that you can freely mix framework calls and low level calls. The agent's own methods go through `nooa`'s litellm client; `complete` goes through the `NVIDIA_client` wrapper, which is litellm underneath; both hit the same NVIDIA NIM endpoint using the same `NVIDIA_API_KEY`.
 
 ## Wrap Up
 
 The design principle behind `nooa` is that the boundary between "code the developer wrote" and "code the model wrote" should be a method boundary, not a serialization boundary. Once you accept that framing, most of the machinery of traditional agent frameworks becomes unnecessary. There is no tool registry because methods are already registered by being on the class. There is no prompt file because docstrings are prompts. There is no output parser because return types are already annotated and Pydantic already knows how to validate against them.
 
-The travel planner in this chapter has fewer than two hundred lines of code and demonstrates six framework capabilities: class based agent definition, docstring driven prompting, deterministic tool methods, language model generation methods, structured Pydantic output, and clean composition with plain litelm calls to the same model. Every one of those capabilities is expressed as ordinary Python. That is the point.
+The travel planner in this chapter has fewer than two hundred lines of code and demonstrates six framework capabilities: class based agent definition, docstring driven prompting, deterministic tool methods, language model generation methods, structured Pydantic output, and clean composition with plain litellm calls to the same model through the `NVIDIA_client` helper. Every one of those capabilities is expressed as ordinary Python. That is the point.
 
 The example is deliberately small enough to hack. Add a destination and the recommender considers it on the next run. Add a helper method such as `weather_score(city, month) -> float` and any generative method that mentions it in its docstring can call it. Add a whole new generative method with a `...` body and a signature, and it works from the first call. The framework fades into the background and leaves you writing Python.
 

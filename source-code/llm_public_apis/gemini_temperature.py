@@ -11,16 +11,26 @@
 # Environment: export GOOGLE_API_KEY="your-api-key"
 # Run: uv run python gemini_temperature.py
 
-import litelm
+import litellm
 
 MODEL = "gemini/gemini-3-flash-preview"
 
 prompt = "Write a one-sentence tagline for a coffee shop."
 
 # Low temperature: deterministic, predictable
-response_low = litelm.completion(MODEL, prompt, temperature=0.0)
-print(f"Temperature 0.0: {response_low.content}")
+response_low = litellm.completion(
+    model=MODEL,
+    messages=[{"role": "user", "content": prompt}],
+    temperature=0.0,
+)
+assert isinstance(response_low, litellm.ModelResponse)
+print(f"Temperature 0.0: {response_low.choices[0].message.content}")
 
 # High temperature: creative, varied
-response_high = litelm.completion(MODEL, prompt, temperature=1.5)
-print(f"Temperature 1.5: {response_high.content}")
+response_high = litellm.completion(
+    model=MODEL,
+    messages=[{"role": "user", "content": prompt}],
+    temperature=1.5,
+)
+assert isinstance(response_high, litellm.ModelResponse)
+print(f"Temperature 1.5: {response_high.choices[0].message.content}")

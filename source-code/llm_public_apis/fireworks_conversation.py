@@ -8,18 +8,21 @@
 # Environment: export FIREWORKS_API_KEY="your-api-key"
 # Run: uv run python fireworks_conversation.py
 
-import litelm
+from typing import Any
 
-MODEL = "fireworks-ai/accounts/fireworks/models/deepseek-v4p1-flash"
+import litellm
 
-messages: list[litelm.Message] = []
+MODEL = "fireworks_ai/accounts/fireworks/models/deepseek-v4p1-flash"
+
+messages: list[dict[str, Any]] = []
 
 
 def chat(user_message: str) -> str:
     """Send a message and get a response, maintaining conversation history."""
     messages.append({"role": "user", "content": user_message})
-    response = litelm.completion(MODEL, messages)
-    reply = response.content
+    response = litellm.completion(model=MODEL, messages=messages)
+    assert isinstance(response, litellm.ModelResponse)
+    reply = response.choices[0].message.content
     if reply is None:
         raise RuntimeError("Empty response from model")
     messages.append({"role": "assistant", "content": reply})

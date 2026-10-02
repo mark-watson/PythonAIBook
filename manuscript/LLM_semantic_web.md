@@ -143,7 +143,7 @@ The code in this directory is split across four files:
 
 | File | Purpose |
 |------|---------|
-| `library.py` | Shared utilities: LLM access via litelm, entity extraction, answer synthesis, SPARQL query execution, CLI helper |
+| `library.py` | Shared utilities: LLM access via [**litellm**](https://github.com/BerriAI/litellm), entity extraction, answer synthesis, SPARQL query execution, CLI helper |
 | `DBPedia.py` | DBpedia-specific templates, property mappings, enrichment, and answer pipeline |
 | `Wikidata.py` | Wikidata-specific templates, property mappings, enrichment, and answer pipeline |
 | `DBPedia_and_Wikidata.py` | Federated example that queries both knowledge bases and merges results |
@@ -155,7 +155,7 @@ Each of the three example scripts implements the same four-stage pipeline:
 3. **SPARQL retrieval** - The program constructs and executes SPARQL queries against one or more knowledge bases, gathering descriptions and structured facts.
 4. **Answer synthesis** - An LLM synthesizes the retrieved facts into a natural-language answer.
 
-The shared `library.py` handles the parts that are identical across all three scripts: the litelm calls to Fireworks.ai, the entity-extraction prompt, the answer-synthesis prompt, and the SPARQL HTTP transport. The KB-specific scripts handle the parts that differ: SPARQL query templates, property mappings, and enrichment logic.
+The shared `library.py` handles the parts that are identical across all three scripts: the litellm calls to Fireworks.ai, the entity-extraction prompt, the answer-synthesis prompt, and the SPARQL HTTP transport. The KB-specific scripts handle the parts that differ: SPARQL query templates, property mappings, and enrichment logic.
 
 ## The Semantic Web and RDF
 
@@ -258,20 +258,19 @@ The `library.py` module contains all the code that is identical across the three
 
 ### LLM Setup
 
-The program talks to Fireworks.ai through **litelm**, the uniform interface used throughout this book. litelm already knows the Fireworks endpoint and reads the API key, so there is no client object to build here — only the model name:
+The program talks to Fireworks.ai through **litellm**, the open-source library that puts a single OpenAI-format interface on more than 100 providers, and the interface used throughout this book. litellm derives the Fireworks endpoint from the model string and reads the API key from the environment, so there is no client object to build here — only the model name:
 
 ```python
 import json
 import re
 
+import litellm
 import requests
 
-import litelm
-
-MODEL_ID = "fireworks-ai/accounts/fireworks/models/deepseek-v4p1-flash"
+MODEL_ID = "fireworks_ai/accounts/fireworks/models/deepseek-v4p1-flash"
 ```
 
-The API key is read from the `FIREWORKS_API_KEY` environment variable on the first call; if it is not set, litelm raises a `LitelmError` that names the variable rather than letting the request fail obscurely. The `MODEL_ID` constant identifies which model to use — note the `fireworks-ai/` provider prefix, which is how litelm routes the call. The rest of the id contains slashes of its own, and litelm preserves them. We picked `deepseek-v4p1-flash` for its speed and low cost, which matters because the program makes up to three LLM calls per question.
+The `MODEL_ID` constant identifies which model to use. The `fireworks_ai/` prefix is how litellm picks the provider: it sends the request to Fireworks' OpenAI-compatible endpoint at `https://api.fireworks.ai/inference/v1` and, for that provider, looks the API key up in the environment variable named `FIREWORKS_API_KEY`. Because litellm resolves that variable at call time, the key never appears in the code itself; you export it in your shell (see Configuration below) and litellm picks it up. If the variable is missing, the first call fails with an error that names it (for example `APIConnectionError: FIREWORKS_API_KEY is not set`), which is easier to diagnose than an opaque 401 from the service. The rest of the model id contains slashes of its own, and litellm preserves them. We picked `deepseek-v4p1-flash` for its speed and low cost, which matters because the program makes up to three LLM calls per question.
 
 A descriptive `User-Agent` string is defined so that SPARQL endpoints (especially Wikidata) do not reject our queries as unidentified bot traffic:
 
@@ -290,17 +289,20 @@ Every LLM call in the program follows the same pattern, so we factor it into a s
 def llm_complete(prompt: str, max_tokens: int = 3000,
                  temperature: float = 0.0) -> str:
     """Send a single user message to the Fireworks.ai LLM and return the text."""
-    response = litelm.completion(
-        MODEL_ID,
+    response = litellm.completion(
+        model=MODEL_ID,
         messages=[{"role": "user", "content": prompt}],
         max_tokens=max_tokens,
         temperature=temperature,
     )
-    content = response.content
+    assert isinstance(response, litellm.ModelResponse), (
+        "Expected a non-streaming completion response"
+    )
+    content = response.choices[0].message.content
     return content.strip() if content else ""
 ```
 
-The `temperature=0` default makes the model deterministic, which is important for entity extraction: we want the same question to produce the same entities every time. Callers that want more creative output (such as answer synthesis) can override the temperature.
+The reply text is read from `response.choices[0].message.content`, the OpenAI response shape that litellm normalizes every provider to. The `temperature=0` default makes the model deterministic, which is important for entity extraction: we want the same question to produce the same entities every time. Callers that want more creative output (such as answer synthesis) can override the temperature.
 
 ### Entity Extraction
 
@@ -1092,7 +1094,7 @@ The project uses `uv` for dependency management. Install dependencies with:
 uv sync
 ```
 
-This reads `pyproject.toml` and creates a virtual environment with `litelm` (installed editable from `../litelm`) and `requests`.
+This reads `pyproject.toml` and creates a virtual environment containing the project's dependencies, including `litellm` and `requests`. `litellm` is an ordinary PyPI package, so `uv sync` installs it like any other dependency — there is no separate library to fetch from a path inside this repository.
 
 ### Configuration
 
@@ -1175,7 +1177,7 @@ The example outputs shown at the beginning of this chapter are the results of th
 
 ## Troubleshooting
 
-**`FIREWORKS_API_KEY` not set** - litelm raises a `LitelmError` naming the missing environment variable when the first LLM call is made. Make sure you have exported the variable in the shell where you run the script.
+**`FIREWORKS_API_KEY` not set** - litellm reads the key from the `FIREWORKS_API_KEY` environment variable when the first LLM call is made, and fails with an error that names it (for example `APIConnectionError: FIREWORKS_API_KEY is not set`). Make sure you have exported the variable in the shell where you run the script.
 
 **Wikidata returns HTTP 429 (Too Many Requests)** - Wikidata's public endpoint aggressively rate-limits queries. The `SPARQL_DELAY` constant in `Wikidata.py` inserts a pause between queries, but if you still get 429 errors, increase the delay or wait a minute before retrying.
 

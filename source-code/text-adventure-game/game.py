@@ -4,15 +4,17 @@ This script runs a text-based adventure game using the Fireworks.ai API
 with the deepseek-v4p1-flash model. The game master persona and setting are
 defined in story.txt.
 
-The LLM is reached through litelm, the book's uniform interface, so the
-"fireworks-ai/" prefix in MODEL is the only Fireworks-specific part.
+The LLM is reached through litellm (https://github.com/BerriAI/litellm), the
+uniform interface to every provider, so the "fireworks_ai/" prefix in MODEL is
+the only Fireworks-specific part.
 """
 
 import sys
+from typing import Any
 
-import litelm
+import litellm
 
-MODEL = "fireworks-ai/accounts/fireworks/models/deepseek-v4p1-flash"
+MODEL = "fireworks_ai/accounts/fireworks/models/deepseek-v4p1-flash"
 
 
 def load_story() -> str:
@@ -27,18 +29,21 @@ def load_story() -> str:
         sys.exit(1)
 
 
-def get_ai_response(messages: list[litelm.Message]) -> str:
+def get_ai_response(messages: list[dict[str, Any]]) -> str:
     """Send conversation history to the model and return its reply."""
-    response = litelm.completion(MODEL, messages)
-    content = response.content
+    response = litellm.completion(model=MODEL, messages=messages)
+    assert isinstance(response, litellm.ModelResponse), (
+        "Expected a non-streaming response"
+    )
+    content = response.choices[0].message.content
     assert content is not None, "Model returned empty response"
     return content
 
 
-def main():
+def main() -> None:
     story_text = load_story()
 
-    messages: list[litelm.Message] = [
+    messages: list[dict[str, Any]] = [
         {"role": "system", "content": story_text},
     ]
 
@@ -54,7 +59,10 @@ def main():
     messages.append({"role": "user", "content": "Start the adventure."})
     try:
         reply = get_ai_response(messages)
-    except litelm.LitelmError as e:
+    # litellm's specific errors (AuthenticationError, RateLimitError,
+    # APIConnectionError, ...) all derive from OpenAIError, so this one clause
+    # covers a missing key as well as a provider outage.
+    except litellm.exceptions.OpenAIError as e:
         print(f"Error connecting to Fireworks.ai: {e}")
         sys.exit(1)
     messages.append({"role": "assistant", "content": reply})
@@ -80,7 +88,7 @@ def main():
                 ]
                 try:
                     reply = get_ai_response(messages)
-                except litelm.LitelmError as e:
+                except litellm.exceptions.OpenAIError as e:
                     print(f"Error: {e}")
                     break
                 messages.append({"role": "assistant", "content": reply})
@@ -98,7 +106,7 @@ def main():
         messages.append({"role": "user", "content": user_input})
         try:
             reply = get_ai_response(messages)
-        except litelm.LitelmError as e:
+        except litellm.exceptions.OpenAIError as e:
             print(f"Error: {e}")
             print("Try again or type /quit to exit.")
             messages.pop()  # Remove the failed user message

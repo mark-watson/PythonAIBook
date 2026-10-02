@@ -58,16 +58,17 @@ The system prompt is the most important part of any LLM-powered application. Whe
 
 ## The Game Engine
 
-The Python code is straightforward. It loads the story, calls the model through litelm, and runs a game loop. Here is the complete program:
+The Python code is straightforward. It loads the story, calls the model through [**litellm**](https://github.com/BerriAI/litellm), and runs a game loop. Here is the complete program:
 
 ```python
 # game.py  Text Adventure Game powered by Fireworks.ai LLMs
 
 import sys
+from typing import Any
 
-import litelm
+import litellm
 
-MODEL = "fireworks-ai/accounts/fireworks/models/deepseek-v4p1-flash"
+MODEL = "fireworks_ai/accounts/fireworks/models/deepseek-v4p1-flash"
 
 
 def load_story() -> str:
@@ -82,18 +83,21 @@ def load_story() -> str:
         sys.exit(1)
 
 
-def get_ai_response(messages: list[litelm.Message]) -> str:
+def get_ai_response(messages: list[dict[str, Any]]) -> str:
     """Send conversation history to the model and return its reply."""
-    response = litelm.completion(MODEL, messages)
-    content = response.content
+    response = litellm.completion(model=MODEL, messages=messages)
+    assert isinstance(response, litellm.ModelResponse), (
+        "Expected a non-streaming response"
+    )
+    content = response.choices[0].message.content
     assert content is not None, "Model returned empty response"
     return content
 
 
-def main():
+def main() -> None:
     story_text = load_story()
 
-    messages: list[litelm.Message] = [
+    messages: list[dict[str, Any]] = [
         {"role": "system", "content": story_text},
     ]
 
@@ -109,7 +113,10 @@ def main():
     messages.append({"role": "user", "content": "Start the adventure."})
     try:
         reply = get_ai_response(messages)
-    except litelm.LitelmError as e:
+    # litellm's specific errors (AuthenticationError, RateLimitError,
+    # APIConnectionError, ...) all derive from OpenAIError, so this one clause
+    # covers a missing key as well as a provider outage.
+    except litellm.exceptions.OpenAIError as e:
         print(f"Error connecting to Fireworks.ai: {e}")
         sys.exit(1)
     messages.append({"role": "assistant", "content": reply})
@@ -135,7 +142,7 @@ def main():
                 ]
                 try:
                     reply = get_ai_response(messages)
-                except litelm.LitelmError as e:
+                except litellm.exceptions.OpenAIError as e:
                     print(f"Error: {e}")
                     break
                 messages.append({"role": "assistant", "content": reply})
@@ -153,7 +160,7 @@ def main():
         messages.append({"role": "user", "content": user_input})
         try:
             reply = get_ai_response(messages)
-        except litelm.LitelmError as e:
+        except litellm.exceptions.OpenAIError as e:
             print(f"Error: {e}")
             print("Try again or type /quit to exit.")
             messages.pop()  # Remove the failed user message
@@ -169,9 +176,9 @@ if __name__ == "__main__":
 
 ### Walking Through the Code
 
-**The LLM call** goes through litelm, the uniform interface we met in the previous two chapters. The model string `fireworks-ai/accounts/fireworks/models/deepseek-v4p1-flash` is the only Fireworks-specific part of the program: litelm finds the endpoint and reads `FIREWORKS_API_KEY` for us. A missing key or a failed request surfaces as a `litelm.LitelmError`, which the game catches and reports instead of crashing.
+**The LLM call** goes through `litellm.completion`, the uniform interface we met in the previous two chapters. The model string `fireworks_ai/accounts/fireworks/models/deepseek-v4p1-flash` is the only Fireworks-specific part of the program: the `fireworks_ai/` prefix tells litellm which provider to call, and litellm finds the endpoint and reads `FIREWORKS_API_KEY` for us. The reply comes back as a `litellm.ModelResponse`, and the text we want lives at `response.choices[0].message.content` — the same shape for every provider litellm talks to.
 
-**The model** is DeepSeek V4 Flash, which is fast and inexpensive. Fast responses are important qualities when a player is waiting for the next scene. I prototyped this example using a local model running on Ollama and the game play was not much fun because the responses were very slow. You can substitute any model litelm can reach by changing the `MODEL` constant — including the local `ollama/llama3.2:3b` from the previous chapter.
+**The model** is DeepSeek V4 Flash, which is fast and inexpensive. Fast responses are important qualities when a player is waiting for the next scene. I prototyped this example using a local model running on Ollama and the game play was not much fun because the responses were very slow. You can substitute any model litellm can reach by changing the `MODEL` constant — litellm dispatches on the provider prefix, so the local `ollama_chat/llama3.2:3b` from the previous chapter is just a different string.
 
 **The conversation history** is a Python list of dictionaries, each with a `role` and `content`. The system message goes in first to set the ground rules. The opening scene is generated by sending `"Start the adventure."` as the first user message. After that, every player input and model response is appended to the list.
 
@@ -179,7 +186,7 @@ if __name__ == "__main__":
 
 **Restarting** works by resetting the message list to just the system prompt and a fresh `"Start the adventure."` so the model generates a completely new opening scene and the adventure begins again.
 
-**Error handling** wraps the API calls in try/except blocks that catch `litelm.LitelmError` (the library's base exception). If a request fails, we print the error and give the player a chance to continue rather than crashing out of the game.
+**Error handling** wraps the API calls in try/except blocks that catch `litellm.exceptions.OpenAIError`. That is litellm's base class for provider failures — `AuthenticationError`, `RateLimitError`, `APIConnectionError` and the rest all derive from it — so one clause covers both a missing API key and a provider outage. If a request fails, we print the error and give the player a chance to continue rather than crashing out of the game. Catch the finer-grained subclasses instead when you want to react differently to a bad key or a throttled request.
 
 ## Playing the Game
 
@@ -268,7 +275,7 @@ uv sync
 uv run python game.py
 ```
 
-Then lose yourself in the ancient valley for a while. The dagger and three gold coins won't spend themselves.
+`uv sync` installs the project's dependencies, including litellm from PyPI, into the project's virtual environment. Then lose yourself in the ancient valley for a while. The dagger and three gold coins won't spend themselves.
 
 ## Summary
 

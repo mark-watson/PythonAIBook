@@ -2,10 +2,10 @@
 
 This directory contains example code for the **LLMs with Local Models** chapter.
 
-Every script drives Ollama through [`litelm`](../litelm), the book's uniform LLM
-interface: models are named `"provider/model-name"` (`ollama/llama3.2:3b` here),
-so the same code reaches a cloud API by changing the prefix. `uv sync` installs
-litelm from `../litelm` as an editable path dependency.
+Every script drives Ollama through [`litellm`](https://github.com/BerriAI/litellm),
+the book's uniform LLM interface: models are named `"provider/model-name"`
+(`ollama_chat/llama3.2:3b` here), so the same code reaches a cloud API by
+changing the prefix. `uv sync` installs litellm from PyPI.
 
 ## Architecture
 
@@ -38,7 +38,7 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 # just — the Rust task runner (do NOT install the Python "just" package from PyPI)
 brew install just
 
-uv sync   # also installs ../litelm editable
+uv sync   # also installs litellm
 ```
 
 ## Examples
@@ -48,7 +48,7 @@ uv sync   # also installs ../litelm editable
 - **ollama_reasoning.py** — Chain-of-thought reasoning with DeepSeek-R1.
 - **ollama_memory.py** — Multi-turn conversation with history.
 - **ollama_caching.py** — Prompt caching benchmark (cold vs warm start).
-- **ollama_openai_compat.py** — Ollama's OpenAI-compatible API through litelm, and switching providers with `LITELM_MODEL`.
+- **ollama_openai_compat.py** — Ollama's OpenAI-compatible API through litellm, and switching providers with `LLM_MODEL`.
 - **image_to_text_description.py** — Generating detailed image descriptions using a vision model.
 
 ## Running

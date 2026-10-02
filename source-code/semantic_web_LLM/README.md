@@ -2,8 +2,9 @@
 
 A command-line tool that answers natural-language questions by combining
 large-language-model entity extraction with live SPARQL queries against the
-DBpedia knowledge base. The LLM calls go through [`litelm`](../litelm), the
-book's uniform interface (`fireworks-ai/...` model strings).
+DBpedia knowledge base. The LLM calls go through
+[`litellm`](https://github.com/BerriAI/litellm), the book's uniform interface
+(`fireworks_ai/...` model strings).
 
 ## How it works
 
@@ -33,7 +34,7 @@ book's uniform interface (`fireworks-ai/...` model strings).
 
 ```bash
 cd source-code/semantic_web_LLM
-uv sync          # creates .venv, installs dependencies + ../litelm editable
+uv sync          # creates .venv and installs dependencies
 ```
 
 ### Configure
@@ -150,15 +151,16 @@ semantic_web_LLM/
 ├── DBPedia.py                 # QA over DBpedia
 ├── Wikidata.py                # QA over Wikidata
 ├── DBPedia_and_Wikidata.py    # federated QA across both
-├── pyproject.toml             # project metadata + dependencies (litelm, requests)
+├── pyproject.toml             # project metadata + dependencies (litellm, requests)
 ├── uv.lock                    # lock file
 └── README.md                  # this file
 ```
 
 ## Troubleshooting
 
-**`FIREWORKS_API_KEY` not set** — litelm raises a `LitelmError` naming the
-variable on the first LLM call. Run `export FIREWORKS_API_KEY="..."` and try
+**`FIREWORKS_API_KEY` not set** — litellm fails the first LLM call with an
+error naming the missing `FIREWORKS_API_KEY` variable (`APIConnectionError:
+FIREWORKS_API_KEY is not set`). Run `export FIREWORKS_API_KEY="..."` and try
 again.
 
 **SPARQL queries return `[]`** — DBpedia's live endpoint occasionally changes

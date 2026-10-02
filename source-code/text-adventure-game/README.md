@@ -2,7 +2,7 @@
 
 A terminal-based text adventure game powered by Fireworks.ai's `deepseek-v4p1-flash` model. The LLM acts as the Game Master, dynamically generating the story, describing scenes, and responding to your choices.
 
-The model is called through [`litelm`](../litelm), the book's uniform LLM interface (`fireworks-ai/...` model strings), installed as an editable path dependency by `uv sync`.
+The model is called through [`litellm`](https://github.com/BerriAI/litellm), the uniform interface to every provider (`fireworks_ai/...` model strings), installed by `uv sync`.
 
 ## Setup
 
@@ -15,7 +15,7 @@ The model is called through [`litelm`](../litelm), the book's uniform LLM interf
 2. Install dependencies and run:
 
    ```bash
-   uv sync   # also installs ../litelm editable
+   uv sync   # installs litellm
    uv run python game.py
    ```
 

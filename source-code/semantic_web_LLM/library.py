@@ -5,7 +5,7 @@ library.py - Shared utilities for SPARQL + LLM question answering.
 This module provides general-purpose functions used by the knowledge-base
 specific scripts (DBPedia.py, Wikidata.py, DBPedia_and_Wikidata.py):
 
-  * LLM utilities: litelm completion, entity extraction, answer synthesis
+  * LLM utilities: litellm completion, entity extraction, answer synthesis
   * SPARQL utilities: generic query execution, relationship detection
   * CLI helper: a reusable main() that delegates to a caller-supplied
     answer_question function
@@ -18,17 +18,17 @@ import json
 import re
 from collections.abc import Callable
 
-import litelm
+import litellm
 import requests
 
 # ---------------------------------------------------------------------------
 # LLM setup
 # ---------------------------------------------------------------------------
 
-# litelm routes a "fireworks-ai/..." model to
+# litellm routes a "fireworks_ai/..." model to
 # https://api.fireworks.ai/inference/v1 and reads FIREWORKS_API_KEY, so there
 # is no client object to build here — just the model id.
-MODEL_ID = "fireworks-ai/accounts/fireworks/models/deepseek-v4p1-flash"
+MODEL_ID = "fireworks_ai/accounts/fireworks/models/deepseek-v4p1-flash"
 
 # Descriptive User-Agent so SPARQL endpoints (especially Wikidata) do not
 # rate-limit us as an unidentified bot.
@@ -43,16 +43,19 @@ ENTITY_TYPES = ["PERSON", "ORG", "GPE", "MISC"]
 def llm_complete(prompt: str, max_tokens: int = 3000, temperature: float = 0.0) -> str:
     """Send a single user message to the Fireworks.ai LLM and return the text.
 
-    Thin wrapper around litelm's uniform interface so callers do not have to
+    Thin wrapper around litellm's uniform interface so callers do not have to
     repeat the model/messages boilerplate.
     """
-    response = litelm.completion(
-        MODEL_ID,
+    response = litellm.completion(
+        model=MODEL_ID,
         messages=[{"role": "user", "content": prompt}],
         max_tokens=max_tokens,
         temperature=temperature,
     )
-    content = response.content
+    assert isinstance(response, litellm.ModelResponse), (
+        "Expected a non-streaming completion response"
+    )
+    content = response.choices[0].message.content
     return content.strip() if content else ""
 
 

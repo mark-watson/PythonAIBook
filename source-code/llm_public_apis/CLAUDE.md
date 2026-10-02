@@ -1,6 +1,6 @@
 # llm_public_apis
 
-Thirteen short demos of calling cloud LLM APIs: **Google Gemini** (6), **Fireworks** via the OpenAI-compatible endpoint (5), and **OpenAI** via the Responses API (2). Every script goes through the book's shared [`litelm`](../litelm) interface — `google-genai`, `openai` and Pillow are no longer dependencies. Uses a uv-based dev workflow with strict pyrefly typing, ruff formatting/linting, pytest, and two Claude Code hooks that gate every edit and every turn end.
+Thirteen short demos of calling cloud LLM APIs: **Google Gemini** (6), **Fireworks** via the OpenAI-compatible endpoint (5), and **OpenAI** via the Responses API (2). Every script goes through [`litellm`](https://github.com/BerriAI/litellm) — `google-genai`, `openai` and Pillow are no longer used directly. Uses a uv-based dev workflow with strict pyrefly typing, ruff formatting/linting, pytest, and two Claude Code hooks that gate every edit and every turn end.
 
 ## Quick start
 
@@ -32,8 +32,8 @@ llm_public_apis/
 ├── fireworks_structured.py       # JSON output
 ├── fireworks_temperature.py      # temperature comparison
 ├── fireworks_thinking.py         # DeepSeek thinking-mode
-├── openai_text.py                # OpenAI Responses API via litelm.responses
-├── openai_search.py              # web-search tool (litelm.WEB_SEARCH)
+├── openai_text.py                # OpenAI Responses API via litellm.responses
+├── openai_search.py              # web-search tool ({"type": "web_search_preview"})
 ├── NVIDIA_client.py              # NVIDIA NIM complete/chat helpers
 ├── tests/
 │   ├── conftest.py               # sys.path shim
@@ -65,11 +65,11 @@ When Claude finishes a turn, `.claude/hooks/py-stop.sh` runs the full gate (`ruf
 
 ## Testing notes
 
-- None of the scripts guard their work behind `if __name__ == "__main__":` — importing them would fire real API calls. `test_smoke.py` `ast.parse`s each script instead: catches syntax errors without needing keys or hitting the network, and asserts each one imports `litelm` rather than a provider SDK.
+- None of the scripts guard their work behind `if __name__ == "__main__":` — importing them would fire real API calls. `test_smoke.py` `ast.parse`s each script instead: catches syntax errors without needing keys or hitting the network, and asserts each one imports `litellm` rather than a provider SDK.
 - If you want a live end-to-end test, run the corresponding `make` target with the right env var set.
 - If you refactor a script into a `main()` guarded by `if __name__ == "__main__":`, promote its entry in `test_smoke.py` from a parse test to a real import test.
 
 ## Typing discipline
 
 - `pyrefly.toml` is on `preset = "strict"` with `python-version = "3.14"`.
-- `litelm` is fully annotated and installed editable from `../litelm`. `Response.content` is `str | None`, so `content or ""` (or an explicit `is None` check) is the usual fixup; `litelm.Message` is the type for a message dict.
+- `litellm` is the only LLM dependency. `message.content` is `str | None`, so `content or ""` (or an explicit `is None` check) is the usual fixup; messages are plain `dict[str, Any]` dicts.

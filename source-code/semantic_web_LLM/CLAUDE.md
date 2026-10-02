@@ -1,6 +1,6 @@
 # semantic_web_LLM
 
-Semantic Web QA: an LLM (Fireworks-hosted, reached through the book's shared [`litelm`](../litelm) interface) extracts named entities from a natural-language question, SPARQL queries pull structured facts from DBpedia and/or Wikidata, and the LLM synthesizes the final answer. Uses a uv-based dev workflow with strict pyrefly typing, ruff formatting/linting, pytest, and two Claude Code hooks.
+Semantic Web QA: an LLM (Fireworks-hosted, reached through the book's shared [`litellm`](https://github.com/BerriAI/litellm) interface) extracts named entities from a natural-language question, SPARQL queries pull structured facts from DBpedia and/or Wikidata, and the LLM synthesizes the final answer. Uses a uv-based dev workflow with strict pyrefly typing, ruff formatting/linting, pytest, and two Claude Code hooks.
 
 ## Quick start
 
@@ -42,4 +42,4 @@ semantic_web_LLM/
 
 ## Typing discipline
 
-- `pyrefly.toml`: `preset = "strict"`, `python-version = "3.14"` (matched to `pyproject.toml`, which litelm requires).
+- `pyrefly.toml`: `preset = "strict"`, `python-version = "3.14"` (matched to `pyproject.toml`, which requires Python ≥ 3.14).

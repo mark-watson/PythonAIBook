@@ -1,6 +1,6 @@
 # text-adventure-game
 
-A tiny text-adventure driver that keeps a story going with Fireworks.ai's `deepseek-v4p1-flash`, reached through the book's shared [`litelm`](../litelm) interface. Uses a uv-based dev workflow with strict pyrefly typing, ruff formatting/linting, pytest, and two Claude Code hooks.
+A tiny text-adventure driver that keeps a story going with Fireworks.ai's `deepseek-v4p1-flash`, reached through [`litellm`](https://github.com/BerriAI/litellm), the uniform interface to every provider. Uses a uv-based dev workflow with strict pyrefly typing, ruff formatting/linting, pytest, and two Claude Code hooks.
 
 ## Quick start
 

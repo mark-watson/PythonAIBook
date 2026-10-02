@@ -1,9 +1,9 @@
 """Syntax smoke tests.
 
 Every script in this project runs its work at *module level* — importing
-them would call litelm and fire off API requests, requiring live keys.
+them would call litellm and fire off API requests, requiring live keys.
 Instead we `ast.parse` each script, which verifies it's syntactically valid
-without executing anything, plus assert that it goes through litelm rather
+without executing anything, plus assert that it goes through litellm rather
 than a provider SDK.
 
 Exception: library modules that guard all API calls behind functions (no
@@ -55,8 +55,8 @@ def test_script_parses(script: str) -> None:
 
 
 @pytest.mark.parametrize("script", SCRIPTS)
-def test_script_uses_litelm(script: str) -> None:
-    assert "litelm" in top_level_imports(script), f"{script} does not import litelm"
+def test_script_uses_litellm(script: str) -> None:
+    assert "litellm" in top_level_imports(script), f"{script} does not import litellm"
 
 
 def test_nvidia_client_importable() -> None:
@@ -65,5 +65,5 @@ def test_nvidia_client_importable() -> None:
     assert callable(mod.chat)
     assert callable(mod.model_id)
     assert mod.DEFAULT_MODEL == "meta/llama-3.1-8b-instruct"
-    assert mod.model_id(mod.DEFAULT_MODEL) == "nvidia/meta/llama-3.1-8b-instruct"
+    assert mod.model_id(mod.DEFAULT_MODEL) == "nvidia_nim/meta/llama-3.1-8b-instruct"
     assert mod._BASE_URL == "https://integrate.api.nvidia.com/v1"

@@ -10,7 +10,7 @@
 
 import json
 
-import litelm
+import litellm
 
 MODEL = "gemini/gemini-3-flash-preview"
 
@@ -21,10 +21,15 @@ Text: "Jane Smith has been working as a Senior Data Scientist at Acme Corp
 for the past 7 years. She specializes in NLP and recommendation systems."
 """
 
-response = litelm.completion(MODEL, prompt, temperature=0.0)
+response = litellm.completion(
+    model=MODEL,
+    messages=[{"role": "user", "content": prompt}],
+    temperature=0.0,
+)
 
 # Parse the JSON from the response (strip any markdown code fences)
-text = response.content or ""
+assert isinstance(response, litellm.ModelResponse)
+text = response.choices[0].message.content or ""
 raw = text.strip().removeprefix("```json").removesuffix("```").strip()
 result = json.loads(raw)
 print(json.dumps(result, indent=2))

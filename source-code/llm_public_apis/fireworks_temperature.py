@@ -11,24 +11,26 @@
 # Environment: export FIREWORKS_API_KEY="your-api-key"
 # Run: uv run python fireworks_temperature.py
 
-import litelm
+import litellm
 
-MODEL = "fireworks-ai/accounts/fireworks/models/deepseek-v4p1-flash"
+MODEL = "fireworks_ai/accounts/fireworks/models/deepseek-v4p1-flash"
 
 prompt = "Write a one-sentence tagline for a coffee shop."
 
 # Low temperature: deterministic, predictable
-response_low = litelm.completion(
-    MODEL,
+response_low = litellm.completion(
+    model=MODEL,
     messages=[{"role": "user", "content": prompt}],
     temperature=0.0,
 )
-print(f"Temperature 0.0: {response_low.content}")
+assert isinstance(response_low, litellm.ModelResponse)
+print(f"Temperature 0.0: {response_low.choices[0].message.content}")
 
 # High temperature: creative, varied
-response_high = litelm.completion(
-    MODEL,
+response_high = litellm.completion(
+    model=MODEL,
     messages=[{"role": "user", "content": prompt}],
     temperature=1.5,
 )
-print(f"Temperature 1.5: {response_high.content}")
+assert isinstance(response_high, litellm.ModelResponse)
+print(f"Temperature 1.5: {response_high.choices[0].message.content}")

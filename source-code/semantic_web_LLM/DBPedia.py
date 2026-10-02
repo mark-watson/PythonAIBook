@@ -15,7 +15,9 @@ Set environment variable:
     export FIREWORKS_API_KEY="your-api-key"
 """
 
-import litelm
+from typing import Any
+
+import litellm
 
 from library import (
     ENTITY_TYPES,
@@ -402,7 +404,7 @@ def answer_question(question: str) -> tuple[str, str]:
 def chat_with_context(system_prompt: str | None = None):
     """Create a multi-turn conversation with DBpedia knowledge."""
     try:
-        messages: list[litelm.Message] = []
+        messages: list[dict[str, Any]] = []
         if system_prompt:
             messages.append({"role": "system", "content": system_prompt})
 
@@ -420,8 +422,13 @@ def chat_with_context(system_prompt: str | None = None):
 
             messages.append({"role": "user", "content": message_content})
 
-            response = litelm.completion(MODEL_ID, messages, max_tokens=3500)
-            content = response.content
+            response = litellm.completion(
+                model=MODEL_ID, messages=messages, max_tokens=3500
+            )
+            assert isinstance(response, litellm.ModelResponse), (
+                "Expected a non-streaming completion response"
+            )
+            content = response.choices[0].message.content
             answer = content.strip() if content else ""
             print(f"\n{answer}")
             messages.append({"role": "assistant", "content": answer})

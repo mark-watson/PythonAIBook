@@ -11,23 +11,30 @@
 # Requirements: uv sync; ollama pull llama3.2:3b
 # Run: uv run python ollama_memory.py
 
-import litelm
+from typing import Any
+
+import litellm
 
 
 class LocalAssistant:
     """A simple conversational assistant that maintains message history."""
 
-    def __init__(self, model: str = "ollama/llama3.2:3b", system_prompt: str = ""):
+    def __init__(
+        self, model: str = "ollama_chat/llama3.2:3b", system_prompt: str = ""
+    ) -> None:
         self.model = model
-        self.messages: list[litelm.Message] = []
+        self.messages: list[dict[str, Any]] = []
         if system_prompt:
             self.messages.append({"role": "system", "content": system_prompt})
 
     def chat(self, user_message: str) -> str:
         """Send a message and get a response, maintaining conversation history."""
         self.messages.append({"role": "user", "content": user_message})
-        response = litelm.completion(self.model, self.messages)
-        reply = response.content or ""
+        response = litellm.completion(model=self.model, messages=self.messages)
+        assert isinstance(response, litellm.ModelResponse), (
+            "Expected a non-streaming response"
+        )
+        reply = response.choices[0].message.content or ""
         self.messages.append({"role": "assistant", "content": reply})
         return reply
 

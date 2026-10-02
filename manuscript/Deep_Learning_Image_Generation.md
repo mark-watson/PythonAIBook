@@ -12,7 +12,7 @@ I have never used deep learning image generation at work but I have fun experime
 The requirements for this chapter are:
 
 ```bash
-uv sync   # torch, diffusers, transformers, accelerate, Pillow, and litelm
+uv sync   # torch, diffusers, transformers, accelerate, Pillow, and litellm
 ```
 
 The examples for this chapter are in the directory **source-code/deep_learning_image_generation**.
@@ -75,31 +75,41 @@ The text prompt is converted to an embedding vector using a text encoder (CLIP),
 
 ## Image Generation Using Google's Imagen API
 
-While running models locally gives you full control and privacy, cloud-based image generation APIs offer higher quality results with virtually no setup. Google's **Imagen 4** model is accessible through the Gemini API, and we reach it with litelm's `generate_image` entry point — no provider SDK, and no image library, since litelm decodes the returned bytes for us.
+While running models locally gives you full control and privacy, cloud-based image generation APIs offer higher quality results with virtually no setup. Google's **Imagen 4** model is accessible through the Gemini API, and we reach it with [**litellm**](https://github.com/BerriAI/litellm)'s `image_generation` entry point. Text-to-image has no OpenAI-compatible endpoint, so litellm reaches the provider's own API, decodes the returned images, and hands back `ImageObject` values — no provider SDK required, and no local GPU or large model downloads.
 
 The entire example is remarkably concise:
 
 ```python
+import base64
 import os
+import urllib.request
 from pathlib import Path
 
-import litelm
+import litellm
 
 MODEL = "gemini/imagen-4.0-fast-generate-001"
 
 
-def main():
+def main() -> None:
     if not os.getenv("GOOGLE_API_KEY"):
         raise SystemExit("Set GOOGLE_API_KEY environment variable")
 
     prompt = "a serene mountain landscape at sunset, oil painting style"
     print(f"Generating image for prompt: '{prompt}'")
 
-    images = litelm.generate_image(MODEL, prompt, number_of_images=1)
+    response = litellm.image_generation(model=MODEL, prompt=prompt, n=1)
 
-    for generated_image in images:
-        output_path = Path(f"gemini_generated_landscape.{generated_image.suffix}")
-        generated_image.save(output_path)
+    for generated_image in response.data:
+        if generated_image.b64_json:
+            image_bytes = base64.b64decode(generated_image.b64_json)
+        elif generated_image.url:
+            with urllib.request.urlopen(generated_image.url) as http_response:
+                image_bytes = http_response.read()
+        else:
+            raise SystemExit("The model returned no image data")
+
+        output_path = Path("gemini_generated_landscape.png")
+        output_path.write_bytes(image_bytes)
         print(f"Image saved to: {output_path}")
 
 
@@ -109,7 +119,7 @@ if __name__ == "__main__":
 
 Compared to the local Stable Diffusion approach, the Imagen example requires no GPU, no multi-gigabyte model downloads, and no hardware-specific configuration. You just need a `GOOGLE_API_KEY` (available free from [Google AI Studio](https://aistudio.google.com/)).
 
-`generate_image` has no OpenAI-compatible equivalent to fall back on — text-to-image is not part of that protocol — so litelm calls the provider's own API for it. Each result is a `GeneratedImage` holding the decoded bytes and their MIME type; `image.suffix` gives the matching file extension, and `image.save(path)` writes the file. The Imagen 4 model family includes three variants: **Fast** (optimized for speed), **Standard** (balanced), and **Ultra** (maximum fidelity up to 2K resolution). We use the Fast variant here since it produces good results with low latency.
+`litellm.image_generation(model="gemini/imagen-4.0-fast-generate-001", prompt=..., n=1)` has no OpenAI-compatible equivalent to fall back on — text-to-image is not part of that protocol — so litellm calls the provider's own API for it. Each entry in `response.data` is an `ImageObject` carrying either base64 image data in `b64_json` or a `url`; the loop decodes whichever one is present and writes the bytes to `gemini_generated_landscape.png`. The Imagen 4 model family includes three variants: **Fast** (optimized for speed), **Standard** (balanced), and **Ultra** (maximum fidelity up to 2K resolution). We use the Fast variant here since it produces good results with low latency.
 
 Here is sample output:
 

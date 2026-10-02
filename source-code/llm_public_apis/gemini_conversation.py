@@ -8,19 +8,22 @@
 # Environment: export GOOGLE_API_KEY="your-api-key"
 # Run: uv run python gemini_conversation.py
 
-import litelm
+from typing import Any
+
+import litellm
 
 MODEL = "gemini/gemini-3-flash-preview"
 
 # Build a conversation as a list of messages
-conversation: list[litelm.Message] = []
+conversation: list[dict[str, Any]] = []
 
 
 def chat(user_message: str) -> str:
     """Send a message and get a response, maintaining conversation history."""
     conversation.append({"role": "user", "content": user_message})
-    response = litelm.completion(MODEL, conversation)
-    text = response.content
+    response = litellm.completion(model=MODEL, messages=conversation)
+    assert isinstance(response, litellm.ModelResponse)
+    text = response.choices[0].message.content
     if text is None:
         raise RuntimeError("Empty response from model")
     conversation.append({"role": "assistant", "content": text})
