@@ -4,29 +4,22 @@
 # Each call sends the full message history so the model can resolve
 # references like "its" and "there" that depend on prior context.
 #
-# Requirements: uv pip install openai
+# Requirements: uv sync
 # Environment: export FIREWORKS_API_KEY="your-api-key"
+# Run: uv run python fireworks_conversation.py
 
-import os
-from openai import OpenAI
-from openai.types.chat import ChatCompletionMessageParam
+import litelm
 
-client = OpenAI(
-    base_url="https://api.fireworks.ai/inference/v1",
-    api_key=os.getenv("FIREWORKS_API_KEY"),
-)
+MODEL = "fireworks-ai/accounts/fireworks/models/deepseek-v4p1-flash"
 
-messages: list[ChatCompletionMessageParam] = []
+messages: list[litelm.Message] = []
 
 
 def chat(user_message: str) -> str:
     """Send a message and get a response, maintaining conversation history."""
     messages.append({"role": "user", "content": user_message})
-    response = client.chat.completions.create(
-        model="accounts/fireworks/models/deepseek-v4-flash",
-        messages=messages,
-    )
-    reply = response.choices[0].message.content
+    response = litelm.completion(MODEL, messages)
+    reply = response.content
     if reply is None:
         raise RuntimeError("Empty response from model")
     messages.append({"role": "assistant", "content": reply})

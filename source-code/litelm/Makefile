@@ -1,4 +1,4 @@
-.PHONY: check clean test run install uninstall build text streaming conversation tools embeddings vision thinking structured nvidia
+.PHONY: check clean test run install uninstall build text streaming conversation tools embeddings vision thinking structured search image nvidia
 
 # The library is a real package, so it can be installed into any uv
 # environment. `uv sync` (and therefore `uv run`) installs it editable
@@ -57,6 +57,12 @@ thinking:
 
 structured:
 	uv run python examples/example_structured.py
+
+search:
+	uv run python examples/example_search.py
+
+image:
+	uv run python examples/example_image.py
 
 nvidia:
 	uv run python examples/example_nvidia.py

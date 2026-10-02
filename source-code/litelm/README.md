@@ -15,7 +15,7 @@ litelm.ask("ollama/llama3.2:3b", "What is 2+2?")  # local, no key
 litelm.ask("openai/gpt-5.4-nano", "What is 2+2?")  # OpenAI
 litelm.ask("gemini/gemini-3-flash-preview", "What is 2+2?")  # Google Gemini
 litelm.ask("nvidia/meta/llama-3.1-8b-instruct", "What is 2+2?")  # NVIDIA NIM
-litelm.ask("fireworks-ai/accounts/fireworks/models/deepseek-v4-flash", "2+2?")
+litelm.ask("fireworks-ai/accounts/fireworks/models/deepseek-v4p1-flash", "2+2?")
 ```
 
 This is the Python member of a family. The Common Lisp original is
@@ -45,12 +45,17 @@ the model string selects the endpoint:
 | NVIDIA NIM | `nvidia/` | `NVIDIA_API_KEY` | `https://integrate.api.nvidia.com/v1` |
 | Ollama (local) | `ollama/` | — | `http://localhost:11434/v1` |
 
+Gemini is the one provider that also carries a **native** URL
+(`https://generativelanguage.googleapis.com/v1beta`), because Imagen image
+generation has no OpenAI-compatible endpoint. `define_provider(..., native_url=...)`
+registers one for any other service that needs it.
+
 Model names may themselves contain slashes. Only the **first** slash separates
 the provider from the model, so `nvidia/meta/llama-3.1-8b-instruct` and
-`fireworks-ai/accounts/fireworks/models/deepseek-v4-flash` survive intact.
+`fireworks-ai/accounts/fireworks/models/deepseek-v4p1-flash` survive intact.
 
 The Common Lisp and Racket versions of litelm also ship `deepseek` and
-`mistral`. This port deliberately does not, because the two chapters this
+`mistral`. This port deliberately does not, because the chapters this
 directory backs never call them — they are one `define_provider` call away.
 
 Any other OpenAI-compatible service can be registered at runtime:
@@ -181,15 +186,23 @@ For manual control of the loop, `assistant_message(response)` and
 | `completion(model, messages, **options)` | `Response` |
 | `completion(model, messages, stream=True)` | iterator of `StreamChunk` |
 | `ask(model, prompt)` | the reply text |
+| `responses(model, input, tools=...)` | `Response` (the OpenAI Responses API) |
 | `embedding(model, input)` | `list[list[float]]` |
+| `generate_image(model, prompt)` | `list[GeneratedImage]` |
 | `chat_with_tools(model, messages, tools)` | the final `Response` |
 
 Shared keyword options: `tools`, `tool_choice` (`"auto"` / `"none"` /
 `"required"` / `None`), `temperature`, `max_tokens`, `top_p`, `system`,
 `provider`, `api_key`, `api_base`, `extra_headers`, `extra`, `timeout`.
+`responses` swaps `messages` for `input` + `instructions` and `max_tokens` for
+`max_output_tokens`, and takes provider-side tools such as `litelm.WEB_SEARCH`
+rather than Python functions; `generate_image` returns `GeneratedImage` values
+carrying `data`, `mime_type`, `suffix`, and a `save(path)` helper.
 
 `Response` carries `content`, `tool_calls`, `finish_reason`, `model`, `usage`
-(`Usage(prompt_tokens, completion_tokens, total_tokens)`), `reasoning`, and
+(`Usage(prompt_tokens, completion_tokens, total_tokens, cached_tokens)` —
+`cached_tokens` is the cache-hit count Ollama, DeepSeek and Anthropic report
+under their various spellings), `reasoning`, and
 `raw` (the decoded JSON body). `ToolCall` carries `id`, `name`, `arguments`
 (a dict), and `arguments_raw` (the JSON text as it arrived).
 
@@ -226,6 +239,51 @@ Common Lisp and Racket versions return an empty list and pass the vector
 through respectively — this port is stricter on purpose, since a short vector
 misaligns against the model's dimensions).
 
+### The Responses API and provider-side tools
+
+`/chat/completions` is not the only protocol in play: OpenAI's newer models are
+also served by the **Responses API**, whose answers arrive as an `output` array
+of typed items and whose built-in tools run on the provider's side. `responses`
+speaks it:
+
+```python
+response = litelm.responses("openai/gpt-5.4-nano", "What is 2+2?")
+print(response.content)
+
+# web_search_preview runs at OpenAI; litelm only sees the answer
+response = litelm.responses(
+    "openai/gpt-5.4-nano",
+    "What were the major AI announcements at Google I/O 2025?",
+    tools=[litelm.WEB_SEARCH],
+)
+print(response.content)
+```
+
+`input` is a prompt string or a list of `{"role": ..., "content": ...}` items,
+`instructions` is the system prompt (the Responses API has no `system` role),
+and `finish_reason` is the response `status` (`"completed"`, or the
+`incomplete_details.reason`). Reasoning items surface as `response.reasoning`,
+and `function_call` items as `response.tool_calls`.
+
+### Image generation
+
+Text-to-image has no OpenAI-compatible endpoint, so `generate_image` reaches the
+provider's **native** API — today Gemini's Imagen, registered with a
+`native_url`:
+
+```python
+for image in litelm.generate_image(
+    "gemini/imagen-4.0-fast-generate-001",
+    "a serene mountain landscape at sunset, oil painting style",
+):
+    image.save(f"landscape.{image.suffix}")
+```
+
+Each result is a `GeneratedImage(data, mime_type)` with `suffix` and
+`save(path)`. `number_of_images`, `aspect_ratio` and `extra` (merged into the
+request's `parameters`) cover the model knobs; a provider with no native URL
+raises `LitelmError` naming the problem.
+
 ### Provider-specific options
 
 Anything a provider supports beyond the common set travels in `extra`, which is
@@ -234,13 +292,18 @@ merged into the request body last:
 ```python
 # Fireworks / DeepSeek thinking mode
 litelm.completion(
-    "fireworks-ai/accounts/fireworks/models/deepseek-v4-flash",
+    "fireworks-ai/accounts/fireworks/models/deepseek-v4p1-flash",
     prompt,
     extra={"thinking": {"type": "enabled"}},
 )
 
 # Ollama's vision models print a <think> block unless told not to
 litelm.completion("ollama/qwen3.5:0.8b", messages, extra={"think": False})
+
+# Gemini's OpenAI-compatible layer reads OpenAI's reasoning_effort
+litelm.completion(
+    "gemini/gemini-3-flash-preview", prompt, extra={"reasoning_effort": "low"}
+)
 ```
 
 When a provider returns a reasoning trace as a separate field, it is surfaced as
@@ -281,8 +344,8 @@ raises `LitelmError` instead of ending the iterator silently.
 
 ## Examples
 
-The runnable demos live in [`examples/`](examples) — one script per idea from the
-two chapters:
+The runnable demos live in [`examples/`](examples) — one script per idea the
+book's LLM examples use:
 
 | Script | Shows |
 |---|---|
@@ -294,6 +357,8 @@ two chapters:
 | [`example_vision.py`](examples/example_vision.py) | Image understanding |
 | [`example_thinking.py`](examples/example_thinking.py) | Reasoning traces, separate and inline |
 | [`example_structured.py`](examples/example_structured.py) | JSON output extraction |
+| [`example_search.py`](examples/example_search.py) | The Responses API and the built-in web-search tool |
+| [`example_image.py`](examples/example_image.py) | Imagen text-to-image generation |
 | [`example_nvidia.py`](examples/example_nvidia.py) | NVIDIA NIM, mirroring `NVIDIA_client.py` |
 
 Run any of them with `uv run`, or through `make`:
@@ -339,48 +404,53 @@ the dependency survives `uv sync`. Use `uv remove litelm` to undo it, or plain
 `uv pip install --editable ../litelm` if you would rather not touch its
 `pyproject.toml`.
 
-## How this relates to the two chapter directories
+## How this relates to the chapter directories
 
-The demos in `llm_local_models` and `llm_public_apis` drive each SDK directly,
-which is the point of those chapters: `ollama.chat(...)`, `client.models.
-generate_content(...)`, `client.responses.create(...)`. This library is the
-after-the-fact generalisation — one call shape, five providers — and the mapping
-is mechanical:
+**Every LLM example in `source-code/` now goes through litelm.** The chapter
+directories — `llm_local_models`, `llm_public_apis`, `text-adventure-game`,
+`semantic_web_LLM`, `openknowledge_format`, `deep_learning_image_generation` and
+`NVIDIA_Object_Oriented_Agents` — declare it as an editable path dependency, so
+one call shape reaches five providers and switching between a local model and a
+cloud API is a one-word edit to the model string.
+
+The mapping from the SDK spellings the chapters used to describe is mechanical:
 
 | Chapter code | litelm |
 |---|---|
 | `ollama.chat(model="llama3.2:3b", messages=[...])` | `litelm.completion("ollama/llama3.2:3b", [...])` |
 | `client.chat.completions.create(base_url=..., ...)` | `litelm.completion("fireworks-ai/...", ...)` |
-| `client.responses.create(model="gpt-5.4-nano", input=...)` | `litelm.ask("openai/gpt-5.4-nano", ...)` |
+| `client.responses.create(model="gpt-5.4-nano", input=...)` | `litelm.responses("openai/gpt-5.4-nano", ...)` |
+| `client.responses.create(..., tools=[{"type": "web_search_preview"}])` | `litelm.responses(..., tools=[litelm.WEB_SEARCH])` |
 | `for chunk in ollama.chat(..., stream=True)` | `for chunk in litelm.completion(..., stream=True)` |
 | `client.models.generate_content(model=..., contents=...)` | `litelm.completion("gemini/...", ...)` |
 | `types.Part.from_bytes(data=..., mime_type=...)` | `{"role": "user", "content": ..., "images": [path]}` |
+| `client.models.generate_images(model="imagen-...", prompt=...)` | `litelm.generate_image("gemini/imagen-...", prompt)` |
 
-Features that only one provider has — Gemini's Google Search grounding, OpenAI's
-`web_search_preview` tool, the Responses API itself — deliberately stay in the
-per-provider chapter scripts.
+Two things deliberately have no litelm equivalent, and the chapter scripts keep
+them: Gemini's Google Search grounding for `generate_content`, and the
+third-party `nooa` agent framework in `NVIDIA_Object_Oriented_Agents`, which
+drives its own litellm client and only uses litelm for the endpoint constants
+and its direct calls.
 
-One consequence worth stating plainly: litelm always speaks
-`POST /chat/completions`. For an OpenAI model that is *only* reachable through
-the Responses API, `litelm.completion("openai/...")` is the wrong tool — use
-[`../llm_public_apis/openai_text.py`](../llm_public_apis/openai_text.py) or
-`openai_search.py` directly. The `max_completion_tokens` retry described under
-[Errors](#errors) exists because newer OpenAI models reject the older
-`max_tokens` spelling on this endpoint.
+`completion` and `responses` are separate entry points because they are separate
+protocols: a model reachable *only* through the Responses API needs
+`litelm.responses`, not `litelm.completion`. The `max_completion_tokens` retry
+described under [Errors](#errors) exists because newer OpenAI models reject the
+older `max_tokens` spelling on `/chat/completions`.
 
 ## File structure
 
 | File | Contents |
 |---|---|
 | `litelm/__init__.py` | Public interface and re-exports |
-| `litelm/providers.py` | Provider registry and `"provider/model"` routing |
+| `litelm/providers.py` | Provider registry, `"provider/model"` routing, native URLs |
 | `litelm/messages.py` | Message normalization, images, tool-message construction |
 | `litelm/tools.py` | `Tool`/`ToolParam`, JSON schemas, `execute_tool_calls` |
-| `litelm/core.py` | `completion`, `ask`, `embedding`, `chat_with_tools`, parsing |
+| `litelm/core.py` | `completion`, `ask`, `responses`, `embedding`, `generate_image`, `chat_with_tools`, parsing |
 | `litelm/transport.py` | The only module that touches the network (HTTP + SSE) |
-| `litelm/types.py` | `Response`, `StreamChunk`, `ToolCall`, `ToolResult`, `Usage` |
+| `litelm/types.py` | `Response`, `StreamChunk`, `ToolCall`, `ToolResult`, `Usage`, `GeneratedImage` |
 | `litelm/errors.py` | The exception hierarchy |
-| `examples/` | The nine runnable demos (import-safe, `main()`-guarded) |
+| `examples/` | The eleven runnable demos (import-safe, `main()`-guarded) |
 | `tests/` | Offline suite (fake transport, loopback HTTP server) plus opt-in live tests |
 
 ## Development workflow
@@ -399,7 +469,7 @@ just test        # pytest (offline; live tests are deselected)
 ## Tests
 
 The offline suite replaces the HTTP layer, so it asserts on the exact JSON bodies
-and headers litelm would send — 183 tests, no network, no keys, well under a
+and headers litelm would send — 227 tests, no network, no keys, well under a
 second:
 
 ```bash

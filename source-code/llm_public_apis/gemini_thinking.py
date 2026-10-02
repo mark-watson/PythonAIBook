@@ -1,19 +1,21 @@
 # gemini_thinking.py - Using Gemini's thinking mode for complex reasoning
 #
-# Gemini 2.5 Flash supports a "thinking budget" that controls how much
-# internal reasoning the model performs before answering. Higher budgets
-# allow deeper reasoning but increase latency and cost.
+# Gemini models reason internally before answering, and the OpenAI-compatible
+# endpoint exposes the same knob OpenAI uses: reasoning_effort. litelm passes it
+# through "extra" (merged into the request body), and Gemini maps it onto its
+# thinking configuration -- "low" is a ~1024-token budget on Gemini 2.5 and the
+# "low" thinking level on Gemini 3. Reasoning cannot be switched off for
+# Gemini 3 models, only reduced.
 #
 # This example uses a classic logic puzzle to demonstrate thinking mode.
 #
-# Requirements: uv pip install google-genai
+# Requirements: uv sync
 # Environment: export GOOGLE_API_KEY="your-api-key"
+# Run: uv run python gemini_thinking.py
 
-from google import genai
-from google.genai import types
-import os
+import litelm
 
-client = genai.Client(api_key=os.getenv("GOOGLE_API_KEY"))
+MODEL = "gemini/gemini-3-flash-preview"
 
 prompt = """
 A farmer has a fox, a chicken, and a bag of grain. He needs to cross
@@ -22,14 +24,10 @@ If left alone, the fox will eat the chicken, and the chicken will eat
 the grain. How does the farmer get everything across safely?
 """
 
-response = client.models.generate_content(
-    model="gemini-3-flash-preview",
-    contents=prompt,
-    config=types.GenerateContentConfig(
-        thinking_config=types.ThinkingConfig(
-            thinking_budget=1000  # allow up to 1000 tokens of reasoning
-        )
-    ),
+response = litelm.completion(
+    MODEL,
+    prompt,
+    extra={"reasoning_effort": "low"},  # keep the thinking budget small
 )
 
-print(response.text)
+print(response.content)

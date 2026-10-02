@@ -7,29 +7,20 @@
 # This script generates the same prompt at two different temperatures
 # so you can see the difference in output style.
 #
-# Requirements: uv pip install google-genai
+# Requirements: uv sync
 # Environment: export GOOGLE_API_KEY="your-api-key"
+# Run: uv run python gemini_temperature.py
 
-import os
-from google import genai
-from google.genai import types
+import litelm
 
-client = genai.Client(api_key=os.getenv("GOOGLE_API_KEY"))
+MODEL = "gemini/gemini-3-flash-preview"
 
 prompt = "Write a one-sentence tagline for a coffee shop."
 
 # Low temperature: deterministic, predictable
-response_low = client.models.generate_content(
-    model="gemini-3-flash-preview",
-    contents=prompt,
-    config=types.GenerateContentConfig(temperature=0.0),
-)
-print(f"Temperature 0.0: {response_low.text}")
+response_low = litelm.completion(MODEL, prompt, temperature=0.0)
+print(f"Temperature 0.0: {response_low.content}")
 
 # High temperature: creative, varied
-response_high = client.models.generate_content(
-    model="gemini-3-flash-preview",
-    contents=prompt,
-    config=types.GenerateContentConfig(temperature=1.5),
-)
-print(f"Temperature 1.5: {response_high.text}")
+response_high = litelm.completion(MODEL, prompt, temperature=1.5)
+print(f"Temperature 1.5: {response_high.content}")

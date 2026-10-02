@@ -8,18 +8,34 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any
 
-__all__ = ["Response", "StreamChunk", "ToolCall", "ToolResult", "Usage"]
+__all__ = [
+    "GeneratedImage",
+    "Response",
+    "StreamChunk",
+    "ToolCall",
+    "ToolResult",
+    "Usage",
+]
 
 
 @dataclass(frozen=True)
 class Usage:
-    """Token accounting, when the provider reports it."""
+    """Token accounting, when the provider reports it.
+
+    ``cached_tokens`` is the part of ``prompt_tokens`` the provider served from
+    its prompt cache -- the number that makes a caching demo (and a cost report)
+    meaningful instead of a wall-clock guess. Providers spell it differently, so
+    litelm reads OpenAI's ``prompt_tokens_details.cached_tokens`` plus the
+    DeepSeek and Anthropic equivalents.
+    """
 
     prompt_tokens: int | None = None
     completion_tokens: int | None = None
     total_tokens: int | None = None
+    cached_tokens: int | None = None
 
 
 @dataclass(frozen=True)
@@ -74,6 +90,42 @@ class Response:
 
     def __str__(self) -> str:
         return self.content or ""
+
+
+#: File suffixes for the image types the providers this book uses return.
+_IMAGE_SUFFIXES = {
+    "image/png": "png",
+    "image/jpeg": "jpg",
+    "image/webp": "webp",
+}
+
+
+@dataclass(frozen=True)
+class GeneratedImage:
+    """One image returned by :func:`litelm.generate_image`.
+
+    The bytes live in memory -- nothing is written unless you ask::
+
+        for index, image in enumerate(litelm.generate_image("gemini/imagen-4.0-fast-generate-001", prompt), 1):
+            image.save(f"out-{index}.{image.suffix}")
+    """
+
+    data: bytes
+    mime_type: str = "image/png"
+
+    @property
+    def suffix(self) -> str:
+        """File extension for this image type, without the dot."""
+        return _IMAGE_SUFFIXES.get(self.mime_type, "png")
+
+    def save(self, path: str | Path) -> Path:
+        """Write the image to ``path`` and return the resolved path."""
+        target = Path(path)
+        target.write_bytes(self.data)
+        return target
+
+    def __len__(self) -> int:
+        return len(self.data)
 
 
 @dataclass(frozen=True)

@@ -41,9 +41,9 @@ def test_the_reference_ports_extras_are_one_call_away() -> None:
             "meta/llama-3.1-8b-instruct",
         ),
         (
-            "fireworks-ai/accounts/fireworks/models/deepseek-v4-flash",
+            "fireworks-ai/accounts/fireworks/models/deepseek-v4p1-flash",
             "fireworks-ai",
-            "accounts/fireworks/models/deepseek-v4-flash",
+            "accounts/fireworks/models/deepseek-v4p1-flash",
         ),
     ],
 )
@@ -100,6 +100,31 @@ def test_provider_url_strips_the_api_base_override() -> None:
     assert litelm.provider_url(
         provider, "/chat/completions", "http://box:9000/v1/"
     ) == ("http://box:9000/v1/chat/completions")
+
+
+def test_provider_native_url_names_the_providers_own_api() -> None:
+    gemini = litelm.find_provider("gemini")
+    assert litelm.provider_native_url(gemini) == (
+        "https://generativelanguage.googleapis.com/v1beta"
+    )
+    assert litelm.provider_native_url(gemini, "http://box:9000/v1beta/") == (
+        "http://box:9000/v1beta"
+    )
+
+
+def test_provider_native_url_rejects_a_chat_only_provider() -> None:
+    with pytest.raises(litelm.LitelmError, match="no native API"):
+        litelm.provider_native_url(litelm.find_provider("openai"))
+
+
+def test_define_provider_records_a_native_url() -> None:
+    provider = litelm.define_provider(
+        "native-test",
+        "https://example.test/v1",
+        env_keys="NATIVE_KEY",
+        native_url="https://example.test/native/",
+    )
+    assert provider.native_url == "https://example.test/native"
 
 
 def test_api_key_prefers_the_explicit_argument(monkeypatch: pytest.MonkeyPatch) -> None:

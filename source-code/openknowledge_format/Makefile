@@ -15,4 +15,4 @@ run:
 
 check:
 	python3 -m py_compile *.py
-	uv run python -c "import ollama"
+	uv run python -c "import litelm"

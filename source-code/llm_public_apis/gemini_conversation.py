@@ -4,31 +4,26 @@
 # Each call sends the full history so the model can resolve references
 # like "its" and "there" that depend on prior context.
 #
-# Requirements: uv pip install google-genai
+# Requirements: uv sync
 # Environment: export GOOGLE_API_KEY="your-api-key"
+# Run: uv run python gemini_conversation.py
 
-import os
-from typing import Any
-from google import genai
-from google.genai import types
+import litelm
 
-client = genai.Client(api_key=os.getenv("GOOGLE_API_KEY"))
+MODEL = "gemini/gemini-3-flash-preview"
 
-# Build a conversation as a list of content parts
-conversation: list[Any] = []
+# Build a conversation as a list of messages
+conversation: list[litelm.Message] = []
 
 
 def chat(user_message: str) -> str:
     """Send a message and get a response, maintaining conversation history."""
-    conversation.append(
-        types.Content(role="user", parts=[types.Part(text=user_message)])
-    )
-    response = client.models.generate_content(
-        model="gemini-3-flash-preview", contents=conversation
-    )
-    text = response.text
-    assert text is not None
-    conversation.append(types.Content(role="model", parts=[types.Part(text=text)]))
+    conversation.append({"role": "user", "content": user_message})
+    response = litelm.completion(MODEL, conversation)
+    text = response.content
+    if text is None:
+        raise RuntimeError("Empty response from model")
+    conversation.append({"role": "assistant", "content": text})
     return text
 
 

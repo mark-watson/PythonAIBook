@@ -11,11 +11,13 @@
 #   3. Builds a simple in-memory index (search by type, tag, text).
 #   4. Uses Ollama (gemma4:e2b-it-qat) as the LLM "consumption agent" —
 #      it receives the relevant concept bodies as context and answers
-#      natural-language questions about the data assets.
+#      natural-language questions about the data assets. The call goes through
+#      litelm, the book's uniform LLM interface, so the model string carries an
+#      "ollama/" provider prefix.
 #
 # Run: uv run okf_explorer.py
 #
-# Requirements: ollama (already in pyproject.toml) + model pulled locally:
+# Requirements: ollama + model pulled locally (uv sync installs litelm):
 #   ollama pull gemma4:e2b-it-qat
 
 import re
@@ -24,14 +26,14 @@ import textwrap
 from dataclasses import dataclass, field
 from pathlib import Path
 
-import ollama
+import litelm
 
 # ---------------------------------------------------------------------------
 # OKF data model
 # ---------------------------------------------------------------------------
 
 RESERVED_FILENAMES = {"index.md", "log.md"}
-MODEL = "gemma4:e2b-it-qat"
+MODEL = "ollama/gemma4:e2b-it-qat"
 BUNDLE_DIR = Path(__file__).parent / "bundle"
 
 
@@ -263,14 +265,14 @@ class OKFAgent:
 
 {question}"""
 
-        response = ollama.chat(
-            model=self.model,
+        response = litelm.completion(
+            self.model,
             messages=[
                 {"role": "system", "content": self.SYSTEM_PROMPT},
                 {"role": "user", "content": user_message},
             ],
         )
-        content = response.message.content
+        content = response.content
         assert content is not None
         return content
 

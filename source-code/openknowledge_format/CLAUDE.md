@@ -1,6 +1,6 @@
 # openknowledge_format
 
-A single-script OKF explorer that reads a bundle of knowledge fragments and answers questions about it via a local Ollama model. Uses a uv-based dev workflow with strict pyrefly typing, ruff formatting/linting, pytest, and two Claude Code hooks.
+A single-script OKF explorer that reads a bundle of knowledge fragments and answers questions about it via a local Ollama model, reached through the book's shared [`litelm`](../litelm) interface. Uses a uv-based dev workflow with strict pyrefly typing, ruff formatting/linting, pytest, and two Claude Code hooks.
 
 ## Quick start
 
@@ -40,4 +40,4 @@ openknowledge_format/
 
 ## Typing discipline
 
-- `pyrefly.toml`: `preset = "strict"`, `python-version = "3.12"` (matched to `pyproject.toml`).
+- `pyrefly.toml`: `preset = "strict"`, `python-version = "3.14"` (matched to `pyproject.toml`, which litelm requires).

@@ -15,13 +15,14 @@ handles them all::
 Provider-specific knobs travel in ``extra`` and are merged into the request
 body last -- Fireworks/DeepSeek thinking mode, for instance::
 
-    litelm.completion("fireworks-ai/accounts/fireworks/models/deepseek-v4-flash",
+    litelm.completion("fireworks-ai/accounts/fireworks/models/deepseek-v4p1-flash",
                       "Solve the fox, chicken and grain puzzle.",
                       extra={"thinking": {"type": "enabled"}})
 """
 
 from __future__ import annotations
 
+import base64
 import json
 from collections.abc import Iterable, Iterator, Mapping, Sequence
 from typing import Any, Literal, overload
@@ -33,6 +34,7 @@ from .providers import (
     bearer_headers,
     parse_model,
     provider_api_key,
+    provider_native_url,
     provider_url,
 )
 from .tools import (
@@ -40,21 +42,31 @@ from .tools import (
     execute_tool_calls,
     tool_schemas,
 )
-from .types import Response, StreamChunk, ToolCall, Usage
+from .types import GeneratedImage, Response, StreamChunk, ToolCall, Usage
 
 __all__ = [
+    "WEB_SEARCH",
     "ask",
     "build_chat_payload",
     "chat_with_tools",
     "completion",
     "embedding",
+    "generate_image",
     "parse_chat_response",
+    "parse_responses_body",
+    "responses",
 ]
 
 #: Tools may be a list or a ``name -> Tool`` mapping.
 Tools = Sequence[Tool] | Mapping[str, Tool]
 #: ``tool_choice`` values every OpenAI-compatible provider understands.
 ToolChoice = str | dict[str, Any] | None
+
+#: The Responses API's built-in web-search tool, for
+#: ``responses(..., tools=[litelm.WEB_SEARCH])``. It runs on the provider's
+#: side -- litelm never sees the search results, only the answer that cites
+#: them. Handed over as a copy, so a caller cannot mutate the shared constant.
+WEB_SEARCH: dict[str, str] = {"type": "web_search_preview"}
 
 
 # --------------------------------------------------------------------------
@@ -113,6 +125,38 @@ def parse_chat_response(data: Mapping[str, Any], model_name: str) -> Response:
         model=_opt_str(data.get("model")) or model_name,
         usage=_parse_usage(data.get("usage")),
         reasoning=_reasoning_of(message),
+        raw=data,
+    )
+
+
+def parse_responses_body(data: Mapping[str, Any], model_name: str) -> Response:
+    """Turn a Responses API (``POST /responses``) body into a :class:`Response`.
+
+    The Responses API answers with an ``output`` *array* of typed items rather
+    than a single message: ``message`` items hold the text, ``reasoning`` items
+    hold a summary trace, and ``function_call`` items hold tool calls. A failure
+    can arrive as an ``error`` field, or as ``status: "failed"``.
+    """
+    if data.get("error"):
+        raise LitelmError(f"LLM API error: {data['error']}")
+    status = _opt_str(data.get("status"))
+    if status == "failed":
+        raise LitelmError(f"LLM API response failed: {_short(data)}")
+
+    finish_reason = status or _opt_str(data.get("finish_reason"))
+    if status == "incomplete":
+        details = data.get("incomplete_details")
+        if isinstance(details, dict) and isinstance(details.get("reason"), str):
+            finish_reason = details["reason"]
+
+    explicit_text = _opt_str(data.get("output_text"))
+    return Response(
+        content=explicit_text if explicit_text is not None else _responses_text(data),
+        tool_calls=_responses_tool_calls(data),
+        finish_reason=finish_reason,
+        model=_opt_str(data.get("model")) or model_name,
+        usage=_parse_usage(data.get("usage")),
+        reasoning=_responses_reasoning(data),
         raw=data,
     )
 
@@ -263,6 +307,70 @@ def ask(
 
 
 # --------------------------------------------------------------------------
+# responses (the OpenAI Responses API)
+# --------------------------------------------------------------------------
+
+
+def responses(
+    model: str,
+    input: str | Mapping[str, Any] | Sequence[Mapping[str, Any]],
+    *,
+    instructions: str | None = None,
+    tools: Sequence[Mapping[str, Any]] | None = None,
+    temperature: float | None = None,
+    max_output_tokens: int | None = None,
+    provider: str | None = None,
+    api_key: str | None = None,
+    api_base: str | None = None,
+    extra_headers: Mapping[str, str] | None = None,
+    extra: Mapping[str, Any] | None = None,
+    timeout: float = transport.DEFAULT_TIMEOUT,
+) -> Response:
+    """Call the OpenAI **Responses API** and return a :class:`Response`.
+
+    The Responses API is a different protocol from ``/chat/completions``, so it
+    gets its own entry point rather than an option on :func:`completion`:
+
+    * ``input`` is a prompt string or a list of ``{"role": ..., "content": ...}``
+      items. Use ``instructions`` for the system prompt -- the Responses API has
+      no ``system`` role.
+    * ``tools`` holds *provider-side* tools such as :data:`WEB_SEARCH`, not
+      litelm :class:`~litelm.tools.Tool` functions. The model runs them and the
+      final answer comes back in ``content``.
+    * ``max_output_tokens`` is the Responses spelling of ``max_tokens``.
+
+    ::
+
+        litelm.responses("openai/gpt-5.4-nano", "What is 2+2?")
+        litelm.responses("openai/gpt-5.4-nano", "AI news this week?",
+                         tools=[litelm.WEB_SEARCH])
+    """
+    prov, model_name = parse_model(model, provider)
+    key = provider_api_key(prov, api_key)
+    headers = bearer_headers(key)
+    if extra_headers:
+        headers.update(extra_headers)
+
+    payload: dict[str, Any] = {"model": model_name, "input": _responses_input(input)}
+    if instructions is not None:
+        payload["instructions"] = instructions
+    if tools:
+        # Copies: the caller keeps ownership of its tool dicts.
+        payload["tools"] = [dict(tool) for tool in tools]
+    if temperature is not None:
+        payload["temperature"] = temperature
+    if max_output_tokens is not None:
+        payload["max_output_tokens"] = max_output_tokens
+    if extra:
+        payload.update(extra)
+
+    data = transport.post_json(
+        provider_url(prov, "/responses", api_base), headers, payload, timeout=timeout
+    )
+    return parse_responses_body(data, model_name)
+
+
+# --------------------------------------------------------------------------
 # embeddings
 # --------------------------------------------------------------------------
 
@@ -304,6 +412,60 @@ def embedding(
     if not isinstance(items, list):
         raise LitelmError(f"Embeddings response has no data array: {_short(data)}")
     return [_vector_of(item) for item in items]
+
+
+# --------------------------------------------------------------------------
+# image generation (the provider's own API)
+# --------------------------------------------------------------------------
+
+
+def generate_image(
+    model: str,
+    prompt: str,
+    *,
+    number_of_images: int = 1,
+    aspect_ratio: str | None = None,
+    provider: str | None = None,
+    api_key: str | None = None,
+    api_base: str | None = None,
+    extra_headers: Mapping[str, str] | None = None,
+    extra: Mapping[str, Any] | None = None,
+    timeout: float = transport.DEFAULT_TIMEOUT,
+) -> list[GeneratedImage]:
+    """Generate images from ``prompt``; returns one :class:`GeneratedImage` each.
+
+    Text-to-image has no OpenAI-compatible equivalent, so this reaches the
+    provider's own API through ``provider.native_url`` -- today Gemini's Imagen
+    (``gemini/imagen-4.0-fast-generate-001``). A provider without a native URL
+    raises :class:`LitelmError` naming the problem.
+
+    ``extra`` is merged into the request's ``parameters`` object for
+    model-specific knobs (``negativePrompt``, ``personGeneration``, ...).
+    """
+    prov, model_name = parse_model(model, provider)
+    base = provider_native_url(prov, api_base)
+    key = provider_api_key(prov, api_key)
+    headers = {"Content-Type": "application/json"}
+    if key:
+        # The Gemini API authenticates its native endpoints with this header.
+        headers["x-goog-api-key"] = key
+    if extra_headers:
+        headers.update(extra_headers)
+
+    parameters: dict[str, Any] = {"sampleCount": number_of_images}
+    if aspect_ratio is not None:
+        parameters["aspectRatio"] = aspect_ratio
+    if extra:
+        parameters.update(extra)
+    payload: dict[str, Any] = {
+        "instances": [{"prompt": prompt}],
+        "parameters": parameters,
+    }
+
+    data = transport.post_json(
+        f"{base}/models/{model_name}:predict", headers, payload, timeout=timeout
+    )
+    return _images_of(data)
 
 
 # --------------------------------------------------------------------------
@@ -583,7 +745,31 @@ def _parse_usage(value: Any) -> Usage | None:
     total = _first_int(value.get("total_tokens"))
     if total is None and prompt is not None and completion is not None:
         total = prompt + completion
-    return Usage(prompt_tokens=prompt, completion_tokens=completion, total_tokens=total)
+    return Usage(
+        prompt_tokens=prompt,
+        completion_tokens=completion,
+        total_tokens=total,
+        cached_tokens=_cached_tokens(value),
+    )
+
+
+def _cached_tokens(value: Mapping[str, Any]) -> int | None:
+    """The provider's count of prompt tokens served from its cache.
+
+    Every provider spells this differently, and a server that reports no cache
+    numbers at all must not look like a cache miss -- so this returns ``None``
+    rather than zero when the field is absent.
+    """
+    details = value.get("prompt_tokens_details")
+    if isinstance(details, dict):
+        cached = _first_int(details.get("cached_tokens"))
+        if cached is not None:
+            return cached
+    return _first_int(
+        value.get("cache_read_input_tokens"),  # Anthropic
+        value.get("prompt_cache_hit_tokens"),  # DeepSeek
+        value.get("cached_tokens"),
+    )
 
 
 def _text_of(value: Any) -> str | None:
@@ -605,6 +791,127 @@ def _reasoning_of(message: Mapping[str, Any]) -> str | None:
         if isinstance(value, str) and value:
             return value
     return None
+
+
+def _responses_input(
+    value: str | Mapping[str, Any] | Sequence[Mapping[str, Any]],
+) -> str | list[dict[str, Any]]:
+    """Normalize ``responses`` input to what the wire wants: text or items."""
+    if isinstance(value, str):
+        return value
+    if isinstance(value, Mapping):
+        return [dict(value)]
+    if isinstance(value, Sequence):
+        items: list[dict[str, Any]] = []
+        for item in value:
+            if not isinstance(item, Mapping):
+                raise LitelmError(f"responses input entries must be dicts: {item!r}")
+            items.append(dict(item))
+        return items
+    raise LitelmError(
+        f"responses input must be a string or a list of message dicts: {value!r}"
+    )
+
+
+def _responses_items(output: Any) -> list[Mapping[str, Any]]:
+    if not isinstance(output, list):
+        return []
+    return [item for item in output if isinstance(item, Mapping)]
+
+
+def _responses_text(data: Mapping[str, Any]) -> str | None:
+    """Concatenate the ``output_text`` parts of every ``message`` item."""
+    parts: list[str] = []
+    for item in _responses_items(data.get("output")):
+        if item.get("type") != "message":
+            continue
+        content = item.get("content")
+        if not isinstance(content, list):
+            continue
+        for block in content:
+            if (
+                isinstance(block, Mapping)
+                and block.get("type") == "output_text"
+                and isinstance(block.get("text"), str)
+            ):
+                parts.append(block["text"])
+    return "".join(parts) or None
+
+
+def _responses_reasoning(data: Mapping[str, Any]) -> str | None:
+    """Join the ``summary_text`` parts of every ``reasoning`` item."""
+    parts: list[str] = []
+    for item in _responses_items(data.get("output")):
+        if item.get("type") != "reasoning":
+            continue
+        summary = item.get("summary")
+        if not isinstance(summary, list):
+            continue
+        for block in summary:
+            if isinstance(block, Mapping) and isinstance(block.get("text"), str):
+                parts.append(block["text"])
+    return "".join(parts) or None
+
+
+def _responses_tool_calls(data: Mapping[str, Any]) -> list[ToolCall]:
+    """Turn ``function_call`` output items into :class:`ToolCall` values."""
+    calls: list[ToolCall] = []
+    for item in _responses_items(data.get("output")):
+        if item.get("type") != "function_call":
+            continue
+        raw = item.get("arguments")
+        arguments: dict[str, Any] = {}
+        arguments_raw: str | None = None
+        if isinstance(raw, str):
+            arguments, arguments_raw = _decode_arguments(raw)
+        elif isinstance(raw, Mapping):
+            arguments, arguments_raw = dict(raw), json.dumps(raw)
+        calls.append(
+            ToolCall(
+                # The Responses API names it call_id; older bodies use id.
+                id=_opt_str(item.get("call_id")) or _opt_str(item.get("id")) or "",
+                name=_opt_str(item.get("name")) or "",
+                arguments=arguments,
+                arguments_raw=arguments_raw,
+            )
+        )
+    return calls
+
+
+def _images_of(data: Mapping[str, Any]) -> list[GeneratedImage]:
+    """Decode the base64 images of an Imagen-style ``predictions`` array."""
+    if data.get("error"):
+        raise LitelmError(f"LLM API error: {data['error']}")
+    predictions = data.get("predictions")
+    if not isinstance(predictions, list) or not predictions:
+        raise LitelmError(f"Image response has no predictions: {_short(data)}")
+    images: list[GeneratedImage] = []
+    for item in predictions:
+        if not isinstance(item, Mapping):
+            continue
+        encoded = item.get("bytesBase64Encoded")
+        mime = item.get("mimeType")
+        nested = item.get("image")
+        if not isinstance(encoded, str) and isinstance(nested, Mapping):
+            raw = nested.get("bytesBase64Encoded") or nested.get("imageBytes")
+            encoded = raw if isinstance(raw, str) else None
+            if not isinstance(mime, str):
+                mime = nested.get("mimeType")
+        if not isinstance(encoded, str):
+            continue
+        try:
+            decoded = base64.b64decode(encoded)
+        except ValueError as exc:  # binascii.Error is a ValueError
+            raise LitelmError("Image response carried malformed base64 data") from exc
+        images.append(
+            GeneratedImage(
+                data=decoded,
+                mime_type=mime if isinstance(mime, str) and mime else "image/png",
+            )
+        )
+    if not images:
+        raise LitelmError(f"Image response had no decodable images: {_short(data)}")
+    return images
 
 
 TOOL_CHOICES = ("auto", "none", "required")

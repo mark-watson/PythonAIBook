@@ -4,25 +4,30 @@
 # This script extracts both the reasoning trace and the final answer,
 # making the model's thought process transparent and debuggable.
 #
+# litelm surfaces a reasoning trace as response.reasoning when the provider
+# sends it as a separate field; DeepSeek-R1 served by Ollama leaves it inline,
+# so we fall back to splitting the <think> block out of the content.
+#
 # Inspired by the reasoning examples in "Ollama in Action" but uses a
 # different problem domain (combinatorics) and a self-contained approach
 # without external config dependencies.
 #
-# Requirements: ollama pull deepseek-r1:7b
-# Run: uv run ollama_reasoning.py
+# Requirements: uv sync; ollama pull deepseek-r1:7b
+# Run: uv run python ollama_reasoning.py
 
-import ollama
+import litelm
 
 
-def reason_about(question: str, model: str = "deepseek-r1:7b") -> dict[str, str]:
+def reason_about(question: str, model: str = "ollama/deepseek-r1:7b") -> dict[str, str]:
     """Ask a question and extract both reasoning and final answer."""
-    response = ollama.chat(
-        model=model, messages=[{"role": "user", "content": question}]
+    response = litelm.completion(
+        model, messages=[{"role": "user", "content": question}]
     )
-    content = response.message.content or ""
+    content = response.content or ""
 
-    # DeepSeek-R1 wraps reasoning in <think>...</think> tags
-    reasoning = ""
+    # A separate reasoning field if the provider sent one, otherwise the
+    # <think>...</think> block DeepSeek-R1 leaves inline.
+    reasoning = response.reasoning or ""
     answer = content
     if "<think>" in content and "</think>" in content:
         reasoning = content.split("<think>")[1].split("</think>")[0].strip()

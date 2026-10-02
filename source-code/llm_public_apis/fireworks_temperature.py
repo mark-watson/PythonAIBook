@@ -7,31 +7,28 @@
 # This script generates the same prompt at two different temperatures
 # so you can see the difference in output style.
 #
-# Requirements: uv pip install openai
+# Requirements: uv sync
 # Environment: export FIREWORKS_API_KEY="your-api-key"
+# Run: uv run python fireworks_temperature.py
 
-import os
-from openai import OpenAI
+import litelm
 
-client = OpenAI(
-    base_url="https://api.fireworks.ai/inference/v1",
-    api_key=os.getenv("FIREWORKS_API_KEY"),
-)
+MODEL = "fireworks-ai/accounts/fireworks/models/deepseek-v4p1-flash"
 
 prompt = "Write a one-sentence tagline for a coffee shop."
 
 # Low temperature: deterministic, predictable
-response_low = client.chat.completions.create(
-    model="accounts/fireworks/models/deepseek-v4-flash",
+response_low = litelm.completion(
+    MODEL,
     messages=[{"role": "user", "content": prompt}],
     temperature=0.0,
 )
-print(f"Temperature 0.0: {response_low.choices[0].message.content}")
+print(f"Temperature 0.0: {response_low.content}")
 
 # High temperature: creative, varied
-response_high = client.chat.completions.create(
-    model="accounts/fireworks/models/deepseek-v4-flash",
+response_high = litelm.completion(
+    MODEL,
     messages=[{"role": "user", "content": prompt}],
     temperature=1.5,
 )
-print(f"Temperature 1.5: {response_high.choices[0].message.content}")
+print(f"Temperature 1.5: {response_high.content}")

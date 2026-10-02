@@ -3,41 +3,31 @@
 # Demonstrates multimodal input: sending both text and an image to the model.
 # The model can describe, analyze, or answer questions about the image content.
 #
+# The "images" key on a user message takes a path, a URL, or raw bytes; litelm
+# reads the file, sniffs its MIME type, base64-encodes it, and builds the
+# content parts the wire expects.
+#
 # Adapted from the Solo_Knowledge_Worker_AI photo_understanding.py example.
 #
-# Requirements: uv pip install google-genai Pillow
+# Requirements: uv sync
 # Environment: export GOOGLE_API_KEY="your-api-key"
+# Run: uv run python gemini_image.py
 
-import io
-import os
-from typing import Any
-from google import genai
-from google.genai import types
-from PIL import Image
+from pathlib import Path
 
-client = genai.Client(api_key=os.getenv("GOOGLE_API_KEY"))
+import litelm
+
+MODEL = "gemini/gemini-3-flash-preview"
 
 # Load an image from disk (replace with your own image path)
-image = Image.open("photo.jpg")
-buf = io.BytesIO()
-image.save(buf, format="JPEG")
-image_bytes = buf.getvalue()
+image_bytes = Path("photo.jpg").read_bytes()
 
 prompt = "Describe what you see in this image. Be specific about people, objects, and setting."
 
-contents: list[Any] = [
-    types.Part(text=prompt),
-    types.Part.from_bytes(data=image_bytes, mime_type="image/jpeg"),
-]
-
-response = client.models.generate_content(
-    model="gemini-3-flash-preview",
-    contents=contents,
-    config=types.GenerateContentConfig(
-        thinking_config=types.ThinkingConfig(
-            thinking_budget=0  # no thinking needed for simple description
-        )
-    ),
+response = litelm.completion(
+    MODEL,
+    messages=[{"role": "user", "content": prompt, "images": [image_bytes]}],
+    extra={"reasoning_effort": "minimal"},  # no deep thinking for a description
 )
 
-print(response.text)
+print(response.content)

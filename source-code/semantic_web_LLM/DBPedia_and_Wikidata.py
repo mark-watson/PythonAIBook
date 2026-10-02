@@ -22,15 +22,13 @@ Set environment variable:
     export FIREWORKS_API_KEY="your-api-key"
 """
 
-from library import (
-    extract_entities,
-    synthesize_answer,
-    run_cli,
-)
-
 import DBPedia
 import Wikidata
-
+from library import (
+    extract_entities,
+    run_cli,
+    synthesize_answer,
+)
 
 # ---------------------------------------------------------------------------
 # Combined answer pipeline

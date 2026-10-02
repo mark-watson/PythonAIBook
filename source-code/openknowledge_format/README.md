@@ -53,8 +53,8 @@ timestamp: 2026-06-10T00:00:00Z
 
 ## Project Structure
 
-* [okf_explorer.py](file:///Users/markwatson/GITHUB/PythonAIBook/source-code/openknowledge_format/okf_explorer.py): The main Python explorer script. It parses the Markdown files, extracts YAML frontmatter, loads concepts into memory, indexes them, and queries the local LLM.
-* [pyproject.toml](file:///Users/markwatson/GITHUB/PythonAIBook/source-code/openknowledge_format/pyproject.toml): Configures the Python project dependencies, strictly relying on `ollama`.
+* [okf_explorer.py](file:///Users/markwatson/GITHUB/PythonAIBook/source-code/openknowledge_format/okf_explorer.py): The main Python explorer script. It parses the Markdown files, extracts YAML frontmatter, loads concepts into memory, indexes them, and queries the local LLM through [`litelm`](../litelm).
+* [pyproject.toml](file:///Users/markwatson/GITHUB/PythonAIBook/source-code/openknowledge_format/pyproject.toml): Configures the Python project dependencies — `litelm`, installed editable from `../litelm`.
 * [bundle/index.md](file:///Users/markwatson/GITHUB/PythonAIBook/source-code/openknowledge_format/bundle/index.md): The main landing index for the OKF bundle catalog.
 
 ---

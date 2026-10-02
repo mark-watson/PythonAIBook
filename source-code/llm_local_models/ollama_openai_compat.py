@@ -1,23 +1,23 @@
-# ollama_openai_compat.py - Using local Ollama with the OpenAI SDK
+# ollama_openai_compat.py - One OpenAI-compatible client for every provider
 #
-# Ollama exposes an OpenAI-compatible API, so you can use the standard
-# openai Python library to talk to local models. This is useful for
-# writing code that can switch between cloud and local models by
-# changing only the base URL.
+# Ollama exposes an OpenAI-compatible API, and that is exactly the protocol
+# litelm speaks. The local server is therefore just another provider: only the
+# prefix of the model string decides where the request goes, so the same call
+# reaches a cloud API when MODEL changes.
 #
-# Requirements: ollama pull llama3.2:3b
-# Run: uv run ollama_openai_compat.py
+# Requirements: uv sync; ollama pull llama3.2:3b
+# Run: uv run python ollama_openai_compat.py
+#      LITELM_MODEL=fireworks-ai/accounts/fireworks/models/deepseek-v4p1-flash \
+#          uv run python ollama_openai_compat.py
 
-from openai import OpenAI
+import os
 
-# Point the OpenAI client at the local Ollama server
-client = OpenAI(
-    base_url="http://localhost:11434/v1",
-    api_key="not-needed",  # Ollama doesn't require authentication locally
-)
+import litelm
 
-response = client.chat.completions.create(
-    model="llama3.2:3b",
+MODEL = os.environ.get("LITELM_MODEL", "ollama/llama3.2:3b")
+
+response = litelm.completion(
+    MODEL,
     messages=[
         {"role": "system", "content": "You are a helpful assistant."},
         {
@@ -28,4 +28,5 @@ response = client.chat.completions.create(
     temperature=0.7,
 )
 
-print(response.choices[0].message.content)
+print(f"model: {MODEL}")
+print(response.content)

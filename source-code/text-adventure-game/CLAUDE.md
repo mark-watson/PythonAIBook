@@ -1,6 +1,6 @@
 # text-adventure-game
 
-A tiny text-adventure driver that streams responses from GPT to keep the story going. Uses a uv-based dev workflow with strict pyrefly typing, ruff formatting/linting, pytest, and two Claude Code hooks.
+A tiny text-adventure driver that keeps a story going with Fireworks.ai's `deepseek-v4p1-flash`, reached through the book's shared [`litelm`](../litelm) interface. Uses a uv-based dev workflow with strict pyrefly typing, ruff formatting/linting, pytest, and two Claude Code hooks.
 
 ## Quick start
 
@@ -9,7 +9,7 @@ uv sync
 just check   # fmt-check + lint + typecheck + test
 ```
 
-Needs `OPENAI_API_KEY` for the actual game.
+Needs `FIREWORKS_API_KEY` for the actual game.
 
 ## Layout
 

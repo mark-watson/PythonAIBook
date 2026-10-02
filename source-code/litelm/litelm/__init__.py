@@ -9,14 +9,15 @@ one-word edit::
     litelm.ask("ollama/llama3.2:3b", "What is 2+2?")
     litelm.ask("openai/gpt-5.4-nano", "What is 2+2?")
     litelm.ask("gemini/gemini-3-flash-preview", "What is 2+2?")
-    litelm.ask("fireworks-ai/accounts/fireworks/models/deepseek-v4-flash", "2+2?")
+    litelm.ask("fireworks-ai/accounts/fireworks/models/deepseek-v4p1-flash", "2+2?")
     litelm.ask("nvidia/meta/llama-3.1-8b-instruct", "What is 2+2?")
 
 This is a Python port of the Common Lisp ``litelm`` library, with the same
 interface as the Racket ``llmapis`` port: routing, message handling, streaming,
 tools as ordinary functions, embeddings, and an error hierarchy mirroring the
-providers' HTTP failures. Only ``completion``, ``ask``, ``embedding`` and
-``chat_with_tools`` reach the network; everything else is pure.
+providers' HTTP failures. ``completion``, ``ask``, ``responses``,
+``chat_with_tools``, ``embedding`` and ``generate_image`` reach the network;
+everything else is pure.
 
 The library needs no third-party packages -- it speaks HTTP with ``urllib`` and
 JSON with ``json``, exactly as the Common Lisp version speaks HTTP with
@@ -26,13 +27,17 @@ JSON with ``json``, exactly as the Common Lisp version speaks HTTP with
 from __future__ import annotations
 
 from .core import (
+    WEB_SEARCH,
     ToolChoice,
     ask,
     build_chat_payload,
     chat_with_tools,
     completion,
     embedding,
+    generate_image,
     parse_chat_response,
+    parse_responses_body,
+    responses,
 )
 from .errors import (
     ApiError,
@@ -56,6 +61,7 @@ from .providers import (
     find_provider,
     parse_model,
     provider_api_key,
+    provider_native_url,
     provider_url,
     providers,
 )
@@ -70,15 +76,17 @@ from .tools import (
     tool_schemas,
 )
 from .transport import DEFAULT_TIMEOUT
-from .types import Response, StreamChunk, ToolCall, ToolResult, Usage
+from .types import GeneratedImage, Response, StreamChunk, ToolCall, ToolResult, Usage
 
 __version__ = "0.1.0"
 
 __all__ = [
     "DEFAULT_TIMEOUT",
+    "WEB_SEARCH",
     "ApiError",
     "AuthenticationError",
     "ContextWindowExceededError",
+    "GeneratedImage",
     "Handler",
     "LitelmError",
     "Message",
@@ -104,15 +112,19 @@ __all__ = [
     "embedding",
     "execute_tool_calls",
     "find_provider",
+    "generate_image",
     "make_tool",
     "normalize_messages",
     "normalize_tools",
     "param",
     "parse_chat_response",
     "parse_model",
+    "parse_responses_body",
     "provider_api_key",
+    "provider_native_url",
     "provider_url",
     "providers",
+    "responses",
     "tool_message",
     "tool_schemas",
 ]

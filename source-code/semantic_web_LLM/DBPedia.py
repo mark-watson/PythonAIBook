@@ -15,20 +15,18 @@ Set environment variable:
     export FIREWORKS_API_KEY="your-api-key"
 """
 
-from openai.types.chat import ChatCompletionMessageParam  # noqa: F401
+import litelm
 
 from library import (
-    client,
-    MODEL_ID,
     ENTITY_TYPES,
-    extract_entities,
-    synthesize_answer,
-    query_sparql,
+    MODEL_ID,
     detect_relationship,
+    extract_entities,
+    query_sparql,
     resolve_value,
     run_cli,
+    synthesize_answer,
 )
-
 
 # ---------------------------------------------------------------------------
 # DBpedia endpoint
@@ -254,7 +252,7 @@ def enrich_entity(name: str, entity_type: str) -> list[str]:
     query = SPARQL_ENRICHMENT_TEMPLATE.format(name=name, values=values_block)
     try:
         results = query_dbpedia(query)
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         print(f"[Warning] Enrichment query failed for {name}: {e}")
         return []
 
@@ -312,7 +310,7 @@ def get_entity_context(entities: dict[str, list[str]]) -> str:
                     context_parts.append(f"{name}: {best}")
                 elif facts:
                     context_parts.append(f"{name}:\n" + "\n".join(facts))
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 print(f"[Warning] SPARQL query failed for {name}: {e}")
 
     return "\n\n".join(context_parts)
@@ -353,7 +351,7 @@ def answer_question(question: str) -> tuple[str, str]:
                             parts.append(label)
                     answer = f"The {verb} of {name} is: {', '.join(parts)}."
                     return answer, "\n".join(parts)
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 print(f"[Warning] Relationship query failed for {name}: {e}")
 
     # General entity lookup + enrichment
@@ -388,7 +386,7 @@ def answer_question(question: str) -> tuple[str, str]:
                             best = value
                 if best:
                     fallback_parts.append(f"{name}: {best}")
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 print(f"[Warning] Query failed for {name}: {e}")
 
     if fallback_parts:
@@ -404,7 +402,7 @@ def answer_question(question: str) -> tuple[str, str]:
 def chat_with_context(system_prompt: str | None = None):
     """Create a multi-turn conversation with DBpedia knowledge."""
     try:
-        messages: list[ChatCompletionMessageParam] = []
+        messages: list[litelm.Message] = []
         if system_prompt:
             messages.append({"role": "system", "content": system_prompt})
 
@@ -422,12 +420,8 @@ def chat_with_context(system_prompt: str | None = None):
 
             messages.append({"role": "user", "content": message_content})
 
-            response = client.chat.completions.create(
-                model=MODEL_ID,
-                messages=messages,
-                max_tokens=3500,
-            )
-            content = response.choices[0].message.content
+            response = litelm.completion(MODEL_ID, messages, max_tokens=3500)
+            content = response.content
             answer = content.strip() if content else ""
             print(f"\n{answer}")
             messages.append({"role": "assistant", "content": answer})

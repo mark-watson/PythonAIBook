@@ -8,7 +8,7 @@ cloud one.
 Run::
 
     uv run example_structured.py
-    LITELM_MODEL=fireworks-ai/accounts/fireworks/models/deepseek-v4-flash \\
+    LITELM_MODEL=fireworks-ai/accounts/fireworks/models/deepseek-v4p1-flash \\
         uv run example_structured.py
 """
 

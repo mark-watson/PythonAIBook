@@ -16,7 +16,12 @@ greeting phrase - all from a single `plan_trip()` call.
 | LLM-driven generation methods (body = `...`) | `recommend_destination`, `draft_itinerary`, `packing_tip` |
 | Structured output with Pydantic | `TravelPlan`, `Itinerary`, `DayPlan` |
 | Async orchestration composing tools + LLM calls | `plan_trip` |
-| Reusing the sibling `NVIDIA_client.py` HTTP helper | `complete(...)` call inside `plan_trip` |
+| Reusing the sibling `NVIDIA_client.py` helper (litelm-backed) | `complete(...)` call inside `plan_trip` |
+
+The model calls split in two: `nooa` drives its own litellm client for the
+agent's generation methods, using the NVIDIA endpoint and model id that
+`../llm_public_apis/NVIDIA_client.py` resolves from [`litelm`](../litelm)'s
+provider registry; the direct helper call goes through litelm itself.
 
 ## Setup
 
@@ -75,7 +80,7 @@ Sample output (truncated):
 - Python 3.10+
 - `uv` (for the PEP 723 script runner)
 - `NVIDIA_API_KEY` environment variable
-- The sibling file `../llm_public_apis/NVIDIA_client.py` (imported at runtime)
+- The sibling files `../llm_public_apis/NVIDIA_client.py` and `../litelm/` (both imported at runtime by path)
 
 ## Files
 

@@ -1,13 +1,18 @@
 """Text Adventure Game powered by Fireworks.ai LLMs.
 
 This script runs a text-based adventure game using the Fireworks.ai API
-with the deepseek-v4-flash model. The game master persona and setting are
+with the deepseek-v4p1-flash model. The game master persona and setting are
 defined in story.txt.
+
+The LLM is reached through litelm, the book's uniform interface, so the
+"fireworks-ai/" prefix in MODEL is the only Fireworks-specific part.
 """
 
-import os
 import sys
-from openai import OpenAI
+
+import litelm
+
+MODEL = "fireworks-ai/accounts/fireworks/models/deepseek-v4p1-flash"
 
 
 def load_story() -> str:
@@ -22,44 +27,24 @@ def load_story() -> str:
         sys.exit(1)
 
 
-def build_client() -> OpenAI:
-    """Create a Fireworks.ai OpenAI-compatible client."""
-    api_key = os.getenv("FIREWORKS_API_KEY")
-    if not api_key:
-        print("Error: FIREWORKS_API_KEY environment variable not set.")
-        print("Set it with: export FIREWORKS_API_KEY='your-api-key'")
-        sys.exit(1)
-    return OpenAI(
-        base_url="https://api.fireworks.ai/inference/v1",
-        api_key=api_key,
-    )
-
-
-MODEL = "accounts/fireworks/models/deepseek-v4-flash"
-
-
-def get_ai_response(client: OpenAI, messages: list[dict[str, str]]) -> str:
+def get_ai_response(messages: list[litelm.Message]) -> str:
     """Send conversation history to the model and return its reply."""
-    response = client.chat.completions.create(
-        model=MODEL,
-        messages=messages,  # type: ignore[arg-type]
-    )
-    content = response.choices[0].message.content
+    response = litelm.completion(MODEL, messages)
+    content = response.content
     assert content is not None, "Model returned empty response"
     return content
 
 
 def main():
     story_text = load_story()
-    client = build_client()
 
-    messages = [
+    messages: list[litelm.Message] = [
         {"role": "system", "content": story_text},
     ]
 
     print("=" * 60)
     print("  TEXT ADVENTURE GAME")
-    print("  Powered by Fireworks.ai — deepseek-v4-flash")
+    print("  Powered by Fireworks.ai — deepseek-v4p1-flash")
     print("=" * 60)
     print()
     print("Commands: /help  /restart  /quit")
@@ -68,8 +53,8 @@ def main():
     # Get the opening scene
     messages.append({"role": "user", "content": "Start the adventure."})
     try:
-        reply = get_ai_response(client, messages)
-    except Exception as e:
+        reply = get_ai_response(messages)
+    except litelm.LitelmError as e:
         print(f"Error connecting to Fireworks.ai: {e}")
         sys.exit(1)
     messages.append({"role": "assistant", "content": reply})
@@ -94,8 +79,8 @@ def main():
                     {"role": "user", "content": "Start the adventure."},
                 ]
                 try:
-                    reply = get_ai_response(client, messages)
-                except Exception as e:
+                    reply = get_ai_response(messages)
+                except litelm.LitelmError as e:
                     print(f"Error: {e}")
                     break
                 messages.append({"role": "assistant", "content": reply})
@@ -112,8 +97,8 @@ def main():
 
         messages.append({"role": "user", "content": user_input})
         try:
-            reply = get_ai_response(client, messages)
-        except Exception as e:
+            reply = get_ai_response(messages)
+        except litelm.LitelmError as e:
             print(f"Error: {e}")
             print("Try again or type /quit to exit.")
             messages.pop()  # Remove the failed user message

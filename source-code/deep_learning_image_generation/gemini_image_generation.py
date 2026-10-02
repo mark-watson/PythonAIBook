@@ -2,47 +2,38 @@
 Image generation using Google's Imagen 4 model
 via the Gemini API.
 
-Uses the google-genai SDK for a simple, low-code
-approach to text-to-image generation — no local GPU
-or large model downloads required.
+The call goes through litelm's generate_image() entry point: text-to-image has
+no OpenAI-compatible endpoint, so litelm reaches the provider's own API, decodes
+the returned images, and hands back GeneratedImage values — no SDK required and
+no local GPU or large model downloads.
 
 Requirements:
-  uv add google-genai Pillow
+  uv sync
 
 Set your API key:
   export GOOGLE_API_KEY="your-key-here"
 """
 
-import io
 import os
+from pathlib import Path
 
-from google import genai
-from google.genai import types
-from PIL import Image
+import litelm
+
+MODEL = "gemini/imagen-4.0-fast-generate-001"
 
 
 def main():
-    api_key = os.getenv("GOOGLE_API_KEY")
-    if not api_key:
+    if not os.getenv("GOOGLE_API_KEY"):
         raise SystemExit("Set GOOGLE_API_KEY environment variable")
-
-    client = genai.Client(api_key=api_key)
 
     prompt = "a serene mountain landscape at sunset, oil painting style"
     print(f"Generating image for prompt: '{prompt}'")
 
-    response = client.models.generate_images(
-        model="imagen-4.0-fast-generate-001",
-        prompt=prompt,
-        config=types.GenerateImagesConfig(
-            number_of_images=1,
-        ),
-    )
+    images = litelm.generate_image(MODEL, prompt, number_of_images=1)
 
-    for generated_image in response.generated_images:
-        image = Image.open(io.BytesIO(generated_image.image.image_bytes))
-        output_path = "gemini_generated_landscape.png"
-        image.save(output_path)
+    for generated_image in images:
+        output_path = Path(f"gemini_generated_landscape.{generated_image.suffix}")
+        generated_image.save(output_path)
         print(f"Image saved to: {output_path}")
 
 

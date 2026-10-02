@@ -5,7 +5,7 @@ library.py - Shared utilities for SPARQL + LLM question answering.
 This module provides general-purpose functions used by the knowledge-base
 specific scripts (DBPedia.py, Wikidata.py, DBPedia_and_Wikidata.py):
 
-  * LLM utilities: Fireworks.ai client, entity extraction, answer synthesis
+  * LLM utilities: litelm completion, entity extraction, answer synthesis
   * SPARQL utilities: generic query execution, relationship detection
   * CLI helper: a reusable main() that delegates to a caller-supplied
     answer_question function
@@ -14,25 +14,21 @@ Set environment variable:
     export FIREWORKS_API_KEY="your-api-key"
 """
 
-import os
 import json
 import re
 from collections.abc import Callable
 
+import litelm
 import requests
-from openai import OpenAI
-
 
 # ---------------------------------------------------------------------------
 # LLM setup
 # ---------------------------------------------------------------------------
 
-client = OpenAI(
-    base_url="https://api.fireworks.ai/inference/v1",
-    api_key=os.getenv("FIREWORKS_API_KEY"),
-)
-
-MODEL_ID = "accounts/fireworks/models/deepseek-v4-flash-0731"
+# litelm routes a "fireworks-ai/..." model to
+# https://api.fireworks.ai/inference/v1 and reads FIREWORKS_API_KEY, so there
+# is no client object to build here — just the model id.
+MODEL_ID = "fireworks-ai/accounts/fireworks/models/deepseek-v4p1-flash-0731"
 
 # Descriptive User-Agent so SPARQL endpoints (especially Wikidata) do not
 # rate-limit us as an unidentified bot.
@@ -44,19 +40,19 @@ _USER_AGENT = (
 ENTITY_TYPES = ["PERSON", "ORG", "GPE", "MISC"]
 
 
-def llm_complete(prompt: str, max_tokens: int = 3000, temperature: float = 0) -> str:
+def llm_complete(prompt: str, max_tokens: int = 3000, temperature: float = 0.0) -> str:
     """Send a single user message to the Fireworks.ai LLM and return the text.
 
-    Thin wrapper around the OpenAI-compatible chat-completions API so callers
-    do not have to repeat the boilerplate client/model/messages dance.
+    Thin wrapper around litelm's uniform interface so callers do not have to
+    repeat the model/messages boilerplate.
     """
-    response = client.chat.completions.create(
-        model=MODEL_ID,
+    response = litelm.completion(
+        MODEL_ID,
         messages=[{"role": "user", "content": prompt}],
         max_tokens=max_tokens,
         temperature=temperature,
     )
-    content = response.choices[0].message.content
+    content = response.content
     return content.strip() if content else ""
 
 
@@ -108,7 +104,7 @@ Output: """
                 names = [names]
             cleaned[etype] = [str(n) for n in names]
         return cleaned
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         print(f"[Warning] LLM entity extraction failed: {e}")
         return {}
 
@@ -139,7 +135,7 @@ def synthesize_answer(
     )
     try:
         return llm_complete(prompt, max_tokens=3500)
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         print(f"[Warning] LLM synthesis failed: {e}")
         return ""
 
@@ -229,7 +225,7 @@ def run_cli(answer_fn: Callable[[str], tuple[str, str]], script_name: str):
     print(f"\nQuestion: {question}")
     print("-" * 50)
 
-    answer, context = answer_fn(question)
+    answer, _context = answer_fn(question)
 
     print("\nAnswer:")
     print(answer)

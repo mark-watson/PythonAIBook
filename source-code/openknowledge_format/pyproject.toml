@@ -1,11 +1,17 @@
 [project]
 name = "openknowledge-format"
 version = "0.1.0"
-requires-python = ">=3.12"
-description = "Open Knowledge Format (OKF) example with Ollama LLM Q&A"
+requires-python = ">=3.14"
+description = "Open Knowledge Format (OKF) example with local LLM Q&A"
 dependencies = [
-    "ollama>=0.6.1",
+    "litelm",
 ]
+
+# litelm is the shared LLM interface for every example in the book; it routes
+# the "ollama/..." model to the local server. The editable install means edits
+# to ../litelm take effect here immediately.
+[tool.uv.sources]
+litelm = { path = "../litelm", editable = true }
 
 [dependency-groups]
 dev = [

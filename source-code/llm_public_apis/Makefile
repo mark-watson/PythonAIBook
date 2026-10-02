@@ -61,4 +61,4 @@ nvidia-text:
 
 check:
 	python3 -m py_compile *.py
-	uv run python -c "import PIL, google, openai"
+	uv run python -c "import litelm"

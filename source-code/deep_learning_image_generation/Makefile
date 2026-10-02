@@ -21,4 +21,4 @@ gemini:
 
 check:
 	python3 -m py_compile *.py
-	uv run python -c "import PIL, diffusers, google, torch"
+	uv run python -c "import PIL, diffusers, litelm, torch"

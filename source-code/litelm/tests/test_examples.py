@@ -29,7 +29,9 @@ def test_every_expected_example_is_present() -> None:
     assert EXAMPLES == [
         "example_conversation.py",
         "example_embeddings.py",
+        "example_image.py",
         "example_nvidia.py",
+        "example_search.py",
         "example_streaming.py",
         "example_structured.py",
         "example_text.py",

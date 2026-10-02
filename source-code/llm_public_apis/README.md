@@ -2,6 +2,13 @@
 
 This directory contains example code for the **LLMs with Public APIs** chapter.
 
+Every script drives its provider through [`litelm`](../litelm), the book's
+uniform LLM interface: models are named `"provider/model-name"`
+(`gemini/gemini-3-flash-preview`, `openai/gpt-5.4-nano`,
+`fireworks-ai/accounts/fireworks/models/deepseek-v4p1-flash`, …). litelm speaks
+HTTP itself, so `google-genai`, `openai` and Pillow are no longer needed —
+`uv sync` installs litelm from `../litelm` as an editable path dependency.
+
 ## Setup
 
 Uses [`uv`](https://docs.astral.sh/uv/) for dependency management and [`just`](https://just.systems/) as the task runner.
@@ -12,7 +19,7 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 # just — the Rust task runner (do NOT install the Python "just" package from PyPI)
 brew install just
 
-uv sync
+uv sync   # also installs ../litelm editable
 ```
 
 ## Google Gemini Examples
@@ -25,7 +32,7 @@ export GOOGLE_API_KEY="your-api-key"
 
 - **gemini_text.py** — Basic text generation.
 - **gemini_temperature.py** — Effect of temperature on output creativity.
-- **gemini_thinking.py** — Extended reasoning with thinking budget.
+- **gemini_thinking.py** — Extended reasoning with a reduced thinking budget.
 - **gemini_conversation.py** — Multi-turn conversation with history.
 - **gemini_image.py** — Multimodal image analysis (requires a `photo.jpg`).
 - **gemini_structured.py** — Extracting structured JSON from text.
@@ -38,8 +45,10 @@ Requires an OpenAI API key ([get one here](https://platform.openai.com/api-keys)
 export OPENAI_API_KEY="your-api-key"
 ```
 
+These two use the OpenAI **Responses API** through `litelm.responses()`.
+
 - **openai_text.py** — Basic text generation with GPT-5.4-nano.
-- **openai_search.py** — Web-search-augmented generation.
+- **openai_search.py** — Web-search-augmented generation (`litelm.WEB_SEARCH`).
 
 ## Fireworks.ai Examples
 
@@ -49,13 +58,24 @@ Requires a Fireworks API key ([get one here](https://fireworks.ai/api-keys)):
 export FIREWORKS_API_KEY="your-api-key"
 ```
 
-Fireworks uses an OpenAI-compatible API, so we use the `openai` SDK with a custom base URL. The default model is `deepseek-v4-flash`.
+Fireworks exposes an OpenAI-compatible API, which is the protocol litelm
+speaks to every provider. The default model is `deepseek-v4p1-flash`.
 
 - **fireworks_text.py** — Basic text generation.
 - **fireworks_temperature.py** — Effect of temperature on output creativity.
 - **fireworks_thinking.py** — Extended reasoning with DeepSeek thinking mode.
 - **fireworks_conversation.py** — Multi-turn conversation with history.
 - **fireworks_structured.py** — Extracting structured JSON from text.
+
+## NVIDIA Examples
+
+Requires a free NVIDIA NIM key ([get one here](https://build.nvidia.com)):
+
+```bash
+export NVIDIA_API_KEY="your-api-key"
+```
+
+- **NVIDIA_client.py** — A small library of `complete` / `chat` helpers, plus the endpoint and model id that `../NVIDIA_Object_Oriented_Agents` reuses.
 
 ## Running
 

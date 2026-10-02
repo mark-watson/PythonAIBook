@@ -1,9 +1,10 @@
 """Syntax smoke tests.
 
 Every script in this project runs its work at *module level* — importing
-them would call `client = genai.Client(...)` / `OpenAI()` and fire off API
-requests, requiring live keys. Instead we `ast.parse` each script, which
-verifies it's syntactically valid without executing anything.
+them would call litelm and fire off API requests, requiring live keys.
+Instead we `ast.parse` each script, which verifies it's syntactically valid
+without executing anything, plus assert that it goes through litelm rather
+than a provider SDK.
 
 Exception: library modules that guard all API calls behind functions (no
 module-level side-effects) are imported directly so we can also verify their
@@ -35,15 +36,34 @@ SCRIPTS = [
 ROOT = Path(__file__).resolve().parent.parent
 
 
+def top_level_imports(script: str) -> set[str]:
+    """Every module name the script imports, however it spells the import."""
+    tree = ast.parse((ROOT / script).read_text(encoding="utf-8"), filename=script)
+    names: set[str] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            names.update(alias.name.split(".")[0] for alias in node.names)
+        elif isinstance(node, ast.ImportFrom) and node.module:
+            names.add(node.module.split(".")[0])
+    return names
+
+
 @pytest.mark.parametrize("script", SCRIPTS)
 def test_script_parses(script: str) -> None:
     source = (ROOT / script).read_text(encoding="utf-8")
     ast.parse(source, filename=script)
 
 
+@pytest.mark.parametrize("script", SCRIPTS)
+def test_script_uses_litelm(script: str) -> None:
+    assert "litelm" in top_level_imports(script), f"{script} does not import litelm"
+
+
 def test_nvidia_client_importable() -> None:
     mod = importlib.import_module("NVIDIA_client")
-    assert callable(mod.get_client)
     assert callable(mod.complete)
     assert callable(mod.chat)
+    assert callable(mod.model_id)
     assert mod.DEFAULT_MODEL == "meta/llama-3.1-8b-instruct"
+    assert mod.model_id(mod.DEFAULT_MODEL) == "nvidia/meta/llama-3.1-8b-instruct"
+    assert mod._BASE_URL == "https://integrate.api.nvidia.com/v1"

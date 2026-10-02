@@ -3,17 +3,21 @@
 # Demonstrates the simplest possible use of the Gemini API:
 # send a text prompt, receive a generated response.
 #
-# Requirements: uv pip install google-genai
+# The model string carries the provider prefix, so litelm routes the request to
+# Gemini's OpenAI-compatible endpoint. Only that prefix changes to call a
+# different provider (see ../litelm/README.md).
+#
+# Requirements: uv sync
 # Environment: export GOOGLE_API_KEY="your-api-key"
+# Run: uv run python gemini_text.py
 
-import os
-from google import genai
+import litelm
 
-client = genai.Client(api_key=os.getenv("GOOGLE_API_KEY"))
+MODEL = "gemini/gemini-3-flash-preview"
 
-response = client.models.generate_content(
-    model="gemini-3-flash-preview",
-    contents="Briefly explain what a transformer model is in AI.",
+response = litelm.completion(
+    MODEL,
+    messages="Briefly explain what a transformer model is in AI.",
 )
 
-print(response.text)
+print(response.content)

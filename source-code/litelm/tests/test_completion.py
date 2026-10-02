@@ -158,6 +158,43 @@ class TestParseChatResponse:
             prompt_tokens=2, completion_tokens=4, total_tokens=6
         )
 
+    def test_cached_tokens_are_read_from_prompt_tokens_details(self) -> None:
+        body = chat_body(
+            "x",
+            usage={
+                "prompt_tokens": 2033,
+                "completion_tokens": 5,
+                "total_tokens": 2038,
+                "prompt_tokens_details": {"cached_tokens": 2023},
+            },
+        )
+        usage = litelm.parse_chat_response(body, "m").usage
+        assert usage is not None
+        assert usage.cached_tokens == 2023
+
+    @pytest.mark.parametrize(
+        ("field", "value"),
+        [
+            ("prompt_cache_hit_tokens", 7),  # DeepSeek
+            ("cache_read_input_tokens", 7),  # Anthropic
+            ("cached_tokens", 7),
+        ],
+    )
+    def test_cached_tokens_accept_other_provider_spellings(
+        self, field: str, value: int
+    ) -> None:
+        body = chat_body("x", usage={"prompt_tokens": 9, field: value})
+        usage = litelm.parse_chat_response(body, "m").usage
+        assert usage is not None
+        assert usage.cached_tokens == 7
+
+    def test_absent_cache_numbers_stay_none_not_zero(self) -> None:
+        """A server that reports no cache fields is not reporting a cache miss."""
+        body = chat_body("x", usage={"prompt_tokens": 9, "completion_tokens": 1})
+        usage = litelm.parse_chat_response(body, "m").usage
+        assert usage is not None
+        assert usage.cached_tokens is None
+
     def test_missing_usage_is_none(self) -> None:
         body = chat_body("x")
         del body["usage"]

@@ -1,25 +1,18 @@
 # openai_text.py - Basic text generation with OpenAI
 #
-# Demonstrates using the OpenAI Responses API with GPT-5.4-nano.
-# The response structure requires iterating through output items
-# to extract the assistant's text message.
+# Demonstrates using the OpenAI Responses API with GPT-5.4-nano. The response
+# arrives as an array of typed output items rather than one message, and
+# litelm.responses folds that array into the usual Response.
 #
-# Requirements: uv pip install openai
+# Requirements: uv sync
 # Environment: export OPENAI_API_KEY="your-api-key"
+# Run: uv run python openai_text.py
 
-from openai import OpenAI
-from openai.types.responses import ResponseOutputMessage, ResponseOutputText
+import litelm
 
-client = OpenAI()  # reads OPENAI_API_KEY from environment
+MODEL = "openai/gpt-5.4-nano"
 
-response = client.responses.create(
-    model="gpt-5.4-nano", input="Briefly explain what a transformer model is in AI."
-)
+response = litelm.responses(MODEL, "Briefly explain what a transformer model is in AI.")
 
-# Extract the assistant's text from the response output
-for item in response.output:
-    if isinstance(item, ResponseOutputMessage) and item.role == "assistant":
-        for content in item.content:
-            if isinstance(content, ResponseOutputText):
-                print(content.text)
-                break
+# content is the concatenated output_text of every message item
+print(response.content)

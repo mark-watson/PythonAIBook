@@ -33,6 +33,7 @@ __all__ = [
     "find_provider",
     "parse_model",
     "provider_api_key",
+    "provider_native_url",
     "provider_url",
     "providers",
 ]
@@ -40,12 +41,19 @@ __all__ = [
 
 @dataclass(frozen=True)
 class Provider:
-    """One OpenAI-compatible endpoint plus the env vars holding its key."""
+    """One OpenAI-compatible endpoint plus the env vars holding its key.
+
+    ``native_url`` is the base of the provider's *own* API, for the handful of
+    capabilities the OpenAI-compatible surface does not carry -- image
+    generation, for instance. A provider without one only speaks
+    ``/chat/completions`` and ``/embeddings``.
+    """
 
     name: str
     base_url: str
     env_keys: tuple[str, ...] = field(default_factory=tuple)
     requires_key: bool = True
+    native_url: str | None = None
 
 
 _REGISTRY: dict[str, Provider] = {}
@@ -57,11 +65,14 @@ def define_provider(
     *,
     env_keys: str | tuple[str, ...] | list[str] = (),
     requires_key: bool = True,
+    native_url: str | None = None,
 ) -> Provider:
     """Register (or replace) a provider and return it.
 
     ``env_keys`` may be a single variable name or a sequence tried in order.
-    Local servers such as Ollama pass ``requires_key=False``.
+    Local servers such as Ollama pass ``requires_key=False``. ``native_url``
+    names the provider's own API for capabilities litelm reaches outside
+    ``/chat/completions``.
     """
     if isinstance(env_keys, str):
         keys: tuple[str, ...] = (env_keys,)
@@ -72,6 +83,7 @@ def define_provider(
         base_url=base_url.rstrip("/"),
         env_keys=keys,
         requires_key=requires_key,
+        native_url=native_url.rstrip("/") if native_url else None,
     )
     _REGISTRY[provider.name] = provider
     return provider
@@ -136,6 +148,21 @@ def provider_url(provider: Provider, path: str, api_base: str | None = None) -> 
     return (api_base.rstrip("/") if api_base else provider.base_url) + path
 
 
+def provider_native_url(provider: Provider, api_base: str | None = None) -> str:
+    """Base URL of the provider's own API, for its non-OpenAI capabilities.
+
+    Raises :class:`~litelm.errors.LitelmError` for a provider that has none,
+    instead of building a URL that was never going to work.
+    """
+    url = api_base if api_base else provider.native_url
+    if not url:
+        raise LitelmError(
+            f"Provider {provider.name!r} has no native API for this call. "
+            "Pass a provider=... that supports it (gemini) or api_base=..."
+        )
+    return url.rstrip("/")
+
+
 def bearer_headers(api_key: str | None) -> dict[str, str]:
     """JSON content type plus a bearer token when there is a key."""
     headers = {"Content-Type": "application/json"}
@@ -159,6 +186,9 @@ define_provider(
     "gemini",
     "https://generativelanguage.googleapis.com/v1beta/openai",
     env_keys=("GEMINI_API_KEY", "GOOGLE_API_KEY"),
+    # Imagen image generation has no OpenAI-compatible endpoint, so it is
+    # reached through the Gemini API's own base URL.
+    native_url="https://generativelanguage.googleapis.com/v1beta",
 )
 define_provider(
     "fireworks-ai",

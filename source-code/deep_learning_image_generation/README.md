@@ -5,7 +5,7 @@ This directory contains example code for the **Overview of Image Generation** ch
 ## Files
 
 - **image_generation.py** — Text-to-image generation using Stable Diffusion via the Hugging Face diffusers library (runs locally).
-- **gemini_image_generation.py** — Text-to-image generation using Google's Imagen 4 via the Gemini API (cloud-based).
+- **gemini_image_generation.py** — Text-to-image generation using Google's Imagen 4 through [`litelm`](../litelm)'s `generate_image()` entry point (cloud-based).
 - **generated_landscape.png** — Sample output image (local model).
 - **gemini_generated_landscape.png** — Sample output image (Gemini Imagen).
 
@@ -49,7 +49,7 @@ uv run python gemini_image_generation.py
 make gemini
 ```
 
-This example uses Google's Imagen 4 model via the Gemini API — no local GPU or large model downloads required. The generated image is saved to `gemini_generated_landscape.png`.
+This example generates the image with Google's Imagen 4 through litelm's `generate_image()` — no `google-genai` SDK, no local GPU, and no large model downloads. The generated image is saved to `gemini_generated_landscape.png`.
 
 Example Gemini-generated image (same prompt):
 

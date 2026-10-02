@@ -171,7 +171,7 @@ def test_gemini_completion() -> None:
 
 @needs_fireworks
 def test_fireworks_completion() -> None:
-    model = "fireworks-ai/accounts/fireworks/models/deepseek-v4-flash"
+    model = "fireworks-ai/accounts/fireworks/models/deepseek-v4p1-flash"
     assert litelm.ask(model, "Reply with exactly: ok")
 
 

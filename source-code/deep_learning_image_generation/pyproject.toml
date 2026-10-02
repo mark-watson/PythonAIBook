@@ -5,13 +5,19 @@ requires-python = ">=3.14"
 dependencies = [
     "accelerate>=1.13.0",
     "diffusers>=0.37.1",
-    "google-genai>=2.2.0",
     "invisible-watermark>=0.2.0",
+    "litelm",
     "pillow>=12.2.0",
     "torch>=2.11.0",
     "torchvision>=0.26.0",
     "transformers>=5.6.2",
 ]
+
+# litelm is the shared LLM/image interface for every example in the book; it
+# reaches Imagen through Gemini's native API, so google-genai is not needed.
+# The editable install means edits to ../litelm take effect here immediately.
+[tool.uv.sources]
+litelm = { path = "../litelm", editable = true }
 
 [dependency-groups]
 dev = [

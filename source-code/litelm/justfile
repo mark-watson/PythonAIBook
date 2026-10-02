@@ -58,5 +58,11 @@ thinking:
 structured:
     uv run python examples/example_structured.py
 
+search:
+    uv run python examples/example_search.py
+
+image:
+    uv run python examples/example_image.py
+
 nvidia:
     uv run python examples/example_nvidia.py

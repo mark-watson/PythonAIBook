@@ -11,11 +11,13 @@
 #   4. Structured output via Pydantic.
 #   5. An async orchestrator method that stitches everything together.
 #   6. A bonus direct call to the sibling `NVIDIA_client.complete()` helper,
-#      showing the framework composes cleanly with plain HTTP calls.
+#      showing the framework composes cleanly with plain LLM calls.
 #
-# The LLM backend is NVIDIA's free OpenAI-compatible NIM endpoint, reached by
-# passing `_BASE_URL` and `DEFAULT_MODEL` from `../llm_public_apis/NVIDIA_client.py`
-# through litellm's `openai/<model>` prefix.
+# The LLM backend is NVIDIA's free OpenAI-compatible NIM endpoint. `NVIDIA_client`
+# resolves the endpoint and model id from litelm, the book's uniform LLM
+# interface, and its `complete()` helper goes through litelm too. The `nooa`
+# framework drives its own litellm client for the agent's generation methods, so
+# litelm contributes the routing/endpoint there rather than the transport.
 #
 # Hack it: edit DESTINATIONS to add cities of your own, change `interests` and
 # `budget` in `main()`, or add new deterministic tool methods and watch the
@@ -29,6 +31,10 @@
 #   "pydantic>=2",
 # ]
 # ///
+#
+# litelm (../litelm) is imported by path rather than declared above: it has no
+# runtime dependencies, and this directory is capped below the Python version
+# its package metadata requires.
 
 import asyncio
 import os
@@ -36,6 +42,11 @@ import sys
 from pathlib import Path
 
 from pydantic import BaseModel, Field
+
+# litelm must be importable before NVIDIA_client, which reads its provider
+# registry for the NVIDIA endpoint.
+_LITELM = Path(__file__).resolve().parent.parent / "litelm"
+sys.path.insert(0, str(_LITELM))
 
 # Reuse endpoint + model from the sibling NVIDIA_client demo
 _SIBLING = Path(__file__).resolve().parent.parent / "llm_public_apis"
@@ -49,8 +60,9 @@ from nooa.unifiedllm.registry import get_llm_client  # noqa: E402
 if not os.getenv("NVIDIA_API_KEY"):
     raise SystemExit("Set NVIDIA_API_KEY first (free key at https://build.nvidia.com)")
 
-# litellm's "openai/" prefix means "any OpenAI-compatible endpoint", so
-# combining it with NVIDIA_client's constants routes every call to NVIDIA NIM.
+# nooa builds its own litellm client; litellm's "openai/" prefix means "any
+# OpenAI-compatible endpoint", so combining it with NVIDIA_client's constants
+# (resolved from litelm's provider registry) routes every call to NVIDIA NIM.
 llm = get_llm_client(
     f"openai/{DEFAULT_MODEL}",
     api_base=_BASE_URL,
@@ -162,9 +174,9 @@ class TravelPlannerAgent(Agent, llm=llm):
         itinerary = Itinerary(days=await self.draft_itinerary(city, nights))
         tip = await self.packing_tip(city)
 
-        # Bonus flourish: one direct sync call to the sibling NVIDIA_client.
-        # Demonstrates that the OO agent framework composes cleanly with
-        # plain HTTP-level LLM calls hitting the same endpoint.
+        # Bonus flourish: one direct sync call through the sibling
+        # NVIDIA_client, which litelm backs. Demonstrates that the OO agent
+        # framework composes cleanly with plain litelm calls to the same model.
         phrase = complete(
             f"Give ONE short local greeting phrase a traveller could use in "
             f"{city}, {self.get_country(city)}, with a phonetic pronunciation "

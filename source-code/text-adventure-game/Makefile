@@ -15,4 +15,4 @@ run:
 
 check:
 	python3 -m py_compile *.py
-	uv run python -c "import openai"
+	uv run python -c "import litelm"

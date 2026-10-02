@@ -12,7 +12,7 @@ Run::
 
     ollama pull deepseek-r1:7b
     LITELM_MODEL=ollama/deepseek-r1:7b uv run example_thinking.py
-    LITELM_MODEL=fireworks-ai/accounts/fireworks/models/deepseek-v4-flash \\
+    LITELM_MODEL=fireworks-ai/accounts/fireworks/models/deepseek-v4p1-flash \\
         uv run example_thinking.py
 """
 

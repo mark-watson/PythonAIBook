@@ -1,8 +1,9 @@
 # litelm
 
-A dependency-free Python library — and the nine runnable demos around it — that
-puts **one interface on every LLM provider this book uses**: the local Ollama
-models from `llm_local_models` and the cloud APIs from `llm_public_apis`.
+A dependency-free Python library — and the eleven runnable demos around it —
+that puts **one interface on every LLM provider this book uses**: the local
+Ollama models from `llm_local_models` and the cloud APIs from
+`llm_public_apis`. Every other LLM example in `source-code/` depends on it.
 
 Models are addressed as `"provider/model-name"` strings, messages are plain
 dicts, tools are ordinary Python functions, and the whole library talks HTTP
@@ -15,14 +16,17 @@ litelm.ask("ollama/llama3.2:3b", "What is 2+2?")  # local, no key
 litelm.ask("openai/gpt-5.4-nano", "What is 2+2?")
 litelm.ask("gemini/gemini-3-flash-preview", "What is 2+2?")
 litelm.ask("nvidia/meta/llama-3.1-8b-instruct", "What is 2+2?")
-litelm.ask("fireworks-ai/accounts/fireworks/models/deepseek-v4-flash", "2+2?")
+litelm.ask("fireworks-ai/accounts/fireworks/models/deepseek-v4p1-flash", "2+2?")
 ```
 
 It is the Python member of a family: the Common Lisp original lives in
 `loving-common-lisp/src/litelm`, the Racket port in
 `Racket-AI-book/source-code/llmapis`. All three share the routing scheme, the
 entry-point names (`completion` / `ask` / `embedding` / `chat_with_tools`), the
-tool-call contract, and the error hierarchy.
+tool-call contract, and the error hierarchy. The Python port adds two entry
+points the other two do not have -- `responses` for the OpenAI Responses API and
+`generate_image` for Imagen -- so this book's examples can reach those
+capabilities through the same library.
 
 ## Quick start
 
@@ -41,12 +45,13 @@ routing table in `README.md`.
 litelm/
 ├── litelm/
 │   ├── __init__.py            # public interface (__all__ is the contract)
-│   ├── providers.py           # registry, "provider/model" routing, API keys
+│   ├── providers.py           # registry, "provider/model" routing, native URLs
 │   ├── messages.py            # normalization, images, assistant/tool messages
 │   ├── tools.py               # Tool/ToolParam, JSON schemas, execute_tool_calls
-│   ├── core.py                # completion/ask/embedding/chat_with_tools + parsing
+│   ├── core.py                # completion/ask/responses/embedding/generate_image
 │   ├── transport.py           # the ONLY module that touches the network
 │   ├── types.py               # Response, StreamChunk, ToolCall, ToolResult, Usage
+│   │                          #   GeneratedImage
 │   └── errors.py              # LitelmError -> ApiError -> 4 subclasses
 ├── examples/                  # runnable demos, import-safe (main()-guarded)
 │   ├── __init__.py
@@ -58,6 +63,8 @@ litelm/
 │   ├── example_vision.py
 │   ├── example_thinking.py
 │   ├── example_structured.py
+│   ├── example_search.py      # Responses API + the built-in web-search tool
+│   ├── example_image.py       # Imagen text-to-image
 │   └── example_nvidia.py
 ├── tests/
 │   ├── conftest.py            # FakeTransport: offline HTTP double
@@ -65,6 +72,8 @@ litelm/
 │   ├── test_messages.py       # normalization, images, tool messages
 │   ├── test_tools.py          # schemas, execution, the agentic loop
 │   ├── test_completion.py     # payload building, response parsing, fallbacks
+│   ├── test_responses.py      # Responses API bodies and output-item parsing
+│   ├── test_images.py         # native predict requests and decoded images
 │   ├── test_streaming.py      # SSE chunk folding, tool-call fragments
 │   ├── test_transport.py      # status mapping, JSON decoding, SSE framing
 │   ├── test_http_server.py    # end-to-end over a real loopback socket

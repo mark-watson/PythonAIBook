@@ -2,12 +2,13 @@
 
 A command-line tool that answers natural-language questions by combining
 large-language-model entity extraction with live SPARQL queries against the
-DBpedia knowledge base.
+DBpedia knowledge base. The LLM calls go through [`litelm`](../litelm), the
+book's uniform interface (`fireworks-ai/...` model strings).
 
 ## How it works
 
 1. **Entity extraction** — The question is sent to a Fireworks.ai LLM
-   (`deepseek-v4-flash`) with a one-shot prompt that classifies every named
+   (`deepseek-v4p1-flash`) with a one-shot prompt that classifies every named
    entity into one of four types: `PERSON`, `ORG`, `GPE`, or `MISC`.
 2. **Relationship detection** — The question is scanned against a hash table
    of ~20 common English phrases (`"capital"`, `"born"`, `"married to"`,
@@ -24,15 +25,15 @@ DBpedia knowledge base.
 
 ### Prerequisites
 
-- Python ≥ 3.13
+- Python ≥ 3.14
 - [uv](https://docs.astral.sh/uv/) package manager
 - A Fireworks.ai API key ([get one here](https://fireworks.ai))
 
 ### Install
 
 ```bash
-cd source-code/semantic_wem_LLM
-uv sync          # creates .venv and installs dependencies
+cd source-code/semantic_web_LLM
+uv sync          # creates .venv, installs dependencies + ../litelm editable
 ```
 
 ### Configure
@@ -49,13 +50,13 @@ persistent.
 ### Interactive mode
 
 ```bash
-uv run LLM_semweb.py
+uv run DBPedia.py
 ```
 
 You'll be prompted to enter a question:
 
 ```
-LLM_semweb.py - QA with SPARQL + DBpedia
+DBPedia.py - QA with SPARQL + LLM
 --------------------------------------------------
 Enter your question: What is the capital of France
 ```
@@ -65,17 +66,20 @@ Enter your question: What is the capital of France
 Pass the question as arguments:
 
 ```bash
-uv run LLM_semweb.py "What is the capital of France"
+uv run DBPedia.py "What is the capital of France"
+uv run Wikidata.py "What is the capital of France"
+uv run DBPedia_and_Wikidata.py "What is the capital of France"
 ```
 
 ### Multi-turn chat
 
-The `chat_with_context` function provides an interactive multi-turn session
-where DBpedia context is injected into each turn. Call it from a Python
-shell:
+The `chat_with_context` function in `DBPedia.py` provides an interactive
+multi-turn session where DBpedia context is injected into each turn. Call it
+from a Python shell:
 
 ```python
-from LLM_semweb import chat_with_context
+from DBPedia import chat_with_context
+
 chat_with_context()
 ```
 
@@ -106,15 +110,15 @@ related entities from DBpedia:
 Passing a list of entity names returns DBpedia descriptions for each:
 
 ```bash
-uv run LLM_semweb.py "California, Texas, IBM, Microsoft, Germany, Canada"
+uv run DBPedia.py "California, Texas, IBM, Microsoft, Germany, Canada"
 ```
 
 ```bash
-uv run LLM_semweb.py "IBM, Pepsi, Canada"
+uv run DBPedia.py "IBM, Pepsi, Canada"
 ```
 
 ```bash
-uv run LLM_semweb.py "Germany, Canada, Pepsi, IBM, California, Biology, Physics"
+uv run DBPedia.py "Germany, Canada, Pepsi, IBM, California, Biology, Physics"
 ```
 
 ## Supported relationship keywords
@@ -141,18 +145,21 @@ properties (matching is case-insensitive, longest phrase first):
 ## Project layout
 
 ```
-semantic_wem_LLM/
-├── LLM_semweb.py     # Main application
-├── pyproject.toml    # Project metadata + dependencies (openai, SPARQLWrapper)
-├── uv.lock           # Lock file
-└── README.md         # This file
+semantic_web_LLM/
+├── library.py                 # shared LLM + SPARQL utilities
+├── DBPedia.py                 # QA over DBpedia
+├── Wikidata.py                # QA over Wikidata
+├── DBPedia_and_Wikidata.py    # federated QA across both
+├── pyproject.toml             # project metadata + dependencies (litelm, requests)
+├── uv.lock                    # lock file
+└── README.md                  # this file
 ```
 
 ## Troubleshooting
 
-**`FIREWORKS_API_KEY` not set** — The script silently passes `None` to the
-OpenAI client, which will raise an authentication error on the first LLM
-call. Run `export FIREWORKS_API_KEY="..."` and try again.
+**`FIREWORKS_API_KEY` not set** — litelm raises a `LitelmError` naming the
+variable on the first LLM call. Run `export FIREWORKS_API_KEY="..."` and try
+again.
 
 **SPARQL queries return `[]`** — DBpedia's live endpoint occasionally changes
 which predicates are available. The query templates already try

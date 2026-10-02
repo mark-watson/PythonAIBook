@@ -2,20 +2,18 @@
 #
 # DeepSeek models on Fireworks support a "thinking" mode that performs
 # internal chain-of-thought reasoning before answering. The thinking
-# tokens are returned separately from the final answer.
+# tokens come back separately from the final answer, and litelm exposes
+# them as response.reasoning.
 #
 # This example uses a classic logic puzzle to demonstrate thinking mode.
 #
-# Requirements: uv pip install openai
+# Requirements: uv sync
 # Environment: export FIREWORKS_API_KEY="your-api-key"
+# Run: uv run python fireworks_thinking.py
 
-import os
-from openai import OpenAI
+import litelm
 
-client = OpenAI(
-    base_url="https://api.fireworks.ai/inference/v1",
-    api_key=os.getenv("FIREWORKS_API_KEY"),
-)
+MODEL = "fireworks-ai/accounts/fireworks/models/deepseek-v4p1-flash"
 
 prompt = """
 A farmer has a fox, a chicken, and a bag of grain. He needs to cross
@@ -24,16 +22,15 @@ If left alone, the fox will eat the chicken, and the chicken will eat
 the grain. How does the farmer get everything across safely?
 """
 
-response = client.chat.completions.create(
-    model="accounts/fireworks/models/deepseek-v4-flash",
+response = litelm.completion(
+    MODEL,
     messages=[{"role": "user", "content": prompt}],
-    extra_body={"thinking": {"type": "enabled"}},
+    extra={"thinking": {"type": "enabled"}},
 )
 
 # DeepSeek returns thinking tokens in the response when thinking is enabled
-message = response.choices[0].message
-if hasattr(message, "thinking") and message.thinking:
+if response.reasoning:
     print("--- Thinking ---")
-    print(message.thinking)
+    print(response.reasoning)
     print("--- Answer ---")
-print(message.content)
+print(response.content)

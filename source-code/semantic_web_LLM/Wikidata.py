@@ -26,14 +26,13 @@ import time
 
 from library import (
     ENTITY_TYPES,
-    extract_entities,
-    synthesize_answer,
-    query_sparql,
     detect_relationship,
+    extract_entities,
+    query_sparql,
     resolve_value,
     run_cli,
+    synthesize_answer,
 )
-
 
 # ---------------------------------------------------------------------------
 # Wikidata endpoint
@@ -231,7 +230,7 @@ def lookup_entity_qid(name: str) -> str | None:
     query = SPARQL_LOOKUP_TEMPLATE.format(name=name.replace("'", "\\'"))
     try:
         results = _query_wikidata(query)
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         print(f"[Warning] Wikidata lookup failed for {name}: {e}")
         return None
 
@@ -257,7 +256,7 @@ def query_relationship(qid: str, pid: str) -> list[dict[str, str]]:
     query = SPARQL_RELATIONSHIP_TEMPLATE.format(qid=qid, pid=pid)
     try:
         results = _query_wikidata(query)
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         print(f"[Warning] Wikidata relationship query failed: {e}")
         return []
 
@@ -287,7 +286,7 @@ def enrich_entity(qid: str, entity_type: str) -> list[str]:
     query = SPARQL_ENRICHMENT_TEMPLATE.format(qid=qid, values=values_block)
     try:
         results = _query_wikidata(query)
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         print(f"[Warning] Wikidata enrichment failed for {qid}: {e}")
         return []
 
@@ -343,7 +342,7 @@ def get_entity_context(entities: dict[str, list[str]]) -> str:
                     if r.get("item", {}).get("value", "").endswith(qid):
                         desc = r.get("description", {}).get("value", "")
                         break
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 print(f"[Warning] Description fetch failed for {name}: {e}")
 
             # Fetch enrichment facts

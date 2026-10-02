@@ -2,23 +2,39 @@
 #
 # Demonstrates Ollama's automatic prompt caching. When the same context
 # prefix is sent with multiple queries, Ollama reuses the cached KV
-# computations from the first request, dramatically speeding up subsequent ones.
+# computations from the first request, so the second prompt is almost
+# entirely a cache hit.
+#
+# litelm exposes the provider's token accounting, so the hit is measured in
+# tokens (Usage.cached_tokens) instead of being guessed from wall-clock time.
+# Ollama's native API also reports prompt_eval_duration; the OpenAI-compatible
+# endpoint litelm speaks reports cached prompt tokens instead.
 #
 # Inspired by the prompt_caching examples in "Ollama in Action" but uses a
 # self-contained context (no external data files) and a different benchmark
 # approach to illustrate the caching mechanism.
 #
-# Requirements: ollama pull llama3.2:3b
-# Run: uv run ollama_caching.py
+# Requirements: uv sync; ollama pull llama3.2:3b
+# Run: uv run python ollama_caching.py
 
-import requests
+import secrets
 import time
 
-OLLAMA_URL = "http://localhost:11434/api/generate"
-MODEL = "llama3.2:3b"
+import litelm
+
+MODEL = "ollama/llama3.2:3b"
+
+# keep_alive is an Ollama extension to the OpenAI-compatible body: it holds the
+# model (and therefore the cached prompt prefix) in memory between requests.
+OLLAMA_EXTRAS: dict[str, str] = {"keep_alive": "60m"}
+
+# A per-run nonce keeps the first request genuinely cold: this exact prefix has
+# never been through the server before, so only the second request can hit the
+# cache. Without it the benchmark would depend on what ran earlier in the day.
+_RUN_NONCE = secrets.token_hex(8)
 
 # A long static context that stays the same across queries
-CONTEXT = (
+CONTEXT = f"[run {_RUN_NONCE}]\n" + (
     """
 The Python programming language was created by Guido van Rossum and first
 released in 1991. Python's design philosophy emphasizes code readability
@@ -37,23 +53,29 @@ wide range of applications.
 
 
 def timed_query(question: str, label: str) -> float:
-    """Send a query with the shared context and measure prompt processing time."""
-    payload = {
-        "model": MODEL,
-        "keep_alive": "60m",  # keep model and cache in memory
-        "prompt": f"{CONTEXT}\n\nQuestion: {question}",
-        "stream": False,
-        "options": {"num_ctx": 4096},
-    }
+    """Send a query with the shared context; report tokens and return the time."""
     start = time.time()
-    resp = requests.post(OLLAMA_URL, json=payload)
+    response = litelm.completion(
+        MODEL,
+        f"{CONTEXT}\n\nQuestion: {question}",
+        extra=OLLAMA_EXTRAS,
+    )
     elapsed = time.time() - start
-    data = resp.json()
 
-    # prompt_eval_duration is in nanoseconds
-    eval_ms = data.get("prompt_eval_duration", 0) / 1_000_000
-    print(f"[{label}] Wall time: {elapsed:.2f}s | Prompt eval: {eval_ms:.0f}ms")
-    return eval_ms
+    usage = response.usage
+    prompt = usage.prompt_tokens if usage else None
+    cached = usage.cached_tokens if usage else None
+    if prompt is None:
+        print(f"[{label}] Wall time: {elapsed:.2f}s | token counts not reported")
+    elif cached is None:
+        print(f"[{label}] Wall time: {elapsed:.2f}s | {prompt} prompt tokens")
+    else:
+        share = cached / prompt if prompt else 0.0
+        print(
+            f"[{label}] Wall time: {elapsed:.2f}s | "
+            f"{prompt} prompt tokens, {cached} cached ({share:.0%})"
+        )
+    return elapsed
 
 
 # First request: cold start, processes the full context
@@ -63,4 +85,4 @@ time_a = timed_query("When was Python created?", "Cold start")
 time_b = timed_query("What paradigms does Python support?", "Cache hit")
 
 if time_a > 0 and time_b > 0:
-    print(f"\nSpeedup: {time_a / time_b:.1f}x faster on cached prompt")
+    print(f"\nWall-clock speedup on the warm request: {time_a / time_b:.1f}x")

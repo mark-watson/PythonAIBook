@@ -3,14 +3,20 @@
 # The simplest example: send a prompt to a local model and print the response.
 # No API keys needed — the request stays entirely on your machine.
 #
-# Requirements: ollama pull llama3.2:3b
-# Run: uv run ollama_text.py
+# litelm names models as "provider/model-name", so this same script talks to a
+# cloud API if MODEL becomes "openai/gpt-5.4-nano" or
+# "gemini/gemini-3-flash-preview" (see ../litelm/README.md).
+#
+# Requirements: uv sync; ollama pull llama3.2:3b
+# Run: uv run python ollama_text.py
 
-import ollama
+import litelm
 
-response = ollama.chat(
-    model="llama3.2:3b",
+MODEL = "ollama/llama3.2:3b"
+
+response = litelm.completion(
+    MODEL,
     messages=[{"role": "user", "content": "Briefly explain what a neural network is."}],
 )
 
-print(response.message.content)
+print(response.content)
