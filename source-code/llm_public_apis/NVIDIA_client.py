@@ -18,7 +18,7 @@ from typing import Any
 import litellm
 
 PROVIDER = "nvidia_nim"
-DEFAULT_MODEL = "meta/llama-3.1-8b-instruct"
+DEFAULT_MODEL = "nvidia/nemotron-3.5-lightning-30b-a3b"
 _BASE_URL = "https://integrate.api.nvidia.com/v1"
 
 

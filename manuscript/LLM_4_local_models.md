@@ -58,6 +58,8 @@ Some recommended models to start with:
 
 As in the previous chapter, we drive the model through [**litellm**](https://github.com/BerriAI/litellm), the open-source library that puts a single OpenAI-format interface on more than 100 providers. The local server is simply another provider: `ollama_chat/llama3.2:3b` names the model, and switching to a cloud model means changing that string rather than the code.
 
+Two demos are the exception. The vision example and the prompt-caching benchmark use **Ollama's own Python SDK**, because they depend on native features that litellm's normalized response does not carry: the `images` field on a message, and the `prompt_eval_duration` / `prompt_eval_count` fields that make a cache hit measurable. We will point out the switch in each section.
+
 ```bash
 uv sync   # installs litellm and the chapter's dependencies
 ```
@@ -241,19 +243,23 @@ Note that unlike cloud APIs, keeping long conversation histories in local models
 
 When you send the same long context (a document, a knowledge base, or a detailed system prompt) with multiple questions, Ollama can cache the prompt processing to dramatically speed up subsequent requests. This happens automatically when the prefix of the prompt is identical across requests.
 
-Here is an example that demonstrates the speedup:
+This is the one demo that uses Ollama's own Python SDK instead of litellm. The
+measurement depends on `prompt_eval_duration` and `prompt_eval_count`, which are
+fields of Ollama's native response; litellm normalizes every provider into the
+OpenAI response shape and does not carry them, so here the native client earns
+its keep. Here is the example:
 
 ```python
 import secrets
-import time
 
-import litellm
+import ollama
 
-MODEL = "ollama_chat/llama3.2:3b"
+MODEL = "llama3.2:3b"
 
-# keep_alive is an Ollama extension to the OpenAI-compatible body: it holds the
-# model (and therefore the cached prompt prefix) in memory between requests.
-OLLAMA_KEEP_ALIVE = "60m"
+# keep_alive holds the model (and therefore the cached prompt prefix) in memory
+# between requests; num_ctx pins the context window so both runs match.
+KEEP_ALIVE = "60m"
+OPTIONS = {"num_ctx": 4096}
 
 # A per-run nonce keeps the first request genuinely cold: this exact prefix has
 # never been through the server before, so only the second request can hit the
@@ -280,27 +286,25 @@ wide range of applications.
 
 
 def timed_query(question: str, label: str) -> float:
-    """Send a query with the shared context; report the wall time it took."""
-    start = time.time()
-    response = litellm.completion(
+    """Send a query with the shared context; report the prompt-eval time."""
+    response = ollama.generate(
         model=MODEL,
-        messages=[{"role": "user", "content": f"{CONTEXT}\n\nQuestion: {question}"}],
-        keep_alive=OLLAMA_KEEP_ALIVE,
+        prompt=f"{CONTEXT}\n\nQuestion: {question}",
+        keep_alive=KEEP_ALIVE,
+        options=OPTIONS,
     )
-    elapsed = time.time() - start
-    assert isinstance(response, litellm.ModelResponse), (
+    assert isinstance(response, ollama.GenerateResponse), (
         "Expected a non-streaming response"
     )
 
-    # litellm's ModelResponse carries a usage object at runtime, but the class
-    # itself does not declare the attribute, so read it defensively.
-    usage = getattr(response, "usage", None)
-    prompt = usage.prompt_tokens if usage else None
-    if prompt is None:
-        print(f"[{label}] Wall time: {elapsed:.2f}s | token counts not reported")
-    else:
-        print(f"[{label}] Wall time: {elapsed:.2f}s | {prompt} prompt tokens")
-    return elapsed
+    # prompt_eval_duration is in nanoseconds and covers only the prompt tokens
+    # Ollama actually had to evaluate, which is exactly what caching reduces.
+    eval_ms = (response.prompt_eval_duration or 0) / 1_000_000
+    print(
+        f"[{label}] Prompt eval: {eval_ms:.0f}ms | "
+        f"prompt tokens: {response.prompt_eval_count}"
+    )
+    return eval_ms
 
 
 # First request: cold start, processes the full context
@@ -310,31 +314,32 @@ time_a = timed_query("When was Python created?", "Cold start")
 time_b = timed_query("What paradigms does Python support?", "Cache hit")
 
 if time_a > 0 and time_b > 0:
-    print(f"\nWall-clock speedup on the warm request: {time_a / time_b:.1f}x")
+    print(f"\nSpeedup: {time_a / time_b:.1f}x faster on cached prompt")
 ```
 
 A run looks like this: both requests carry the same long context, and the warm
-one returns noticeably faster because it reuses the cached prefix:
+one evaluates almost none of it:
 
 ```
-[Cold start] Wall time: 1.44s | 2507 prompt tokens
-[Cache hit] Wall time: 0.56s | 2510 prompt tokens
+[Cold start] Prompt eval: 1234ms | prompt tokens: 2506
+[Cache hit] Prompt eval: 92ms | prompt tokens: 2509
 
-Wall-clock speedup on the warm request: 2.6x
+Speedup: 13.4x faster on cached prompt
 ```
 
 The key settings for prompt caching:
 
-- **keep_alive**: passed straight to `litellm.completion(...)` as a keyword argument, this Ollama extension keeps the model and its KV cache in memory between requests. A long duration like `"60m"` avoids paying the load cost again.
+- **keep_alive**: passed to `ollama.generate(...)`, this keeps the model and its KV cache in memory between requests. A long duration like `"60m"` avoids paying the load cost again.
+- **num_ctx**: pins the context window size so both requests are measured against the same window.
 - **Identical prefix**: the cached portion must match exactly. If even one character of the context changes, the cache is invalidated — which is also why the example prepends a fresh nonce on each run, so the first request really is cold.
-- **Measure the hit in wall-clock time**: Ollama's native API reports `prompt_eval_duration` and cached-prompt tokens, but litellm's `response.usage` exposes only `prompt_tokens`, so the cache hit has to be inferred from timing. The example wraps each call in `time.time()` and reports the seconds elapsed, and the warm request lands well under the cold one. Timing is noisy, so run it a few times before drawing conclusions.
+- **Measure prompt evaluation, not the whole call**: `prompt_eval_duration` covers only the tokens Ollama had to evaluate, so it isolates the thing caching improves. The second request reports the same 2,500-token prompt as the first, but evaluates it in a fraction of the time.
 
 Prompt caching is especially valuable for applications like document Q&A, where you load a long document once and then answer many questions about it.
 
 
 ## Image to Text Description (Vision Models)
 
-Ollama also supports vision models, allowing you to pass an image along with your text prompt so the model can analyze the visual content. You just need to ensure you're using a vision-capable model (like `llava` or `qwen3.5`), inline the image as a base64 data URL, and send it as an OpenAI-style `image_url` content part.
+Ollama also supports vision models, allowing you to pass an image along with your text prompt so the model can analyze the visual content. You just need to ensure you're using a vision-capable model (like `llava` or `qwen3.5`). Ollama's own Python SDK takes the image as the `images` field on a message — a path, a URL, or raw bytes — and handles the encoding for you, so this is the second demo where we use the native client instead of litellm.
 
 Here is the sample image we will use for this example:
 
@@ -344,39 +349,26 @@ Here is the sample image we will use for this example:
 Here is an example of asking a vision model to describe an image:
 
 ```python
-import base64
-import mimetypes
-from pathlib import Path
-
-import litellm
+import ollama
 
 # Specify the path to the image file to be analyzed
-image_path = Path("ticket.png")
-
-# Inline the image as a data URL the vision models can decode
-mime = mimetypes.guess_type(image_path.name)[0] or "image/jpeg"
-image_data_url = (
-    f"data:{mime};base64,{base64.b64encode(image_path.read_bytes()).decode('ascii')}"
-)
+image_path = "ticket.png"
 
 # Send the image to the vision-capable model for a detailed description
-response = litellm.completion(
-    model="ollama_chat/qwen3.5:0.8b",  # Ensure you use a vision-capable model
+response = ollama.chat(
+    model="qwen3.5:0.8b",  # Ensure you use a vision-capable model
     messages=[
         {
             "role": "user",
-            "content": [
-                {"type": "text", "text": "Describe this image in detail"},
-                {"type": "image_url", "image_url": {"url": image_data_url}},
-            ],
+            "content": "Describe this image in detail",
+            "images": [image_path],
         }
     ],
     think=False,  # Suppresses the <think> reasoning block
 )
-assert isinstance(response, litellm.ModelResponse), "Expected a non-streaming response"
 
 # Print the model's descriptive analysis of the image
-print(response.choices[0].message.content)
+print(response.message.content)
 ```
 
 Here is abbreviated output from running this example:

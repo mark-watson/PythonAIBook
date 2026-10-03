@@ -2,10 +2,16 @@
 
 This directory contains example code for the **LLMs with Local Models** chapter.
 
-Every script drives Ollama through [`litellm`](https://github.com/BerriAI/litellm),
+Most scripts drive Ollama through [`litellm`](https://github.com/BerriAI/litellm),
 the book's uniform LLM interface: models are named `"provider/model-name"`
 (`ollama_chat/llama3.2:3b` here), so the same code reaches a cloud API by
 changing the prefix. `uv sync` installs litellm from PyPI.
+
+Two demos use **Ollama's own Python SDK** instead, because they need
+Ollama-specific features that litellm does not expose: `image_to_text_description.py`
+uses the native `images` field on a message, and `ollama_caching.py` reads
+`prompt_eval_duration`/`prompt_eval_count` from the native response to measure
+the prompt cache.
 
 ## Architecture
 
@@ -47,9 +53,9 @@ uv sync   # also installs litellm
 - **ollama_streaming.py** — Streaming responses for real-time output.
 - **ollama_reasoning.py** — Chain-of-thought reasoning with DeepSeek-R1.
 - **ollama_memory.py** — Multi-turn conversation with history.
-- **ollama_caching.py** — Prompt caching benchmark (cold vs warm start).
+- **ollama_caching.py** — Prompt caching benchmark (cold vs warm start); uses Ollama's Python SDK for the native `prompt_eval_duration` metric.
 - **ollama_openai_compat.py** — Ollama's OpenAI-compatible API through litellm, and switching providers with `LLM_MODEL`.
-- **image_to_text_description.py** — Generating detailed image descriptions using a vision model.
+- **image_to_text_description.py** — Generating detailed image descriptions using a vision model; uses Ollama's Python SDK for the native `images` field.
 
 ## Running
 

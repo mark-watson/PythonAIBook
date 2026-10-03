@@ -1,14 +1,16 @@
+# Most examples use litellm (https://github.com/BerriAI/litellm) for a uniform
+# provider interface. Two demos use Ollama's own Python SDK instead, because
+# they need Ollama-specific features: the `images` field on a message
+# (image_to_text_description.py) and the prompt-cache timing metrics in the
+# native response (ollama_caching.py).
 [project]
 name = "llm-local-models"
 version = "0.1.0"
 requires-python = ">=3.14"
 dependencies = [
     "litellm",
+    "ollama>=0.6.1",
 ]
-
-# litellm is the shared LLM interface for every example in the book; it is
-# installed from PyPI and reaches Ollama through the "ollama_chat/" prefix.
-# https://github.com/BerriAI/litellm
 
 [dependency-groups]
 dev = [
