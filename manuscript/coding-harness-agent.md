@@ -13,19 +13,20 @@ The finished program is a Python project managed by [uv](https://docs.astral.sh/
 
 ## The Program at a Glance
 
-The agent is nine modules. Each has one job:
+The agent is nine modules, plus a test suite that exercises them offline:
 
 | File | Role |
 | --- | --- |
 | `agent.py` | CLI parsing, REPL, slash commands, intent routing, context management |
 | `harness_config.py` | Hierarchical JSON configuration: global file, local override file, provider profiles |
 | `chat_loop.py` | The provider-agnostic agentic loop (the heart of the program) |
-| `tools.py` | Tool registry: `read_file`, `list_dir`, `grep`, `run_shell`, `propose_edit` |
+| `tools.py` | Tool registry: `read_file`, `list_dir`, `grep`, `run_shell`, `propose_edit`, `replace_in_file` |
 | `approval.py` | Unified diffs, ANSI coloring, y/n/s approval prompts |
 | `fireworks_ai.py` | Client for OpenAI-compatible hosted APIs, with SSE streaming and cost tracking |
 | `mlx_serve.py` | Client for local OpenAI-compatible servers (MLX, oMLX, sushi, Ollama) |
 | `search.py` | Brave and Exa web search backends |
 | `line_input.py` | Readline editing, persistent history, Tab completion, with graceful fallback |
+| `tests/` | Offline smoke tests: `make test` |
 
 Data flows through the program like this:
 
@@ -223,7 +224,7 @@ import json
 import os
 
 GLOBAL_CONFIG_PATH = os.path.expanduser("~/.coding_harness.json")
-LOCAL_CONFIG_PATH = os.path.join(os.getcwd(), ".local_coding_harness.json")
+LOCAL_CONFIG_BASENAME = ".local_coding_harness.json"
 
 # The merged config, loaded once at startup (reloadable via load_harness_config).
 harness_config = {}
@@ -264,13 +265,17 @@ def deep_merge(global_cfg, local_cfg):
     return acc
 
 
+def local_config_path():
+    """The local override file, always looked up in the *current* directory
+    (--cwd may have changed it since this module was imported)."""
+    return os.path.join(os.getcwd(), LOCAL_CONFIG_BASENAME)
+
+
 def load_harness_config():
     """Load global then local, deep-merge, store, and return the result."""
     global harness_config, _active_provider_name
     global_cfg = _read_json_file(GLOBAL_CONFIG_PATH) or {}
-    # The local override is always looked up in the *current* directory.
-    local_path = os.path.join(os.getcwd(), ".local_coding_harness.json")
-    local_cfg = _read_json_file(local_path) or {}
+    local_cfg = _read_json_file(local_config_path()) or {}
     harness_config = deep_merge(global_cfg, local_cfg)
     _active_provider_name = None  # re-resolve the default profile
     return harness_config
@@ -284,8 +289,15 @@ def config_providers():
     return p if isinstance(p, dict) else {}
 
 
+def provider_names(cfg):
+    """-> sorted profile names declared in `cfg` (the caller's dict, not the
+    module global, so loading and defaulting can be reasoned about separately)."""
+    p = cfg.get("providers") if isinstance(cfg, dict) else None
+    return sorted(p.keys()) if isinstance(p, dict) else []
+
+
 def config_provider_names():
-    return sorted(config_providers().keys())
+    return provider_names(harness_config)
 
 
 def config_provider(name):
@@ -296,9 +308,14 @@ def config_provider(name):
 
 
 def _pick_default_provider_name(cfg):
-    declared = cfg.get("default_provider")
-    names = sorted(config_providers().keys())
-    if isinstance(declared, str) and declared in config_providers():
+    """-> name of the profile to start with, or None.
+
+    The declared "default_provider" wins; otherwise "fireworks" if present,
+    otherwise the first name alphabetically.
+    """
+    names = provider_names(cfg)
+    declared = cfg.get("default_provider") if isinstance(cfg, dict) else None
+    if isinstance(declared, str) and declared in names:
         return declared
     if "fireworks" in names:
         return "fireworks"
@@ -400,11 +417,11 @@ def generation_ref(generation, key, default=None):
 # Debug helper
 
 def print_config_summary():
+    def loaded(path):
+        return "(loaded)" if os.path.isfile(path) else "(absent)"
     print("Config files: {} {} / {} {}".format(
-        GLOBAL_CONFIG_PATH,
-        "(loaded)" if os.path.isfile(GLOBAL_CONFIG_PATH) else "(absent)",
-        os.path.join(os.getcwd(), ".local_coding_harness.json"),
-        "(loaded)" if os.path.isfile(os.path.join(os.getcwd(), ".local_coding_harness.json")) else "(absent)"))
+        GLOBAL_CONFIG_PATH, loaded(GLOBAL_CONFIG_PATH),
+        local_config_path(), loaded(local_config_path())))
     print("Providers:    {}".format(", ".join(config_provider_names())))
     print("Active:       {}".format(config_active_provider_name() or "(defaults)"))
 ```
@@ -426,7 +443,7 @@ The model can only call tools that the harness declared in the request. `tools.p
   "type": "function",
   "function": {
     "name": "read_file",
-    "description": "Read and return the contents of a file. Refuses to read hidden/internal files (~, #...#, and dotfiles).",
+    "description": "Read and return the contents of a file. Refuses hidden/internal paths (~, #...#, dotfiles) and paths outside the working directory.",
     "parameters": {
       "type": "object",
       "properties": {
@@ -451,8 +468,9 @@ Here is the whole module:
 # Licensed under the GNU Affero General Public License v3.0 (AGPL-3.0)
 # See LICENSE file for details
 #
-# Five tools: read_file, list_dir, grep, run_shell, propose_edit
-# propose_edit shows a colored diff, asks y/n/s, and gates on `make check`.
+# Six tools: read_file, list_dir, grep, run_shell, propose_edit,
+# replace_in_file. The two edit tools show a colored diff and ask y/n/s;
+# propose_edit then gates on `make check`.
 
 import json
 import os
@@ -460,7 +478,6 @@ import re
 import shlex
 import subprocess
 
-import approval
 from approval import unified_diff, print_colored_diff, prompt_yes_no_skip, prompt_reason
 
 # ---------------------------------------------------------------------------
@@ -470,11 +487,22 @@ registry = {}
 
 SHELL_WHITELIST = {"make", "ls", "pwd", "cat", "uv"}
 MAX_CHECK_OUTPUT_CHARS = 2000
+MAX_SHELL_OUTPUT_CHARS = 20000
+GREP_MAX_MATCHES = 200
+GREP_MAX_LINE_CHARS = 300
+SHELL_TIMEOUT = 300
+CHECK_TIMEOUT = 600
+TIMEOUT_EXIT_CODE = 124
 
 # CLI-controlled modes (mutated by agent.py, read by the tools)
 auto_approve = False
 dry_run = False
 quiet_mode = False
+
+# Set by tool_propose_edit / tool_replace_in_file when an applied change leaves
+# `make check` failing. agent.py reads it to pick the process exit code for a
+# one-shot run instead of re-scanning old tool output.
+make_check_failed = False
 
 
 def define_tool(name, params, description, handler):
@@ -519,14 +547,15 @@ def render_tools(names):
 def call_tool(name, args):
     tool = registry.get(name)
     if tool is None:
-        raise ValueError("Unknown tool: {}".format(name))
+        return "Error: unknown tool '{}'. Available tools: {}".format(
+            name, ", ".join(sorted(registry)))
     params = tool["parameters"]
     # Missing required args? Return an actionable error describing the expected
     # argument list -- small models frequently emit malformed/truncated
     # arguments, and silently receiving None tends to send them into retry loops.
     # Match the Racket semantics: only a missing key or a JSON null counts as
     # missing -- the empty string is a VALID value (propose_edit passes ""
-    # as `old` when creating a new file).
+    # and replace_in_file may pass an empty replacement).
     missing = [p[0] for p in params if args.get(p[0]) is None]
     if missing:
         return ("Error: tool '{}' missing required argument(s): {}. "
@@ -558,10 +587,14 @@ def execute_tool_calls(tool_calls):
         short = args_json if len(args_json) <= 120 else args_json[:117] + "..."
         if not quiet_mode:
             print("* {} {}".format(name, short))
+        bad_json = None
         try:
             parsed = json.loads(args_json)
             args_parsed = parsed if isinstance(parsed, dict) else "NOT-OBJECT"
-        except Exception:
+        except Exception as e:  # noqa: BLE001
+            # The decode error itself ("Expecting ',' delimiter: line 3 ...")
+            # tells the model what to fix, so pass it through.
+            bad_json = str(e)
             args_parsed = "BAD-JSON"
         if isinstance(args_parsed, dict):
             # Coerce non-string values to strings so handlers behave like the
@@ -573,17 +606,17 @@ def execute_tool_calls(tool_calls):
             # function name survived. Feed that back instead of crashing.
             result = ("Error: the model's tool call was truncated mid-generation "
                       "(no function name provided). Received arguments: {}".format(short))
-        elif args_parsed == "BAD-JSON":
-            result = "Error: invalid JSON in arguments for tool '{}'. Received: {}".format(name, short)
+        elif bad_json is not None:
+            result = "Error: invalid JSON in arguments for tool '{}': {}. Received: {}".format(
+                name, bad_json, short)
         elif args_parsed == "NOT-OBJECT":
             result = "Error: arguments for tool '{}' must be a JSON object. Received: {}".format(name, short)
         else:
-            # Unknown tool names, contract violations, etc. become feedback to the
-            # model rather than an uncaught exception that aborts the loop.
-            try:
-                result = call_tool(name, args_parsed)
-            except Exception as e:  # noqa: BLE001
-                result = "Error: tool '{}' raised: {}".format(name, e)
+            result = call_tool(name, args_parsed)
+        # Guarantee a usable id: some local servers omit tool_call ids, and the
+        # matching role:"tool" message needs one to line up.
+        if not isinstance(call_id, str) or call_id == "":
+            call_id = "call_{}".format(len(results))
         results.append((call_id, name, result))
     return results
 
@@ -591,11 +624,20 @@ def execute_tool_calls(tool_calls):
 # ---------------------------------------------------------------------------
 # Helpers: run subprocess and capture combined output
 
-def run_external(exe, args):
-    """exe: str, args: list of str -> (combined_output, exit_code)."""
-    proc = subprocess.run([exe] + list(args),
-                          stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                          text=True, errors="replace")
+def run_external(exe, args, timeout=SHELL_TIMEOUT):
+    """exe: str, args: list of str -> (combined_output, exit_code).
+
+    A timeout is reported as exit code 124 rather than raised, so a hung
+    command becomes tool feedback instead of an exception.
+    """
+    try:
+        proc = subprocess.run([exe] + list(args),
+                              stdin=subprocess.DEVNULL,
+                              stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                              text=True, errors="replace", timeout=timeout)
+    except subprocess.TimeoutExpired:
+        return ("command timed out after {}s: {} {}".format(
+            timeout, exe, " ".join(str(a) for a in args)), TIMEOUT_EXIT_CODE)
     return (proc.stdout + proc.stderr), proc.returncode
 
 
@@ -611,7 +653,7 @@ def strip_shell_quotes(s):
     return s
 
 
-# Hidden files (ignored from listings and reject read attempts):
+# Hidden files (ignored from listings and rejected on read/search/run):
 #   - names ending in ~  (e.g. foo.rkt~)
 #   - names wrapped in #...#  (e.g. #foo.rkt#)
 #   - names starting with .  (e.g. .git, .gitignore, .env)
@@ -621,27 +663,88 @@ def hidden_file(name):
             or name.startswith("."))
 
 
+def hidden_in_path(path):
+    """True when any component of `path` names a hidden/internal file.
+
+    Checking every component (not just the basename) is what keeps the tools
+    out of directories such as .git/ or ~/.ssh/. "." and ".." are ordinary
+    path syntax, not hidden names, so they are skipped here.
+    """
+    for part in re.split(r"[\\/]+", str(path)):
+        if part in ("", ".", ".."):
+            continue
+        if hidden_file(part):
+            return True
+    return False
+
+
 def hidden_arg(s):
     cleaned = strip_shell_quotes(s)
-    return (not cleaned.startswith("-")) and hidden_file(os.path.basename(cleaned))
+    return (not cleaned.startswith("-")) and hidden_in_path(cleaned)
+
+
+def working_dir():
+    """The directory the agent is allowed to touch (established by --cwd)."""
+    return os.path.realpath(os.getcwd())
+
+
+def path_within_working_dir(path):
+    """True when `path` resolves to the working directory or something inside it."""
+    root = working_dir()
+    full = os.path.realpath(os.path.join(root, os.path.expanduser(path)))
+    return full == root or full.startswith(root + os.sep)
+
+
+def resolve_tool_path(path):
+    """-> (absolute path, None) or (None, refusal message).
+
+    Every tool that touches the filesystem funnels through this: hidden
+    components are refused, and anything outside the working directory (../,
+    absolute paths, symlinks that escape) is refused as well.
+    """
+    if not isinstance(path, str) or path.strip() == "":
+        return None, "refusing: empty path"
+    if hidden_in_path(path):
+        return None, "refusing to touch hidden/internal path: {}".format(path)
+    full = os.path.realpath(os.path.join(working_dir(), os.path.expanduser(path)))
+    if full != working_dir() and not full.startswith(working_dir() + os.sep):
+        return None, ("refusing: {} is outside the working directory {}. "
+                      "Use a path relative to it.").format(path, working_dir())
+    return full, None
+
+
+def looks_like_long_ls_line(line):
+    """True for `ls -l` rows: permissions, links, owner, group, size, date, name."""
+    parts = line.split(None, 1)
+    if not parts:
+        return False
+    mode = parts[0]
+    return len(mode) >= 10 and mode[0] in "-dlbcps" and set(mode[1:10]) <= set("rwxSsTt-")
 
 
 def filter_ls_output(out):
-    lines = out.split("\n")
+    """Drop `total N` headers, the . / .. rows, and hidden names.
+
+    Long-format rows are split into at most eight fields so that a filename
+    containing spaces survives intact; short-format rows are split into one
+    name per whitespace-separated token.
+    """
     result_lines = []
-    for line in lines:
+    for line in out.split("\n"):
         t = line.strip()
-        if t.startswith("total ") or t == "":
+        if t == "" or t.startswith("total "):
             continue
-        tokens = t.split()
-        if not tokens:
-            continue
-        if re.match(r"^[-d]", tokens[0]):
-            fname = tokens[-1]
-            if hidden_file(fname) or fname in (".", ".."):
+        if looks_like_long_ls_line(t):
+            fields = t.split(None, 8)
+            fname = fields[8] if len(fields) > 8 else fields[-1]
+            if fname in (".", "..") or hidden_file(fname):
                 continue
-        elif hidden_file(t):
-            continue
+        else:
+            names = [n for n in t.split()
+                     if n not in (".", "..") and not hidden_file(n)]
+            if not names:
+                continue
+            line = " ".join(names)
         result_lines.append(line)
     return "\n".join(result_lines)
 
@@ -650,36 +753,92 @@ def filter_ls_output(out):
 # Tool implementations
 
 def tool_read_file(path):
+    full, refusal = resolve_tool_path(path)
+    if refusal:
+        return refusal
     try:
-        fname = os.path.basename(path)
-        if hidden_file(fname):
-            return "refusing to read hidden/internal file: {}".format(path)
-        with open(path, "r", encoding="utf-8", errors="replace") as f:
+        with open(full, "r", encoding="utf-8", errors="replace") as f:
             return f.read()
     except Exception as e:  # noqa: BLE001
         return "Error reading {}: {}".format(path, e)
 
 
 def tool_list_dir(path):
+    full, refusal = resolve_tool_path(path)
+    if refusal:
+        return refusal
     try:
-        entries = sorted(os.listdir(path))
+        entries = sorted(os.listdir(full))
         lines = []
         for e in entries:
             if hidden_file(e):
                 continue
-            full = os.path.join(path, e)
-            lines.append(e + "/" if os.path.isdir(full) else e)
+            child = os.path.join(full, e)
+            lines.append(e + "/" if os.path.isdir(child) else e)
         return "\n".join(lines)
     except Exception as e:  # noqa: BLE001
         return "Error listing {}: {}".format(path, e)
 
 
 def tool_grep(pattern, path):
+    """Recursive regex search that skips hidden files and directories.
+
+    Implemented with os.walk + re instead of shelling out to `grep -rnE` for
+    three reasons: hidden directories (.git/) stay out of the model's context,
+    a pattern beginning with "-" cannot be mistaken for a flag, and the result
+    can be capped and truncated instead of flooding the window.
+    """
+    root, refusal = resolve_tool_path(path)
+    if refusal:
+        return refusal
     try:
-        out, _code = run_external("grep", ["-rnE", pattern, path])
-        return out
-    except Exception as e:  # noqa: BLE001
-        return "Error running grep: {}".format(e)
+        rx = re.compile(pattern)
+    except re.error as e:
+        return "Error: invalid regular expression '{}': {}".format(pattern, e)
+
+    targets = [root] if os.path.isfile(root) else None
+    if targets is None and not os.path.isdir(root):
+        return "Error: no such file or directory: {}".format(path)
+
+    matches = []
+    truncated = False
+
+    def add_match(text):
+        nonlocal truncated
+        if len(matches) >= GREP_MAX_MATCHES:
+            truncated = True
+            return
+        matches.append(truncate_string(text, GREP_MAX_LINE_CHARS))
+
+    if targets:
+        files = targets
+    else:
+        files = []
+        for dirpath, dirnames, filenames in os.walk(root):
+            dirnames[:] = sorted(d for d in dirnames if not hidden_file(d))
+            for fname in sorted(filenames):
+                if not hidden_file(fname):
+                    files.append(os.path.join(dirpath, fname))
+
+    for fname in files:
+        try:
+            with open(fname, "r", encoding="utf-8", errors="replace") as f:
+                for lineno, line in enumerate(f, 1):
+                    if rx.search(line):
+                        rel = os.path.relpath(fname, working_dir())
+                        add_match("{}:{}:{}".format(rel, lineno, line.rstrip("\n")))
+                        if truncated:
+                            break
+        except (OSError, UnicodeError):
+            continue
+        if truncated:
+            break
+    if not matches:
+        return "no matches for {!r} under {}".format(pattern, os.path.relpath(root, working_dir()))
+    if truncated:
+        matches.append("... (stopped after {} matches; narrow the pattern or path)".format(
+            GREP_MAX_MATCHES))
+    return "\n".join(matches)
 
 
 def tool_run_shell(command):
@@ -694,30 +853,83 @@ def tool_run_shell(command):
     if cmd not in SHELL_WHITELIST:
         return "Command '{}' not whitelisted. Allowed: {}".format(
             cmd, ", ".join(sorted(SHELL_WHITELIST)))
-    if cmd != "ls":
-        for a in tokens[1:]:
-            if hidden_arg(a):
-                return "refusing to run command referencing hidden/internal file: {}".format(a)
+    for a in tokens[1:]:
+        if hidden_arg(a):
+            return "refusing to run command referencing hidden/internal file: {}".format(a)
+        # Note: the whitelist limits WHICH programs run. It does not sandbox
+        # what they do -- `uv run` and `make` execute arbitrary code by design.
+        try:
+            inside = path_within_working_dir(strip_shell_quotes(a))
+        except (OSError, ValueError):
+            inside = False
+        if not inside:
+            return ("refusing to run command referencing a path outside the working "
+                    "directory: {}".format(a))
     try:
-        out, code = run_external(cmd, tokens[1:])
+        out, code = run_external(cmd, tokens[1:], timeout=SHELL_TIMEOUT)
         filtered = filter_ls_output(out) if cmd == "ls" else out
-        return "{}(exit {})".format(filtered, code)
+        return "{}(exit {})".format(truncate_string(filtered, MAX_SHELL_OUTPUT_CHARS), code)
     except Exception as e:  # noqa: BLE001
         return "Error running command: {}".format(e)
 
 
 def run_make_check():
     try:
-        return run_external("make", ["check"])
+        return run_external("make", ["check"], timeout=CHECK_TIMEOUT)
     except Exception as e:  # noqa: BLE001
         return "make check error: {}".format(e), 1
 
 
+def apply_change(path, full, new):
+    """Write the approved contents and report the `make check` verdict."""
+    global make_check_failed
+    parent = os.path.dirname(full)
+    if parent:
+        os.makedirs(parent, exist_ok=True)
+    with open(full, "w", encoding="utf-8") as f:
+        f.write(new)
+    out, status = run_make_check()
+    if status == 0:
+        return "applied; make check passed"
+    make_check_failed = True
+    return "applied; make check FAILED (exit {}):\n{}".format(
+        status, truncate_string(out, MAX_CHECK_OUTPUT_CHARS))
+
+
+def gate_write(path, full, current, new, heading):
+    """Shared approval flow: diff, then y/n/s, then write + `make check`."""
+    diff_text = unified_diff(current, new, "a/" + path, "b/" + path)
+    print("")
+    if heading:
+        print(heading)
+    print_colored_diff(diff_text)
+
+    if dry_run:
+        return "dry-run: diff shown, file not written (use without --dry-run to apply)"
+    if auto_approve:
+        # Safety: still show diff above, then auto-apply without prompting
+        if not quiet_mode:
+            print("[auto-approve: applying change without prompt]")
+        return apply_change(path, full, new).replace(
+            "applied;", "applied (auto-approved);", 1)
+    answer = prompt_yes_no_skip()
+    if answer == "no":
+        return "user rejected the change"
+    if answer == "skip":
+        reason = prompt_reason()
+        return "user skipped: {}".format(reason)
+    return apply_change(path, full, new)
+
+
 def tool_propose_edit(path, old, new):
-    exists = os.path.isfile(path)
+    """Whole-file edit: `old` must match the current contents exactly ("" to create)."""
+    full, refusal = resolve_tool_path(path)
+    if refusal:
+        return refusal
+    exists = os.path.isfile(full)
     if exists:
         try:
-            with open(path, "r", encoding="utf-8", errors="replace") as f:
+            with open(full, "r", encoding="utf-8", errors="replace") as f:
                 current = f.read()
         except Exception as e:  # noqa: BLE001
             return "Error reading {}: {}".format(path, e)
@@ -732,39 +944,34 @@ def tool_propose_edit(path, old, new):
     if not exists and new == "":
         return "refused: cannot create an empty file"
 
-    diff_text = unified_diff(current, new, "a/" + path, "b/" + path)
-    print("")
-    if not exists:
-        print("(new file: {})".format(path))
-    print_colored_diff(diff_text)
+    heading = "(new file: {})".format(path) if not exists else None
+    return gate_write(path, full, current, new, heading)
 
-    def _apply():
-        parent = os.path.dirname(path)
-        if parent:
-            os.makedirs(parent, exist_ok=True)
-        with open(path, "w", encoding="utf-8") as f:
-            f.write(new)
-        out, status = run_make_check()
-        if status == 0:
-            return "applied; make check passed"
-        return "applied; make check FAILED (exit {}):\n{}".format(
-            status, truncate_string(out, MAX_CHECK_OUTPUT_CHARS))
 
-    if dry_run:
-        return "dry-run: diff shown, file not written (use without --dry-run to apply)"
-    if auto_approve:
-        # Safety: still show diff above, then auto-apply without prompting
-        if not quiet_mode:
-            print("[auto-approve: applying change without prompt]")
-        result = _apply()
-        return result.replace("applied;", "applied (auto-approved);", 1)
-    answer = prompt_yes_no_skip()
-    if answer == "no":
-        return "user rejected the change"
-    if answer == "skip":
-        reason = prompt_reason()
-        return "user skipped: {}".format(reason)
-    return _apply()
+def tool_replace_in_file(path, old_string, new_string):
+    """Compact edit: replace one unique snippet instead of echoing the whole file."""
+    full, refusal = resolve_tool_path(path)
+    if refusal:
+        return refusal
+    if old_string == "":
+        return "refused: old_string is empty; use propose_edit to create a file"
+    try:
+        with open(full, "r", encoding="utf-8", errors="replace") as f:
+            current = f.read()
+    except Exception as e:  # noqa: BLE001
+        return "Error reading {}: {}".format(path, e)
+
+    hits = current.count(old_string)
+    if hits == 0:
+        return ("old_string not found in {}. Read the file again and copy a unique "
+                "snippet exactly, including indentation.".format(path))
+    if hits > 1:
+        return ("old_string appears {} times in {}. Include more surrounding "
+                "context so the snippet is unique.".format(hits, path))
+    new = current.replace(old_string, new_string, 1)
+    if new == current:
+        return "no changes (replacement is identical to the matched text)"
+    return gate_write(path, full, current, new, None)
 
 
 # ---------------------------------------------------------------------------
@@ -774,7 +981,7 @@ def register_all():
     define_tool(
         "read_file",
         [("path", "string", "File path relative to the working directory.")],
-        "Read and return the contents of a file. Refuses to read hidden/internal files (~, #...#, and dotfiles).",
+        "Read and return the contents of a file. Refuses hidden/internal paths (~, #...#, dotfiles) and paths outside the working directory.",
         tool_read_file)
     define_tool(
         "list_dir",
@@ -783,40 +990,50 @@ def register_all():
         tool_list_dir)
     define_tool(
         "grep",
-        [("pattern", "string", "Extended regex pattern to search for."),
-         ("path", "string", "Directory or file path to search.")],
-        "Recursively grep files for PATTERN. Wraps `grep -rnE`.",
+        [("pattern", "string", "Python regular expression to search for."),
+         ("path", "string", "File or directory path to search, relative to the working directory.")],
+        "Recursively search files for PATTERN and return matching lines as path:line:text. Hidden/internal files and directories (dotfiles, .git) are skipped, and the result is capped at {} matches.".format(GREP_MAX_MATCHES),
         tool_grep)
     define_tool(
         "run_shell",
         [("command", "string", "Shell command. Only whitelisted commands may run: make, ls, pwd, cat, uv.")],
-        "Run a whitelisted shell command and return its combined output. Refuses commands that reference hidden/internal files.",
+        "Run a whitelisted shell command and return its combined output. Refuses hidden/internal paths and paths outside the working directory. The whitelist limits which programs run, not what they do: make and uv execute project code.",
         tool_run_shell)
     define_tool(
         "propose_edit",
         [("path", "string", "Path to the file to edit or create."),
          ("old", "string", "For an existing file: the exact current contents. For a new file: pass empty string."),
          ("new", "string", "The proposed new contents of the file, in full.")],
-        "Propose an edit or new-file creation. The user is shown a unified diff and asked to approve. On approval the file is written and `make check` is run.",
+        "Propose a whole-file edit or new-file creation. The user is shown a unified diff and asked to approve. On approval the file is written and `make check` is run. Prefer replace_in_file for small changes to an existing file.",
         tool_propose_edit)
+    define_tool(
+        "replace_in_file",
+        [("path", "string", "Path to an existing file inside the working directory."),
+         ("old_string", "string", "The exact snippet to replace. It must appear exactly once in the file."),
+         ("new_string", "string", "The replacement text. Pass empty string to delete the snippet.")],
+        "Propose a surgical edit: replace one unique snippet of an existing file. Far cheaper than propose_edit when the file is large. The user is shown a unified diff and asked to approve; on approval the file is written and `make check` is run.",
+        tool_replace_in_file)
 
 
-ENABLED_TOOLS = ["read_file", "list_dir", "grep", "run_shell", "propose_edit"]
+ENABLED_TOOLS = ["read_file", "list_dir", "grep", "run_shell", "propose_edit",
+                 "replace_in_file"]
 ```
 
-The five tools divide into two groups. The *observation* tools (`read_file`, `list_dir`, `grep`) are safe and unrestricted apart from a hidden-file filter. The *action* tools (`run_shell`, `propose_edit`) can change the world, so both are gated: `run_shell` accepts only `make`, `ls`, `pwd`, `cat`, and `uv`, and `propose_edit` requires your approval.
+The six tools divide into two groups. The *observation* tools (`read_file`, `list_dir`, `grep`) cannot change anything, and are restricted only by the path rules. The *action* tools (`run_shell`, `propose_edit`, `replace_in_file`) can change the world, so all three are gated: `run_shell` accepts only `make`, `ls`, `pwd`, `cat`, and `uv`, and both edit tools require your approval. Two edit tools exist because a whole-file rewrite is the wrong shape for a one-line change. `propose_edit` makes the model echo the entire file as `old`; `replace_in_file` takes a unique snippet instead. On a large file that is the difference between a few thousand tokens per edit and a few dozen.
 
-Four ideas in this file carry most of the teaching value.
+Five ideas in this file carry most of the teaching value.
 
-**Errors are feedback, not exceptions.** Look at `call_tool` and `execute_tool_calls`. Missing arguments, malformed JSON, truncated tool calls, and unknown tool names all return an error *string* that goes back to the model in a `tool` message. Small models produce these failures constantly. Returning actionable text ("missing required argument(s): path; Expected arguments: path") lets the model correct itself. Raising an exception would abort the whole session.
+**Errors are feedback, not exceptions.** Look at `call_tool` and `execute_tool_calls`. Missing arguments, malformed JSON, truncated tool calls, and unknown tool names all return an error *string* that goes back to the model in a `tool` message. Small models produce these failures constantly. Returning actionable text ("missing required argument(s): path; Expected arguments: path") lets the model correct itself. Raising an exception would abort the whole session. The JSON decoder's own complaint is passed through too, because "Expecting ',' delimiter: line 1 column 12" tells the model exactly what to fix.
 
 **The empty string is a valid argument.** When the model creates a new file it passes `""` as `old`. So `call_tool` treats only a *missing key or JSON null* as a missing argument. A careless `if not value` check would reject the one argument value that matters most.
 
-**Hidden files are invisible.** The predicate `hidden_file` treats names ending in `~`, names wrapped in `#...#`, and dotfiles as hidden. Listings skip them, reads refuse them, and shell arguments referencing them are rejected. Secrets in `.env` and repository internals in `.git` stay out of the model's context.
+**Every filesystem tool funnels through one path check.** `resolve_tool_path` is the single gate: it refuses any path with a hidden component, and refuses anything that resolves outside the working directory, so `../secrets`, `/etc/passwd`, and a symlink pointing out of the tree are all rejected with a message the model can act on. `hidden_in_path` inspects *every* component rather than the basename, which is what keeps `.git/config` and `~/.ssh/id_rsa` out of reach; "." and ".." are path syntax rather than hidden names, so they pass through to the containment test. The predicate `hidden_file` treats names ending in `~`, names wrapped in `#...#`, and dotfiles as hidden. The observation tools skip those entries, `grep` never walks into them, and shell arguments that reference them are rejected. Secrets in `.env` and repository internals in `.git` stay out of the model's context.
 
-**Edits are compared against a fresh read of the file.** In `tool_propose_edit`, if the model's `old` string does not match the current on-disk contents, the tool returns a `stale base` error telling the model to read the file again and retry. This kills an entire class of hallucinated-edit bugs, where a model edits from memory of a file it read twenty messages ago.
+**`grep` is written in Python rather than shelled out.** Wrapping `grep -rnE` was three lines, but it leaked: a search from the project root returned matches from inside `.git`, and a pattern beginning with `-` could be read as a flag. Walking the tree with `os.walk` and matching with the `re` module fixes both, and adds a cap (`GREP_MAX_MATCHES`) plus per-line truncation so one broad search cannot flood the context window. A bad pattern becomes feedback ("invalid regular expression") instead of a silent empty result.
 
-When the user approves, `_apply` writes the file and runs `make check`. A failed check returns its output (truncated to 2000 characters) as the tool result, so the model sees the compile or test errors and can react. The harness also turns that failure into a nonzero exit code in one-shot mode, which lets shell scripts detect a bad edit.
+**Edits are checked against a fresh read of the file.** In `tool_propose_edit`, if the model's `old` string does not match the current on-disk contents, the tool returns a `stale base` error telling the model to read the file again and retry. `replace_in_file` gets the same protection from the other direction: the snippet must appear *exactly once*, so zero matches ("copy a unique snippet exactly, including indentation") and multiple matches ("include more surrounding context") are both refused before any diff is shown. Together they kill an entire class of hallucinated-edit bugs, where a model edits from memory of a file it read twenty messages ago.
+
+When the user approves, `apply_change` writes the file and runs `make check`. A failed check returns its output (truncated to 2000 characters) as the tool result, so the model sees the compile or test errors and can react. It also sets the module-level `make_check_failed` flag, which the CLI turns into a nonzero exit code in one-shot mode so shell scripts can detect a bad edit. `run_external` adds a timeout to every subprocess, so a hung `make` becomes a tool result ("command timed out after 600s") with exit code 124 rather than a terminal that never comes back. And nothing here decides policy on its own: `auto_approve`, `dry_run`, and `quiet_mode` are module globals that `agent.py` sets from the CLI flags, which is how the same tool code serves both a `-y` script and an interactive session.
 
 ## Human Approval: approval.py
 
@@ -848,6 +1065,12 @@ ANSI_RESET = "\033[0m"
 
 # When False, print diffs without ANSI (for --plain / --no-color / piped output)
 color_enabled = True
+
+
+def set_color_enabled(enabled):
+    """Turn ANSI colors on/off (used by --plain and the plain/quiet config)."""
+    global color_enabled
+    color_enabled = bool(enabled)
 
 
 # ---------------------------------------------------------------------------
@@ -887,13 +1110,15 @@ def print_colored_diff(diff_text):
 # prompt_yes_no_skip : -> 'yes' | 'no' | 'skip'
 
 def prompt_yes_no_skip():
+    """-> 'yes' | 'no' | 'skip'. EOF (no human present) counts as 'no'."""
     while True:
         sys.stdout.write("\nApply this change? [y]es / [n]o / [s]kip and tell the model why: ")
         sys.stdout.flush()
         try:
             line = input("")
         except EOFError:
-            line = ""
+            print("\n(no answer available: refusing the change)")
+            return "no"
         norm = (line or "").strip().lower()
         if norm in ("y", "yes"):
             return "yes"
@@ -948,7 +1173,9 @@ from tools import render_tools, execute_tool_calls
 # burning all max-iterations. A signature is (name + args-json) per call,
 # sorted, so multi-call batches compare as a set.
 REPEAT_WINDOW = 5   # remember the last N batches
-REPEAT_LIMIT = 2    # >= 2 identical batches in the window => stuck
+REPEAT_LIMIT = 2    # the same batch seen this many times => stuck
+
+MAX_ITERATIONS_DEFAULT = 20
 
 
 # ---------------------------------------------------------------------------
@@ -972,6 +1199,38 @@ def msg_content(msg):
     """
     c = msg.get("content", "") if msg else ""
     return c if isinstance(c, str) else ""
+
+
+def clean_assistant_message(msg):
+    """A copy of an assistant message safe to send back to a strict server.
+
+    Two normalizations happen here. A null or non-string 'content' becomes ""
+    (mlx_lm.server sends "" on tool-only responses, the OpenAI spec sends
+    null, and replaying the null back can be rejected). A missing tool-call id
+    gets a generated one at index 0, 1, ... -- the matching role:"tool" reply
+    is addressed by that id, so an empty id breaks the pairing.
+    """
+    tool_calls = msg.get("tool_calls")
+    has_calls = isinstance(tool_calls, list) and bool(tool_calls)
+    out = {"role": "assistant", "content": msg_content(msg)}
+    if not has_calls:
+        return out
+    cleaned = []
+    for i, tc in enumerate(tool_calls):
+        func = tc.get("function") or {}
+        call_id = tc.get("id")
+        cleaned.append({
+            "id": call_id if isinstance(call_id, str) and call_id != ""
+                  else "call_{}".format(i),
+            "type": tc.get("type") or "function",
+            "function": {"name": func.get("name", ""),
+                         "arguments": func.get("arguments", "{}")},
+        })
+    out["tool_calls"] = cleaned
+    reasoning = msg.get("reasoning_content")
+    if isinstance(reasoning, str) and reasoning != "":
+        out["reasoning_content"] = reasoning
+    return out
 
 
 # ---------------------------------------------------------------------------
@@ -1005,7 +1264,8 @@ def chat(post_fn, messages, model_id, max_tokens=None, temperature=None):
 # Multi-turn agentic loop.
 
 def chat_with_tools(post_fn, messages, tools, model_id,
-                    max_tokens=None, temperature=None, max_iterations=20):
+                    max_tokens=None, temperature=None,
+                    max_iterations=MAX_ITERATIONS_DEFAULT):
     tools_rendered = render_tools(tools)
     current_messages = list(messages)
     recent_signatures = []
@@ -1017,10 +1277,15 @@ def chat_with_tools(post_fn, messages, tools, model_id,
             sig.append("{}|{}".format(f.get("name", ""), f.get("arguments", "")))
         return sorted(sig)
 
-    def seen_too_often(sig):
-        # True when the same batch of calls appeared >= REPEAT_LIMIT times in
-        # the recent window (i.e. once already, before this repeat).
-        return sum(1 for s in recent_signatures if s == sig) >= REPEAT_LIMIT - 1
+    def remember_and_count(sig):
+        """Record this batch and return how often it has now been seen.
+
+        The batch is recorded BEFORE the count, so the second identical batch
+        reports 2 and trips REPEAT_LIMIT.
+        """
+        recent_signatures.append(sig)
+        del recent_signatures[:-REPEAT_WINDOW]
+        return sum(1 for s in recent_signatures if s == sig)
 
     def append_tool_results(results):
         for (call_id, name, result_str) in results:
@@ -1031,24 +1296,23 @@ def chat_with_tools(post_fn, messages, tools, model_id,
                 "content": result_str,
             })
 
-    _it = 0
+    iter_ = 0
     while True:
-        iter_ = _it
-        _it += 1
         if iter_ >= max_iterations:
-            # Max iterations -- one final no-tools call for summary
+            # Max iterations -- one final no-tools call for a summary.
             payload = request_payload(model_id, max_tokens, temperature, current_messages)
             try:
                 data = post_fn(payload)
                 msg = response_message(data)
-                content = msg.get("content", "") if msg else ""
-                if not isinstance(content, str) or content == "":
+                content = msg_content(msg)
+                if content == "":
                     content = "(no summary from model)"
                 if msg:
-                    current_messages.append(msg)
+                    current_messages.append(clean_assistant_message(msg))
                 return content, current_messages
             except Exception:
                 return "(max tool iterations reached)", current_messages
+        iter_ += 1
 
         payload = request_payload(model_id, max_tokens, temperature, current_messages)
         if tools_rendered:
@@ -1060,47 +1324,48 @@ def chat_with_tools(post_fn, messages, tools, model_id,
             raise RuntimeError("response has no 'message'. Raw: {}".format(data))
         tool_calls = msg.get("tool_calls")
         content = msg_content(msg)
-        # Append the assistant message
-        current_messages.append(msg)
+        assistant_msg = clean_assistant_message(msg)
+        current_messages.append(assistant_msg)
 
-        if (isinstance(tool_calls, list) and tool_calls
-                and seen_too_often(call_signature(tool_calls))):
+        if not tool_calls:
+            return (content if content else "(empty response from model)"), current_messages
+
+        # Echo any reasoning the model emitted alongside its tool calls, then
+        # run the calls. Results are appended before the stuck-model check so
+        # the transcript keeps a role:"tool" reply for every call.
+        if content.strip():
+            print("")
+            print(content.strip())
+        batch = call_signature(tool_calls)
+        results = execute_tool_calls(tool_calls)
+        append_tool_results(results)
+        seen = remember_and_count(batch)
+        if seen >= REPEAT_LIMIT:
             # The model is stuck re-issuing the identical call(s) -- bail out
             # with an explanation instead of looping to max-iterations.
             return ("(stopped: the model repeated the identical tool call(s) "
                     "{} times without making progress; it may be too weak for "
-                    "this task or its arguments are malformed)".format(REPEAT_LIMIT),
+                    "this task or its arguments are malformed)".format(seen),
                     current_messages)
-
-        if content and content.strip() and isinstance(tool_calls, list) and tool_calls:
-            print("")
-            print(content.strip())
-            recent_signatures.append(call_signature(tool_calls))
-            recent_signatures = recent_signatures[-REPEAT_WINDOW:]
-            append_tool_results(execute_tool_calls(tool_calls))
-            continue
-        if not tool_calls:
-            return (content if content else "(empty response from model)"), current_messages
-        recent_signatures.append(call_signature(tool_calls))
-        recent_signatures = recent_signatures[-REPEAT_WINDOW:]
-        append_tool_results(execute_tool_calls(tool_calls))
 ```
 
 Follow `chat_with_tools` iteration by iteration:
 
 1. Render the tool definitions and attach them to the payload with `"tool_choice": "auto"`.
 2. POST. Extract the assistant message.
-3. Append the assistant message to the history, exactly as the model sent it. The history grows to be a faithful transcript: user text, assistant text, tool calls, tool results.
+3. Append a normalized copy of the assistant message to the history. The history grows to be a faithful transcript: user text, assistant text, tool calls, tool results.
 4. If there are no `tool_calls`, the turn is over. Return the text and the new history.
 5. If there are tool calls, print any accompanying text, execute the calls, append one `tool` message per call, and go back to step 1.
 
-Two safeguards stand out.
+Three safeguards stand out.
 
-**Repetition detection.** Each batch of tool calls is reduced to a *signature*: a sorted list of `name|arguments-json` strings. Sorting makes multi-call batches compare as a set, so the order the model emits them does not hide a repeat. The loop remembers the last `REPEAT_WINDOW = 5` signatures. When the same signature appears `REPEAT_LIMIT = 2` times in that window, the loop stops and says so. A model stuck on a malformed argument no longer burns twenty iterations of your token budget.
+**Repetition detection.** Each batch of tool calls is reduced to a *signature*: a sorted list of `name|arguments-json` strings. Sorting makes multi-call batches compare as a set, so the order the model emits them does not hide a repeat. `remember_and_count` records the new signature *before* counting how often it has appeared in the last `REPEAT_WINDOW = 5` batches, so the second identical batch reports 2 and trips `REPEAT_LIMIT = 2`. Order matters here: count first and the same batch has to appear a third time before the loop notices. When the limit trips, the loop stops and says so, and a model stuck on a malformed argument no longer burns twenty iterations of your token budget.
 
-**Bounded iterations with a graceful ending.** After `max_iterations = 20`, the loop makes one final request *without* tools, forcing the model to produce a text summary instead of another tool call. If even that fails, it returns a placeholder string. The loop always returns a `(text, messages)` pair; the session never hangs on the loop itself.
+**A stopped loop is still a valid transcript.** The repetition check runs *after* the tool results are appended, and the reason is a protocol detail that bites anyone who writes this loop: an assistant message carrying `tool_calls` must be followed by one `role: "tool"` message per call. Returning early before executing the batch would leave that assistant message dangling, and a strict server rejects the next request with a 400. The test `test_repeated_batch_stops_after_the_second_attempt` asserts that the counts stay equal.
 
-The code also patches over real-world server bugs. `msg_content` coerces `"content": null` to `""`, because `mlx_lm.server` sends exactly that on tool-only responses. The payload builder omits `max_tokens` and `temperature` unless they were configured, because some local servers reject unknown or unwanted parameters.
+**Bounded iterations with a graceful ending.** After `max_iterations` turns (the default `MAX_ITERATIONS_DEFAULT = 20`, overridable per profile), the loop makes one final request *without* tools, forcing the model to produce a text summary instead of another tool call. If even that fails, it returns a placeholder string. The loop always returns a `(text, messages)` pair; the session never hangs on the loop itself.
+
+The code also patches over real-world server bugs, and the helper that does it is small enough to quote. `clean_assistant_message` copies the assistant turn before it goes back on the wire: a missing tool-call id becomes `call_0`, `"content": null` becomes `""`, and an empty `reasoning_content` is dropped. Either of the first two can make a strict server reject the whole transcript on the next request, so normalizing once at the boundary is cheaper than discovering it in production. The payload builder omits `max_tokens` and `temperature` unless they were configured, because some local servers reject unknown or unwanted parameters.
 
 ## A Hosted Client with Streaming and Cost Accounting: fireworks_ai.py
 
@@ -1132,17 +1397,18 @@ data: [DONE]
 # in here.
 
 import json
+import os
 import threading
 
 import requests
 
-import harness_config as hc
 from harness_config import (config_active_provider, provider_api_key_env,
                             provider_endpoint, provider_generation,
                             provider_model, provider_pricing, pricing_ref,
                             generation_ref)
 from chat_loop import chat as chat_star
 from chat_loop import chat_with_tools as chat_with_tools_star
+from chat_loop import MAX_ITERATIONS_DEFAULT
 
 # ---------------------------------------------------------------------------
 # Modes and timeouts
@@ -1153,13 +1419,11 @@ debug_log = False  # shared /debug toggle (agent.py flips this)
 # wall-clock cap on generation: a long response that keeps producing
 # tokens simply keeps streaming. The only remaining timeouts are:
 #   CONNECT_MAX_TIME    -- seconds to establish the TCP connection.
-#   HEADER_MAX_TIME     -- seconds to wait for response headers (TTFT).
-#   STREAM_IDLE_TIMEOUT -- seconds of *silence* from the server before we
-#                          give up (requests' read timeout applies per-chunk).
-#                          Tokens arriving periodically never trip this; only
-#                          a genuinely stalled connection does.
+#   STREAM_IDLE_TIMEOUT -- seconds the server may stay silent, both while
+#                          waiting for response headers (time to first token)
+#                          and between chunks. Tokens arriving periodically
+#                          never trip this; only a stalled connection does.
 CONNECT_MAX_TIME = 10
-HEADER_MAX_TIME = 600
 STREAM_IDLE_TIMEOUT = 300
 
 # ---------------------------------------------------------------------------
@@ -1211,10 +1475,17 @@ def completion_cost(tokens):
     return rate_cost(tokens, pricing_ref(active_pricing(), "output"))
 
 
+def session_snapshot():
+    """-> (prompt, cached, completion, total) token totals, read under one lock."""
+    with _stats_lock:
+        return (_session_prompt_tokens, _session_cached_tokens,
+                _session_completion_tokens, _session_total_tokens)
+
+
 # Cached input tokens are reported by the server in
 # usage.prompt_tokens_details.cached_tokens and are part of prompt_tokens;
 # bill them at the discounted rate and subtract them from the uncached pool.
-def session_cost():
+def session_cost(snapshot=None):
     """-> number, or None when the active profile declares no pricing at all."""
     rates = active_pricing()
     inp = pricing_ref(rates, "input")
@@ -1222,22 +1493,15 @@ def session_cost():
     out = pricing_ref(rates, "output")
     if inp is None and cached is None and out is None:
         return None
-    with _stats_lock:
-        pt = _session_prompt_tokens
-        ca = _session_cached_tokens
-        ct = _session_completion_tokens
+    pt, ca, ct = snapshot or session_snapshot()[:3]
     return ((rate_cost(max(0, pt - ca), inp) or 0)
             + (rate_cost(ca, cached) or 0)
             + (rate_cost(ct, out) or 0))
 
 
 def print_session_stats():
-    with _stats_lock:
-        pt = _session_prompt_tokens
-        ct = _session_completion_tokens
-        tt = _session_total_tokens
-        ca = _session_cached_tokens
-    cost = session_cost()
+    pt, ca, ct, tt = session_snapshot()
+    cost = session_cost((pt, ca, ct))
     rates = active_pricing()
     print("")
     print("Session token usage:")
@@ -1276,8 +1540,6 @@ def accumulate_usage(data):
 #
 # The env var name comes from the active provider profile's api_key_env when
 # a harness config is loaded; falls back to FIREWORKS_API_KEY.
-
-import os  # noqa: E402
 
 
 def get_api_key():
@@ -1435,6 +1697,8 @@ def post_fireworks(payload):
                              timeout=(CONNECT_MAX_TIME, STREAM_IDLE_TIMEOUT))
         data = parse_sse_response(resp)
         resp.close()
+    except (KeyboardInterrupt, SystemExit):
+        raise  # let Ctrl-C reach the REPL as a cancelled turn
     except Exception as e:  # noqa: BLE001
         raise RuntimeError("fireworks-ai: HTTP error: {}".format(e))
     if debug_log:
@@ -1471,6 +1735,12 @@ def gen_param(key):
     return generation_ref(provider_generation(config_active_provider()), key, None)
 
 
+def gen_max_iterations():
+    """Loop budget: profile "generation": {"max_iterations": N} or the default."""
+    n = gen_param("max_iterations")
+    return n if isinstance(n, int) and n > 0 else MAX_ITERATIONS_DEFAULT
+
+
 def chat(messages, model_id=None, max_tokens=None, temperature=None):
     return chat_star(post_fireworks, messages,
                      model_id=model_id or active_model_id(),
@@ -1479,17 +1749,17 @@ def chat(messages, model_id=None, max_tokens=None, temperature=None):
 
 
 def chat_with_tools(messages, tools, model_id=None, max_tokens=None,
-                    temperature=None, max_iterations=20):
+                    temperature=None, max_iterations=None):
     return chat_with_tools_star(post_fireworks, messages, tools,
                                 model_id=model_id or active_model_id(),
                                 max_tokens=max_tokens if max_tokens is not None else gen_param("max_tokens"),
                                 temperature=temperature if temperature is not None else gen_param("temperature"),
-                                max_iterations=max_iterations)
+                                max_iterations=max_iterations or gen_max_iterations())
 ```
 
 Two aspects deserve attention.
 
-**Timeouts for streaming.** A total wall-clock timeout would kill long generations, which is wrong for a model that is still producing tokens. The module instead uses three separate bounds: `CONNECT_MAX_TIME = 10` seconds to open the TCP connection, `HEADER_MAX_TIME = 600` as the time-to-first-token allowance, and `STREAM_IDLE_TIMEOUT = 300` as the read timeout, which `requests` applies *per chunk*. A response that keeps producing tokens never trips it. Only a truly silent connection does.
+**Timeouts for streaming.** A total wall-clock timeout would kill long generations, which is wrong for a model that is still producing tokens. The module instead passes `requests` a `(connect, read)` pair: `CONNECT_MAX_TIME = 10` seconds to open the TCP connection, and `STREAM_IDLE_TIMEOUT = 300` as the read timeout, which `requests` applies *per chunk*. Because the first streamed byte is itself a read, that same 300-second budget doubles as the time-to-first-token allowance. A response that keeps producing tokens never trips it; only a truly stalled connection does.
 
 **Cost accounting.** Each response's `usage` is added to thread-safe session counters. The profile's `pricing` block gives USD rates per 1,000,000 tokens. For `p`$ prompt tokens, `a`$ of those cached, and `o`$ completion tokens, with input, cached-input, and output rates `r_i`$, `r_c`$, and `r_o`$, the session cost is
 
@@ -1527,6 +1797,7 @@ Local inference needs neither keys nor streaming. `mlx_lm.server` and its siblin
 # active provider profile in the harness config; nothing provider-specific is
 # compiled in here.
 
+import json
 import os
 import threading
 
@@ -1537,6 +1808,7 @@ from harness_config import (config_active_provider, provider_api_key_env,
                             provider_model, generation_ref)
 from chat_loop import chat as chat_star
 from chat_loop import chat_with_tools as chat_with_tools_star
+from chat_loop import MAX_ITERATIONS_DEFAULT
 import fireworks_ai  # for the shared debug_log toggle
 
 # The provider dict MLX requests consult for endpoint/model/generation.
@@ -1547,7 +1819,6 @@ mlx_active_provider = None
 # The OpenAI-compatible endpoint returns reasoning in the assistant message's
 # 'reasoning' field, which chat_loop.py ignores (it only reads 'content' and
 # 'tool_calls'), so there is no separate thinking toggle to wire up here.
-MLX_THINK = False
 
 # Non-streaming request: the whole generation must complete within this
 # window. Local models on large weights can be slow, so be generous.
@@ -1562,7 +1833,9 @@ def current_provider_json():
 # ---------------------------------------------------------------------------
 # Session stats (thread-safe). mlx_lm.server reports prompt_tokens /
 # completion_tokens on every /v1/chat/completions response. Local inference is
-# free, so stats are informational only -- estimated cost is always $0.
+# free, so stats are informational only -- there is no cost estimate here.
+# Both a reset and a print function exist so this module mirrors the
+# fireworks_ai.py interface that agent.py calls.
 
 _stats_lock = threading.Lock()
 _session_prompt_tokens = 0
@@ -1623,6 +1896,8 @@ def post_mlx(payload):
         resp = requests.post(endpoint, headers=headers, json=request_body,
                              timeout=(MLX_CONNECT_TIME, MLX_MAX_TIME))
         data = resp.json()
+    except (KeyboardInterrupt, SystemExit):
+        raise  # let Ctrl-C reach the REPL as a cancelled turn
     except Exception as e:  # noqa: BLE001
         raise RuntimeError("mlx-serve: HTTP error: {}".format(e))
     if fireworks_ai.debug_log:
@@ -1638,7 +1913,6 @@ def post_mlx(payload):
 
 
 def json_dumps(x):
-    import json
     try:
         return json.dumps(x)
     except Exception:
@@ -1653,6 +1927,12 @@ def json_dumps(x):
 
 def m_gen_param(key):
     return generation_ref(provider_generation(current_provider_json()), key, None)
+
+
+def m_max_iterations():
+    """Loop budget: profile "generation": {"max_iterations": N} or the default."""
+    n = m_gen_param("max_iterations")
+    return n if isinstance(n, int) and n > 0 else MAX_ITERATIONS_DEFAULT
 
 
 def m_model_id():
@@ -1671,12 +1951,12 @@ def mlx_chat(messages, model_id=None, max_tokens=None, temperature=None):
 
 
 def mlx_chat_with_tools(messages, tools, model_id=None, max_tokens=None,
-                        temperature=None, max_iterations=20):
+                        temperature=None, max_iterations=None):
     return chat_with_tools_star(post_mlx, messages, tools,
                                 model_id=model_id or m_model_id(),
                                 max_tokens=max_tokens if max_tokens is not None else m_gen_param("max_tokens"),
                                 temperature=temperature if temperature is not None else m_gen_param("temperature"),
-                                max_iterations=max_iterations)
+                                max_iterations=max_iterations or m_max_iterations())
 ```
 
 Note `MLX_MAX_TIME = 900`. A non-streaming local request must finish generation inside one read window, and large quantized models on a laptop can be slow. Be generous.
@@ -1806,7 +2086,23 @@ from harness_config import (config_active_provider, config_active_provider_name,
                             provider_generation, provider_model, provider_type)
 from tools import ENABLED_TOOLS, register_all
 
-VERSION = "0.2.0"
+
+def version():
+    """Prefer the installed distribution's version so pyproject.toml is the
+    single source of truth; fall back for a source checkout that is not
+    installed (plain `python agent.py`)."""
+    try:
+        from importlib.metadata import PackageNotFoundError, version as dist_version
+        try:
+            return dist_version("coding-harness-agent")
+        except PackageNotFoundError:
+            pass
+    except Exception:  # noqa: BLE001
+        pass
+    return "0.2.0"
+
+
+VERSION = version()
 
 # ---------------------------------------------------------------------------
 # Prompts
@@ -1815,14 +2111,18 @@ SYSTEM_PROMPT_TEMPLATE = (
     "You are an interactive coding assistant working in the directory {cwd}.\n\n"
     "Rules:\n"
     "- Use read_file, list_dir, and grep to understand the code BEFORE proposing edits.\n"
-    "- To EDIT an existing file: read_file it first, then pass its exact current contents\n"
-    "  as `old` to propose_edit.\n"
+    "- To EDIT an existing file: read_file it first. Then use replace_in_file with a\n"
+    "  unique snippet copied exactly (including indentation) as old_string. This is\n"
+    "  the cheap path and the one you should prefer.\n"
+    "- Use propose_edit only when you are rewriting most of a file, and then pass its\n"
+    "  exact current contents as `old`.\n"
     "- To CREATE a new file: call propose_edit with the empty string \"\" as `old` and\n"
     "  the full desired contents as `new`. Do not call read_file first for a file that\n"
     "  does not exist yet.\n"
-    "- One file per propose_edit call. Keep diffs small and focused.\n"
-    "- If the user rejects an edit or `make check` fails, ask for clarification instead\n"
-    "  of retrying blindly.\n"
+    "- One change per call. Keep diffs small and focused.\n"
+    "- Every edit is gated: the user sees a diff and approves it, and `make check`\n"
+    "  runs afterwards. If an edit is rejected or `make check` fails, read the error\n"
+    "  and fix it rather than re-sending the same change.\n"
     "- run_shell only accepts whitelisted commands: make, ls, pwd, cat, uv.\n"
     "- When you are done, reply with a short natural-language summary of what changed."
 )
@@ -1971,7 +2271,7 @@ def apply_harness_flags():
         tools.quiet_mode = True
     if cfg.get("plain"):
         cli_plain = True
-        approval.color_enabled = False
+        approval.set_color_enabled(False)
     if cfg.get("debug"):
         fireworks_ai.debug_log = True
     s = cfg.get("search")
@@ -2004,7 +2304,7 @@ def apply_env_overrides():
         tools.quiet_mode = True
     if os.environ.get("CODING_AGENT_PLAIN"):
         cli_plain = True
-        approval.color_enabled = False
+        approval.set_color_enabled(False)
     if os.environ.get("CODING_AGENT_DEBUG"):
         fireworks_ai.debug_log = True
 
@@ -2017,6 +2317,14 @@ def read_all_stdin():
         return sys.stdin.read()
     except Exception:
         return ""
+
+
+def stdin_is_pipe():
+    """True when stdin is not an interactive terminal (pipe, file, CI)."""
+    try:
+        return not sys.stdin.isatty()
+    except Exception:  # noqa: BLE001
+        return False
 
 
 def build_prompt(positional, prompt_parts, stdin_text):
@@ -2132,6 +2440,7 @@ def reset_conversation():
     prompt = SYSTEM_PROMPT_TEMPLATE.replace("{cwd}", cwd)
     messages.clear()
     messages.append({"role": "system", "content": prompt})
+    tools.make_check_failed = False
 
 
 def print_banner():
@@ -2186,6 +2495,27 @@ PREVIEW_WIDTH = 60
 PREVIEW_MAX_LINES = 3
 
 
+def transcript_entry(msg):
+    """One message rendered for the /compact transcript.
+
+    Tool-call arguments and tool output are included: they are exactly the
+    details (paths, snippets, errors) the summary must carry forward."""
+    role = msg.get("role", "?")
+    header = "### {}".format(role)
+    if role == "tool" and msg.get("name"):
+        header += " {}".format(msg["name"])
+    body = []
+    content = msg.get("content", "")
+    if isinstance(content, str) and content.strip() != "":
+        body.append(content)
+    tcs = msg.get("tool_calls")
+    if isinstance(tcs, list):
+        for tc in tcs:
+            f = tc.get("function") or {}
+            body.append("tool call {} {}".format(f.get("name", "?"), f.get("arguments", "")))
+    return "{}\n{}".format(header, "\n".join(body) if body else "(no content)")
+
+
 def wrap_preview(s):
     """Wrap s at PREVIEW_WIDTH (breaking on the last space in the window when
     possible) into at most PREVIEW_MAX_LINES lines; "…" marks text that still
@@ -2237,13 +2567,7 @@ def compact_context():
     print("Compacting {} messages ({} chars)…".format(len(messages), before))
     transcript_parts = []
     for m in messages:
-        tcs = m.get("tool_calls")
-        header = "### {}".format(m.get("role", "?"))
-        if isinstance(tcs, list) and tcs:
-            header += " (tool calls: {})".format(
-                ", ".join((tc.get("function") or {}).get("name", "?") for tc in tcs))
-        content = m.get("content", "")
-        transcript_parts.append("{}\n{}".format(header, content if isinstance(content, str) else ""))
+        transcript_parts.append(transcript_entry(m))
     transcript = "\n\n".join(transcript_parts)
     try:
         summary = llm_chat([
@@ -2283,6 +2607,7 @@ Commands:
   /search brave     enable Brave search
   /search exa       enable Exa search
   /tokens           show session token usage and estimated cost
+  /tokens reset     zero the session token counters
   /skills           list available skills in ~/.agents/skills
   /<skill-name>     load that skill into the conversation
   /quit             exit
@@ -2333,7 +2658,12 @@ def handle_slash_command(line):
         fireworks_ai.debug_log = not fireworks_ai.debug_log
         print("Debug logging {}".format("ON" if fireworks_ai.debug_log else "OFF"))
         return "continue"
-    if line == "/tokens":
+    if line == "/tokens" or line == "/tokens reset":
+        if line.endswith(" reset"):
+            fireworks_ai.reset_session_stats()
+            mlx_serve.mlx_reset_session_stats()
+            print("Session token counters reset.")
+            return "continue"
         if using_mlx():
             mlx_serve.mlx_print_session_stats()
         else:
@@ -2469,12 +2799,62 @@ INTENT_LABELS = {
 }
 
 
+def messages_contain(msgs, substr):
+    """Case-insensitive substring search over message content."""
+    sub = substr.lower()
+    return any(sub in str(m.get("content", "")).lower() for m in msgs)
+
+
+def infer_exit_code(turn_messages):
+    """Map a one-shot turn onto a process exit code.
+
+    tools.make_check_failed is the authoritative signal for a failed check:
+    tools.py sets it when an approved write leaves `make check` non-zero, so
+    the code does not depend on matching words inside old tool output. Any
+    rejection anywhere in the turn counts, even if a later turn carried on,
+    because the change the run was asked for was refused.
+    """
+    if tools.make_check_failed:
+        return EXIT_CHECK_FAILED
+    if messages_contain(turn_messages, "user rejected") or messages_contain(turn_messages, "user skipped"):
+        return EXIT_REJECTED
+    return EXIT_OK
+
+
+def rejected_last_turn(turn_messages):
+    """True when a turn ENDED with the user rejecting or skipping a change.
+
+    This is the narrower test used to decide whether a one-shot retry is
+    worthwhile: a rejection the model already worked around is not.
+    """
+    tool_msgs = [m for m in turn_messages if m.get("role") == "tool"]
+    if not tool_msgs:
+        return False
+    last = str(tool_msgs[-1].get("content", "")).lower()
+    return "user rejected" in last or "user skipped" in last
+
+
+ONE_SHOT_RETRY_PROMPT = (
+    "The previous edit was rejected. Make a smaller, safer change and propose "
+    "it again in one call."
+)
+
+
 def send_to_model(user_line):
+    """Run one turn and return the messages that turn added to the transcript.
+
+    A coding or hybrid turn appends to the persistent `messages` history; a
+    general turn is stateless and returns [] so the coding transcript is not
+    touched.
+    """
     global messages
     intent = classify_intent(user_line)
     if not cli_quiet:
-        print("[intent: {} → {}]".format(intent, INTENT_LABELS[intent]))
+        print("[intent: {} → {}]".format(intent,
+                                         INTENT_LABELS.get(intent, "coding tools")))
     if intent == "general":
+        # A general question is answered statelessly: no coding system prompt
+        # and no tools, so the coding transcript is left untouched.
         content = maybe_search(user_line, True) or user_line
         msgs = [
             {"role": "system", "content": GENERAL_SYSTEM_PROMPT},
@@ -2482,35 +2862,15 @@ def send_to_model(user_line):
         ]
         reply = llm_chat(msgs)
         print("\n{}".format(clean(reply)))
-    elif intent == "coding":
-        updated = messages + [{"role": "user", "content": user_line}]
-        reply, new_messages = llm_chat_with_tools(updated, ENABLED_TOOLS)
-        messages = new_messages
-        print("\n{}".format(clean(reply)))
-    else:  # hybrid
-        content = maybe_search(user_line, False) or user_line
-        updated = messages + [{"role": "user", "content": content}]
-        reply, new_messages = llm_chat_with_tools(updated, ENABLED_TOOLS)
-        messages = new_messages
-        print("\n{}".format(clean(reply)))
+        return []
 
-
-# ---------------------------------------------------------------------------
-# One-shot helpers: infer exit code from tool results
-
-def tool_messages_contain(substr):
-    sub = substr.lower()
-    return any(m.get("role") == "tool"
-               and sub in str(m.get("content", "")).lower()
-               for m in messages)
-
-
-def infer_exit_code():
-    if tool_messages_contain("make check failed"):
-        return EXIT_CHECK_FAILED
-    if tool_messages_contain("user rejected") or tool_messages_contain("user skipped"):
-        return EXIT_REJECTED
-    return EXIT_OK
+    content = maybe_search(user_line, intent == "hybrid" and search_enabled) or user_line
+    updated = messages + [{"role": "user", "content": content}]
+    start = len(updated)
+    reply, new_messages = llm_chat_with_tools(updated, ENABLED_TOOLS)
+    messages = new_messages
+    print("\n{}".format(clean(reply)))
+    return new_messages[start:]
 
 
 def run_one_shot(prompt):
@@ -2518,11 +2878,21 @@ def run_one_shot(prompt):
     register_all()
     reset_conversation()
     # One-shot still respects quiet/plain but banner is suppressed anyway
+    retried = False
     try:
-        send_to_model(prompt)
-        exit_code = infer_exit_code()
+        turn = send_to_model(prompt)
+        if rejected_last_turn(turn) and not retried:
+            # A one-shot run has no human to steer, so give the model exactly
+            # one chance to come back with a smaller change.
+            retried = True
+            print("\n[change rejected — retrying once with a smaller request]")
+            turn = send_to_model(ONE_SHOT_RETRY_PROMPT)
+        exit_code = infer_exit_code(turn)
     except SystemExit:
         raise
+    except KeyboardInterrupt:
+        sys.stderr.write("\ncancelled\n")
+        exit_with_code(EXIT_MODEL_ERROR)
     except Exception as e:  # noqa: BLE001
         sys.stderr.write("Error talking to model: {}\n".format(e))
         exit_with_code(EXIT_MODEL_ERROR)
@@ -2559,16 +2929,31 @@ def configured_model_ids():
 
 
 def completion_candidates(word):
-    """Readline completes the word under the cursor rather than the whole
-    line, so the command set and the argument sets are merged and filtered by
-    prefix. Tab in the middle of prose only reacts to words that actually
-    begin a known name (command, provider profile, engine, or model id)."""
-    matching = lambda xs: [x for x in xs if x.startswith(word)]  # noqa: E731
-    if word.startswith("/"):
-        return matching(SLASH_COMMANDS)
-    return (matching(config_provider_names())
-            + matching(SEARCH_ENGINES)
-            + matching(configured_model_ids()))
+    """-> list of completion strings for the word under the cursor.
+
+    Readline completes the word as *it* splits it, and the split differs
+    between the two implementations the harness runs on. GNU Readline keeps a
+    leading "/" in the word, so completing "/t" hands us "/t" and expects
+    "/tokens" back. libedit (the macOS backend) treats "/" as a word
+    separator, so the same keystrokes hand us "t" and expect "tokens" back --
+    the slash stays on the line either way.
+
+    Getting this wrong used to be visible rather than merely unhelpful: with
+    "t" matching no command, libedit fell back to *filename* completion and
+    inserted a file name into the middle of "/tokens". So both spellings are
+    accepted here, and the slash is put back only when it came with the word.
+    """
+    had_slash = word.startswith("/")
+    variants = [word, "/" + word] if not had_slash else [word]
+    names = config_provider_names() + SEARCH_ENGINES + configured_model_ids()
+    known = (SLASH_COMMANDS if any(v.startswith("/") for v in variants) else []) + names
+    out = []
+    for candidate in known:
+        if candidate in out or not any(candidate.startswith(v) for v in variants):
+            continue
+        out.append(candidate if had_slash or not candidate.startswith("/")
+                   else candidate[1:])
+    return out
 
 
 def setup_line_input():
@@ -2610,6 +2995,11 @@ def run_repl():
             continue
         try:
             send_to_model(trimmed)
+        except KeyboardInterrupt:
+            # Ctrl-C cancels the turn, not the session; the transcript keeps
+            # whatever was already committed to it.
+            print("\n[cancelled]")
+            sys.stdout.flush()
         except Exception as e:  # noqa: BLE001
             print("\nError talking to model: {}".format(e))
             sys.stdout.flush()
@@ -2632,9 +3022,9 @@ def build_arg_parser():
     parser.add_argument("-p", "--prompt", action="append", default=[],
                         metavar="TEXT", help="prompt text, repeatable, joined with newlines")
     parser.add_argument("--stdin", action="store_true",
-                        help="read prompt from stdin (pipe/heredoc)")
+                        help="read prompt text from stdin (pipe/heredoc)")
     parser.add_argument("-y", "--yes", action="store_true",
-                        help="auto-approve propose_edit after showing diff")
+                        help="auto-approve edits after showing the diff")
     parser.add_argument("--dry-run", action="store_true",
                         help="show diffs but do not write files")
     parser.add_argument("--provider", metavar="NAME",
@@ -2687,7 +3077,7 @@ def cli_main(argv=None):
         tools.quiet_mode = True
     if args.plain:
         cli_plain = True
-        approval.color_enabled = False
+        approval.set_color_enabled(False)
     if args.yes:
         tools.auto_approve = True
     if args.dry_run:
@@ -2709,11 +3099,19 @@ def cli_main(argv=None):
         set_current_model(args.model.strip())
     if args.cwd:
         resolve_cwd(args.cwd)
-    # Build prompt from all sources
-    stdin_text = read_all_stdin() if args.stdin else None
+    # Build the prompt from every source. Reading stdin when it is a pipe is
+    # implied even without --stdin, so `git diff | coding-agent -p "..."` works
+    # either way.
+    piped = stdin_is_pipe()
+    stdin_text = read_all_stdin() if (args.stdin or piped) else None
     prompt = build_prompt(args.positional, args.prompt, stdin_text)
     if prompt != "":
         run_one_shot(prompt)
+    elif args.stdin:
+        # `--stdin` with nothing on the pipe would otherwise look like a
+        # request for the interactive REPL while stdin is already at EOF.
+        sys.stderr.write("error: --stdin was given but stdin is empty\n")
+        exit_with_code(EXIT_BAD_ARGS)
     else:
         run_repl()
 
@@ -2724,41 +3122,45 @@ if __name__ == "__main__":
 
 ### The system prompt is a policy document
 
-`SYSTEM_PROMPT_TEMPLATE` is where the behavioral contract lives. It tells the model to explore before editing, to `read_file` immediately before proposing an edit so the `old` string matches disk, to pass `""` as `old` for new files, to keep diffs small, and to ask rather than retry after a rejection. Compare that text with `tools.py`: every rule in the prompt is backed by enforcement in code. Stale bases are rejected by the tool, whitelisted commands are enforced by `run_shell`. The prompt teaches the model the rules; the tools make breaking them impossible. That pairing is the single most important habit in harness design.
+`SYSTEM_PROMPT_TEMPLATE` is where the behavioral contract lives. It tells the model to explore before editing, to prefer `replace_in_file` with a unique snippet over rewriting a whole file, to use `propose_edit` when it really is rewriting most of a file or creating one, to pass `""` as `old` for new files, and to read the error and adjust rather than re-sending a rejected change. Compare that text with `tools.py`: the rules that matter are backed by enforcement in code. A snippet that does not match exactly is refused by `replace_in_file`; paths outside the working directory are refused by `resolve_tool_path`; unrecognized commands are refused by `run_shell`'s whitelist. The prompt teaches the model the rules, the tools make the common ways of breaking them fail loudly, and your approval stands behind the rest. That pairing is the single most important habit in harness design, as long as you are honest about which of the three is doing the work for any given rule.
 
 ### Intent routing
 
 Not every message belongs in a coding loop. Before calling the model, `send_to_model` classifies the input:
 
-- `general` (weather, movies, "who is"): a stateless call with web search forced on and `GENERAL_SYSTEM_PROMPT`. No coding tools, no conversation history.
+- `general` (weather, movies, "who is"): a stateless call with `GENERAL_SYSTEM_PROMPT` and search attempted regardless of the `/search` toggle, since a factual question has nowhere else to get its answer. No coding tools, no conversation history.
 - `coding`: the full agentic loop with `ENABLED_TOOLS` over the persistent `messages` history.
 - `hybrid`: the coding loop, but with search results prepended when `/search` is on.
 
-`classify_intent` uses a cheap two-stage design: `heuristic_classify` scans the lower-cased input for keyword lists (`GENERAL_KEYWORDS`, `CODING_KEYWORDS`). Only when neither list matches does it spend one LLM call, with `max_tokens=10` and `temperature=0.0`, asking for one word. Errors in that classifier call default to `coding`, so the assistant degrades to useful behavior instead of refusing to act.
+A failure to search is not a failure to answer: `maybe_search` returns `None` on a missing key or a network error and the original question is sent unchanged. The `general` and `hybrid` paths differ in exactly one way that matters in practice -- the general path returns `[]` instead of touching `messages`, which is why a weather question cannot consume or pollute your coding transcript.
+
+`classify_intent` uses a cheap two-stage design: `heuristic_classify` scans the lower-cased input for keyword lists (`GENERAL_KEYWORDS`, `CODING_KEYWORDS`). Only when neither list matches does it spend one LLM call, with `max_tokens=10` and `temperature=0.0`, asking for one word. Errors in that classifier call default to `coding`, so the assistant degrades to useful behavior instead of refusing to act, and `INTENT_LABELS.get(...)` keeps an unexpected label from raising a `KeyError` in the middle of a turn.
 
 ### Context management: /context and /compact
 
 An agentic session accumulates messages fast: each tool call adds the assistant message and at least one tool result. `message_char_size` counts characters of content, reasoning, and tool arguments, and `/context` prints a table with one line per message. The token estimate divides characters by 4, the standard heuristic `\hat{t} \approx c / 4`$ for English text and code.
 
-`/compact` is the interesting one. It serializes the whole conversation into a transcript, sends it with `COMPACT_SYSTEM_PROMPT` asking for a dense summary, and then replaces everything except the original system prompt with the summary as a single user message. A 40,000-character session becomes a 2,000-character brief. The model keeps working from the summary: goals, decisions, files touched, and open tasks survive; the giant file dumps do not.
+`/compact` is the interesting one. `transcript_entry` renders each message for the summarizer -- not just `content`, but the tool-call arguments and every `role: "tool"` result, because the file paths, snippets, and error text are exactly what the next turn needs and what a naive transcript drops. It sends that with `COMPACT_SYSTEM_PROMPT` asking for a dense summary, then replaces everything except the original system prompt with the summary as a single user message. A 40,000-character session becomes a 2,000-character brief. The model keeps working from the summary: goals, decisions, files touched, and open tasks survive; the giant file dumps do not.
 
 ### Slash commands, skills, and Tab completion
 
-`handle_slash_command` dispatches `/reset`, `/history`, `/context`, `/compact`, `/model`, `/provider`, `/debug`, `/search`, `/tokens`, `/help`, `/skills`, and `/quit`. Any *other* `/name` is treated as a skill lookup under `~/.agents/skills/<name>/SKILL.md`: the file is read, injected as a system message, and the model is asked to acknowledge it. This is the same skill mechanism the bigger agents use, in about sixty lines.
+`handle_slash_command` dispatches `/reset`, `/history`, `/context`, `/compact`, `/model`, `/provider`, `/debug`, `/search`, `/tokens` (and `/tokens reset`), `/help`, `/skills`, and `/quit`. Any *other* `/name` is treated as a skill lookup under `~/.agents/skills/<name>/SKILL.md`: the file is read, injected as a system message, and the model is asked to acknowledge it. This is the same skill mechanism the bigger agents use, in about sixty lines.
 
 `completion_candidates` powers Tab completion. Readline completes the word under the cursor, so the function merges slash commands (when the word starts with `/`) with provider profile names, search engines, and configured model IDs, filtered by prefix.
 
 ### One-shot mode and exit codes
 
-With a prompt (from `-p`, positional words, or `--stdin`), the agent runs one task and exits. `infer_exit_code` scans the tool results for the phrases `"make check failed"`, `"user rejected"`, and `"user skipped"` and maps them to distinct exit codes:
+With a prompt (from `-p`, positional words, or piped stdin), the agent runs one task and exits. `run_one_shot` keeps the messages the turn added, hands them to `infer_exit_code`, and maps the outcome to a distinct exit code:
 
 | Code | Meaning |
 | --- | --- |
 | 0 | success |
-| 1 | model/API error |
+| 1 | model/API error, or Ctrl-C during the turn |
 | 2 | edit applied but `make check` failed |
 | 3 | user rejected or skipped the change |
 | 5 | bad arguments or no providers configured |
+
+Two design points are worth copying. First, the failed-check signal is a flag (`tools.make_check_failed`) set by the module that actually ran `make check`, not a substring search over old tool output -- the program asks the component that knows rather than grepping its own transcript. Second, a one-shot run has no human to steer, so a rejected edit gets exactly one retry with a shorter instruction before the run gives up. A *rejection anywhere in the turn* still exits 3 even if the retry succeeded, because the change the caller asked for was refused; `infer_exit_code` and `rejected_last_turn` split those two questions on purpose.
 
 This turns the agent into a Unix citizen. A CI script can run `coding-agent -p "fix the lint errors"; test $? -eq 0` and know not just that the agent finished, but whether the result compiles.
 
@@ -2872,21 +3274,34 @@ def save_history():
 # ---------------------------------------------------------------------------
 # Completion
 
+# Readline asks for one candidate at a time via completer(text, state), so the
+# filtered list is built once (at state 0) and cached here between calls.
+_completions = []
+
+
 def install_completer(candidates_fn):
-    """candidates_fn: str -> list of completion strings. Ignored when the
-    backend is unavailable."""
+    """candidates_fn: str -> list of completion strings, for the word under the
+    cursor. Ignored when the backend is unavailable."""
     if not line_input_available():
         return
 
     def completer(text, state):
         # Pure string work: no I/O, threads, or subprocesses (libedit calls
         # this while the interpreter is effectively in atomic mode).
-        try:
-            matches = candidates_fn(text) or []
-        except Exception:
-            matches = []
-        if state < len(matches):
-            return matches[state]
+        if state == 0:
+            _completions.clear()
+            try:
+                matches = candidates_fn(text) or []
+            except Exception:
+                matches = []
+            # Readline replaces the word it passed us, so a candidate that
+            # does not begin with that word would be inserted verbatim and
+            # leave stray text on the line. Drop those instead of guessing.
+            for m in matches:
+                if isinstance(m, str) and m and m.startswith(text) and m not in _completions:
+                    _completions.append(m)
+        if state < len(_completions):
+            return _completions[state]
         return None
 
     readline.set_completer(completer)
@@ -2902,22 +3317,33 @@ def install_completer(candidates_fn):
 # Reading
 
 def read_input_line(prompt):
-    """-> str, or None on EOF/KeyboardInterrupt. Always prints the prompt,
-    with readline handling editing on a terminal and a plain read-line used
+    """-> str, or None on EOF.
+
+    Ctrl-C cancels the current line and returns "" (the caller re-prompts);
+    Ctrl-D returns None, which ends the REPL. Always prints the prompt, with
+    readline handling editing on a terminal and a plain read-line used
     otherwise."""
     if line_input_available():
         try:
             line = input(prompt)
-            readline.add_history(line)
+            # The backend records the line as it is accepted, so re-adding it
+            # would put every command in the history twice.
+            n = readline.get_current_history_length()
+            if n == 0 or readline.get_history_item(n) != line:
+                readline.add_history(line)
             return line
         except EOFError:
             return None
         except KeyboardInterrupt:
-            return None
+            print("")  # move past the ^C echo; the caller re-prompts
+            return ""
     sys.stdout.write(prompt)
     sys.stdout.flush()
     try:
         line = sys.stdin.readline()
+    except KeyboardInterrupt:
+        print("")
+        return ""
     except Exception:
         return None
     if line == "":  # EOF
@@ -2944,16 +3370,20 @@ The Makefile wraps the usual work:
 make run          # uv run agent.py
 make sync         # create/update .venv
 make check        # byte-compile all sources
+make test         # run the smoke tests under tests/
 make install      # uv tool install .  -> global coding-agent command
 make build        # uv build -> sdist + wheel in dist/
 make clean
 ```
 
+`make test` runs offline. The loop takes a `post_fn` callback, so the tests give it a fake model -- a list of canned responses -- and exercise repetition detection, malformed arguments, missing tool-call ids, path containment, and the one-shot exit codes without a network or an API key. That seam is not only good design for the book; it is the reason the behaviors described in this chapter can be tested at all.
+
 Try the modes, in order:
 
 ```
 coding-agent --provider mlx -q -p "add a docstring to normalize in search.py"
-echo "what is the capital of Norway" | coding-agent --stdin --provider fireworks
+echo "what is the capital of Norway" | coding-agent --provider fireworks
+git diff | coding-agent -p "review this diff"      # --stdin is implied for pipes
 coding-agent --dry-run --debug -p "refactor grep tool to exclude binary files"
 ```
 
@@ -2973,7 +3403,7 @@ Coding Agent REPL.  /help for commands, /quit to exit.
 
 I'll read the file first, then propose the edit.
 * read_file search.py
-* propose_edit {"path": "search.py", "old": "def normalize(s):\n    return s.strip().l…
+* replace_in_file {"path": "search.py", "old_string": "def normalize(s):\n    return s.strip().…
 
 --- a/search.py
 +++ b/search.py
@@ -3002,25 +3432,27 @@ Session token usage:
 > /quit
 ```
 
-Reading the transcript against the code: `[intent: coding ...]` is `send_to_model` reporting the classifier. The `* read_file search.py` lines come from `execute_tool_calls` in quiet-off mode. The assistant text printed *before* each `*` line is `content` from the same message that carried the tool calls, which the loop prints before executing. The diff and the y/n/s prompt are `approval.py`. The final sentence is the last iteration's content, the one that carried no tool calls.
+Reading the transcript against the code: `[intent: coding ...]` is `send_to_model` reporting the classifier. The `* read_file search.py` lines come from `execute_tool_calls` in quiet-off mode. The assistant text printed *before* each `*` line is `content` from the same message that carried the tool calls, which the loop prints before executing. The diff and the y/n/s prompt are `approval.py`. The final sentence is the last iteration's content, the one that carried no tool calls. And notice the size of the edit call: the model sent one snippet, not the whole file, which is why `replace_in_file` is the tool the system prompt tells it to reach for first.
 
 ### Reading /context
 
 After a few exchanges, `/context` prints the message table:
 
 ```
-Context: 5 messages, 15234 chars, 3808 tokens (est.)
+Context: 7 messages, 6834 chars, 1708 tokens (est.)
 
    #  role       chars  preview
   ---  ---------  -------  --------------------------------------------------
-   1  system       712  You are an interactive coding assistant working in t…
+   1  system       812  You are an interactive coding assistant working in t…
    2  user         184  add a docstring to normalize in search.py and run ma…
-   3  assistant   9840  [tool calls: read_file, propose_edit]
-   4  tool       4412  [read_file] import os\n\ndef normalize(s):\n    retur…
-   5  assistant    86  make check passed. Added a three-line docstring to no…
+   3  assistant     212  [tool calls: read_file]
+   4  tool        4412  [read_file] import os\n\ndef normalize(s):\n    retur…
+   5  assistant     148  [tool calls: replace_in_file]
+   6  tool         980  [replace_in_file] applied; make check passed
+   7  assistant      86  make check passed. Added a three-line docstring to no…
 ```
 
-The table immediately shows where your tokens go. Message 4 is a whole file echo. The system prompt (712 characters, resent every turn) is *why prompt caching pays off here*: it is a fixed prefix, so the server bills it at the cached rate.
+The table immediately shows where your tokens go. Message 4 is a whole file echo, and it costs four times what the edit that followed it cost. The system prompt (resent every turn) is *why prompt caching pays off here*: it is a fixed prefix, so the server bills it at the cached rate.
 
 ### One-shot and piped output
 
@@ -3034,25 +3466,27 @@ $ echo $?
 0
 ```
 
-Pipe input with `--stdin` to feed the agent command output:
+Pipe input to feed the agent command output. `--stdin` is accepted, and implied whenever stdin is not a terminal, which is how the `git diff` example worked earlier in the chapter:
 
 ```
 $ git diff origin/main | coding-agent --stdin --provider fireworks \
     -p "summarize these changes for the release notes"
 ```
 
-If the user rejects an edit in a one-shot run, the exit code is 3 and the phrase `[change rejected or skipped]` prints, unless `-q` suppressed it.
+If the user rejects an edit in a one-shot run, the exit code is 3 and the phrase `[change rejected or skipped]` prints, unless `-q` suppressed it. The run first gives the model one chance to propose something smaller; if that is rejected too, the run reports the rejection.
 
 ## Wrap Up
 
 This chapter built a complete coding agent in nine small Python modules. The finished harness does four things that generalize to every agent you will ever build or use:
 
 1. **The loop is separate from the transport.** `chat_loop.py` holds all agent intelligence and knows nothing about HTTP or providers. Swapping Fireworks for MLX was a `post_fn` argument, not an edit. If you want to add Anthropic- or Google-style clients later, you write one function, not a new loop.
-2. **Behavior lives in two places: the prompt and the tools.** Instructions tell the model what to do; code guarantees what may happen. Whitelisted commands, hidden-file filters, stale-base rejection, and the approval gate mean the model cannot damage your project even if it misreads the instructions. Whenever you write a rule in a system prompt, ask which tool enforces it.
+2. **Behavior lives in two places: the prompt and the tools.** Instructions tell the model what to do; code guarantees what may happen. Path containment, hidden-file filters, stale-base rejection, and the approval gate keep the model from changing files you did not agree to change. Be precise about the strength of that claim, though: the whitelist limits *which programs* `run_shell` may start, and `make` and `uv run` execute project code by design, so the real guarantee is "nothing is written without approval", not "nothing bad can happen". Whenever you write a rule in a system prompt, ask which tool enforces it.
 3. **Failures of small models are design inputs, not exceptions.** Malformed JSON, null content, truncated tool calls, and repetition loops all have explicit handling that turns them into feedback the model can act on. Stuck-model detection with signatures bounds the cost of confusion.
 4. **Configuration is data.** Endpoints, models, keys-by-name, generation parameters, and pricing all live in the global and local JSON files, merged with a twelve-line `deep_merge`. Unknown values are reported as unknown. New providers need no code change, which is exactly the test of whether you separated policy from mechanism.
 
 You now understand the core architecture of the coding agents in this book at a level that a user of those agents does not reach by reading their documentation. The agentic loop, the approval gate, and the hierarchical config are all reusable in your own projects, from CI bots to home-lab automation.
+
+One last habit is worth taking from this project. The chapter prints nine modules in full, and that is only honest if the printed code is the code that runs, so the repository keeps a small script (`tools/sync_listings.py`) that rewrites each listing from its source file and fails the build when the two drift. Every listing you read here was generated that way.
 
 ## Exercises for the Reader
 
@@ -3062,5 +3496,5 @@ You now understand the core architecture of the coding agents in this book at a 
 4. **Make `/compact` budget-driven.** Add an auto-compaction trigger: when the total of `message_char_size` exceeds a threshold from the config file (say `"auto_compact_chars": 50000`), run compaction automatically before the next model call.
 5. **Add a third search engine** (for example Tavily) to `search.py`, return the same `(url, title, snippet)` triples, and wire `/search tavily` plus config support for the new engine name.
 6. **Estimate cost without pricing.** `session_cost` currently returns `None` when a profile declares no `pricing`. Change `print_session_stats` to also show the estimated token count of the *next* request using `c / 4`$ so readers can see context growth even for unpriced profiles.
-7. **Harden the shell whitelist.** `run_shell` currently allows `cat`, which can read any non-dotfile by absolute path. Add a check that rejects arguments containing `..` or an absolute path outside the working directory, and return the reason as the tool result.
+7. **Audit the path check.** `resolve_tool_path` and `path_within_working_dir` are the only things standing between the model and the rest of your filesystem. Write down every way you can think of to reach a file outside the working directory -- a symlink, a mount point, a path the shell expands differently than `shlex.split` does -- and turn each one into a test under `tests/`. Then tighten `resolve_tool_path` until they pass.
 8. **Port the loop to streaming for MLX.** `mlx_lm.server` also supports SSE. Reuse `parse_sse_response` from `fireworks_ai.py` to stream local responses, and print tokens as they arrive.

@@ -52,7 +52,7 @@ import json
 import os
 
 GLOBAL_CONFIG_PATH = os.path.expanduser("~/.coding_harness.json")
-LOCAL_CONFIG_PATH = os.path.join(os.getcwd(), ".local_coding_harness.json")
+LOCAL_CONFIG_BASENAME = ".local_coding_harness.json"
 
 # The merged config, loaded once at startup (reloadable via load_harness_config).
 harness_config = {}
@@ -93,13 +93,17 @@ def deep_merge(global_cfg, local_cfg):
     return acc
 
 
+def local_config_path():
+    """The local override file, always looked up in the *current* directory
+    (--cwd may have changed it since this module was imported)."""
+    return os.path.join(os.getcwd(), LOCAL_CONFIG_BASENAME)
+
+
 def load_harness_config():
     """Load global then local, deep-merge, store, and return the result."""
     global harness_config, _active_provider_name
     global_cfg = _read_json_file(GLOBAL_CONFIG_PATH) or {}
-    # The local override is always looked up in the *current* directory.
-    local_path = os.path.join(os.getcwd(), ".local_coding_harness.json")
-    local_cfg = _read_json_file(local_path) or {}
+    local_cfg = _read_json_file(local_config_path()) or {}
     harness_config = deep_merge(global_cfg, local_cfg)
     _active_provider_name = None  # re-resolve the default profile
     return harness_config
@@ -113,8 +117,15 @@ def config_providers():
     return p if isinstance(p, dict) else {}
 
 
+def provider_names(cfg):
+    """-> sorted profile names declared in `cfg` (the caller's dict, not the
+    module global, so loading and defaulting can be reasoned about separately)."""
+    p = cfg.get("providers") if isinstance(cfg, dict) else None
+    return sorted(p.keys()) if isinstance(p, dict) else []
+
+
 def config_provider_names():
-    return sorted(config_providers().keys())
+    return provider_names(harness_config)
 
 
 def config_provider(name):
@@ -125,9 +136,14 @@ def config_provider(name):
 
 
 def _pick_default_provider_name(cfg):
-    declared = cfg.get("default_provider")
-    names = sorted(config_providers().keys())
-    if isinstance(declared, str) and declared in config_providers():
+    """-> name of the profile to start with, or None.
+
+    The declared "default_provider" wins; otherwise "fireworks" if present,
+    otherwise the first name alphabetically.
+    """
+    names = provider_names(cfg)
+    declared = cfg.get("default_provider") if isinstance(cfg, dict) else None
+    if isinstance(declared, str) and declared in names:
         return declared
     if "fireworks" in names:
         return "fireworks"
@@ -229,10 +245,10 @@ def generation_ref(generation, key, default=None):
 # Debug helper
 
 def print_config_summary():
+    def loaded(path):
+        return "(loaded)" if os.path.isfile(path) else "(absent)"
     print("Config files: {} {} / {} {}".format(
-        GLOBAL_CONFIG_PATH,
-        "(loaded)" if os.path.isfile(GLOBAL_CONFIG_PATH) else "(absent)",
-        os.path.join(os.getcwd(), ".local_coding_harness.json"),
-        "(loaded)" if os.path.isfile(os.path.join(os.getcwd(), ".local_coding_harness.json")) else "(absent)"))
+        GLOBAL_CONFIG_PATH, loaded(GLOBAL_CONFIG_PATH),
+        local_config_path(), loaded(local_config_path())))
     print("Providers:    {}".format(", ".join(config_provider_names())))
     print("Active:       {}".format(config_active_provider_name() or "(defaults)"))

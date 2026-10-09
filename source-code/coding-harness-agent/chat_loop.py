@@ -21,7 +21,9 @@ from tools import render_tools, execute_tool_calls
 # burning all max-iterations. A signature is (name + args-json) per call,
 # sorted, so multi-call batches compare as a set.
 REPEAT_WINDOW = 5   # remember the last N batches
-REPEAT_LIMIT = 2    # >= 2 identical batches in the window => stuck
+REPEAT_LIMIT = 2    # the same batch seen this many times => stuck
+
+MAX_ITERATIONS_DEFAULT = 20
 
 
 # ---------------------------------------------------------------------------
@@ -45,6 +47,38 @@ def msg_content(msg):
     """
     c = msg.get("content", "") if msg else ""
     return c if isinstance(c, str) else ""
+
+
+def clean_assistant_message(msg):
+    """A copy of an assistant message safe to send back to a strict server.
+
+    Two normalizations happen here. A null or non-string 'content' becomes ""
+    (mlx_lm.server sends "" on tool-only responses, the OpenAI spec sends
+    null, and replaying the null back can be rejected). A missing tool-call id
+    gets a generated one at index 0, 1, ... -- the matching role:"tool" reply
+    is addressed by that id, so an empty id breaks the pairing.
+    """
+    tool_calls = msg.get("tool_calls")
+    has_calls = isinstance(tool_calls, list) and bool(tool_calls)
+    out = {"role": "assistant", "content": msg_content(msg)}
+    if not has_calls:
+        return out
+    cleaned = []
+    for i, tc in enumerate(tool_calls):
+        func = tc.get("function") or {}
+        call_id = tc.get("id")
+        cleaned.append({
+            "id": call_id if isinstance(call_id, str) and call_id != ""
+                  else "call_{}".format(i),
+            "type": tc.get("type") or "function",
+            "function": {"name": func.get("name", ""),
+                         "arguments": func.get("arguments", "{}")},
+        })
+    out["tool_calls"] = cleaned
+    reasoning = msg.get("reasoning_content")
+    if isinstance(reasoning, str) and reasoning != "":
+        out["reasoning_content"] = reasoning
+    return out
 
 
 # ---------------------------------------------------------------------------
@@ -78,7 +112,8 @@ def chat(post_fn, messages, model_id, max_tokens=None, temperature=None):
 # Multi-turn agentic loop.
 
 def chat_with_tools(post_fn, messages, tools, model_id,
-                    max_tokens=None, temperature=None, max_iterations=20):
+                    max_tokens=None, temperature=None,
+                    max_iterations=MAX_ITERATIONS_DEFAULT):
     tools_rendered = render_tools(tools)
     current_messages = list(messages)
     recent_signatures = []
@@ -90,10 +125,15 @@ def chat_with_tools(post_fn, messages, tools, model_id,
             sig.append("{}|{}".format(f.get("name", ""), f.get("arguments", "")))
         return sorted(sig)
 
-    def seen_too_often(sig):
-        # True when the same batch of calls appeared >= REPEAT_LIMIT times in
-        # the recent window (i.e. once already, before this repeat).
-        return sum(1 for s in recent_signatures if s == sig) >= REPEAT_LIMIT - 1
+    def remember_and_count(sig):
+        """Record this batch and return how often it has now been seen.
+
+        The batch is recorded BEFORE the count, so the second identical batch
+        reports 2 and trips REPEAT_LIMIT.
+        """
+        recent_signatures.append(sig)
+        del recent_signatures[:-REPEAT_WINDOW]
+        return sum(1 for s in recent_signatures if s == sig)
 
     def append_tool_results(results):
         for (call_id, name, result_str) in results:
@@ -104,24 +144,23 @@ def chat_with_tools(post_fn, messages, tools, model_id,
                 "content": result_str,
             })
 
-    _it = 0
+    iter_ = 0
     while True:
-        iter_ = _it
-        _it += 1
         if iter_ >= max_iterations:
-            # Max iterations -- one final no-tools call for summary
+            # Max iterations -- one final no-tools call for a summary.
             payload = request_payload(model_id, max_tokens, temperature, current_messages)
             try:
                 data = post_fn(payload)
                 msg = response_message(data)
-                content = msg.get("content", "") if msg else ""
-                if not isinstance(content, str) or content == "":
+                content = msg_content(msg)
+                if content == "":
                     content = "(no summary from model)"
                 if msg:
-                    current_messages.append(msg)
+                    current_messages.append(clean_assistant_message(msg))
                 return content, current_messages
             except Exception:
                 return "(max tool iterations reached)", current_messages
+        iter_ += 1
 
         payload = request_payload(model_id, max_tokens, temperature, current_messages)
         if tools_rendered:
@@ -133,27 +172,26 @@ def chat_with_tools(post_fn, messages, tools, model_id,
             raise RuntimeError("response has no 'message'. Raw: {}".format(data))
         tool_calls = msg.get("tool_calls")
         content = msg_content(msg)
-        # Append the assistant message
-        current_messages.append(msg)
+        assistant_msg = clean_assistant_message(msg)
+        current_messages.append(assistant_msg)
 
-        if (isinstance(tool_calls, list) and tool_calls
-                and seen_too_often(call_signature(tool_calls))):
+        if not tool_calls:
+            return (content if content else "(empty response from model)"), current_messages
+
+        # Echo any reasoning the model emitted alongside its tool calls, then
+        # run the calls. Results are appended before the stuck-model check so
+        # the transcript keeps a role:"tool" reply for every call.
+        if content.strip():
+            print("")
+            print(content.strip())
+        batch = call_signature(tool_calls)
+        results = execute_tool_calls(tool_calls)
+        append_tool_results(results)
+        seen = remember_and_count(batch)
+        if seen >= REPEAT_LIMIT:
             # The model is stuck re-issuing the identical call(s) -- bail out
             # with an explanation instead of looping to max-iterations.
             return ("(stopped: the model repeated the identical tool call(s) "
                     "{} times without making progress; it may be too weak for "
-                    "this task or its arguments are malformed)".format(REPEAT_LIMIT),
+                    "this task or its arguments are malformed)".format(seen),
                     current_messages)
-
-        if content and content.strip() and isinstance(tool_calls, list) and tool_calls:
-            print("")
-            print(content.strip())
-            recent_signatures.append(call_signature(tool_calls))
-            recent_signatures = recent_signatures[-REPEAT_WINDOW:]
-            append_tool_results(execute_tool_calls(tool_calls))
-            continue
-        if not tool_calls:
-            return (content if content else "(empty response from model)"), current_messages
-        recent_signatures.append(call_signature(tool_calls))
-        recent_signatures = recent_signatures[-REPEAT_WINDOW:]
-        append_tool_results(execute_tool_calls(tool_calls))

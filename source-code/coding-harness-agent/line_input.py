@@ -103,21 +103,34 @@ def save_history():
 # ---------------------------------------------------------------------------
 # Completion
 
+# Readline asks for one candidate at a time via completer(text, state), so the
+# filtered list is built once (at state 0) and cached here between calls.
+_completions = []
+
+
 def install_completer(candidates_fn):
-    """candidates_fn: str -> list of completion strings. Ignored when the
-    backend is unavailable."""
+    """candidates_fn: str -> list of completion strings, for the word under the
+    cursor. Ignored when the backend is unavailable."""
     if not line_input_available():
         return
 
     def completer(text, state):
         # Pure string work: no I/O, threads, or subprocesses (libedit calls
         # this while the interpreter is effectively in atomic mode).
-        try:
-            matches = candidates_fn(text) or []
-        except Exception:
-            matches = []
-        if state < len(matches):
-            return matches[state]
+        if state == 0:
+            _completions.clear()
+            try:
+                matches = candidates_fn(text) or []
+            except Exception:
+                matches = []
+            # Readline replaces the word it passed us, so a candidate that
+            # does not begin with that word would be inserted verbatim and
+            # leave stray text on the line. Drop those instead of guessing.
+            for m in matches:
+                if isinstance(m, str) and m and m.startswith(text) and m not in _completions:
+                    _completions.append(m)
+        if state < len(_completions):
+            return _completions[state]
         return None
 
     readline.set_completer(completer)
@@ -133,22 +146,33 @@ def install_completer(candidates_fn):
 # Reading
 
 def read_input_line(prompt):
-    """-> str, or None on EOF/KeyboardInterrupt. Always prints the prompt,
-    with readline handling editing on a terminal and a plain read-line used
+    """-> str, or None on EOF.
+
+    Ctrl-C cancels the current line and returns "" (the caller re-prompts);
+    Ctrl-D returns None, which ends the REPL. Always prints the prompt, with
+    readline handling editing on a terminal and a plain read-line used
     otherwise."""
     if line_input_available():
         try:
             line = input(prompt)
-            readline.add_history(line)
+            # The backend records the line as it is accepted, so re-adding it
+            # would put every command in the history twice.
+            n = readline.get_current_history_length()
+            if n == 0 or readline.get_history_item(n) != line:
+                readline.add_history(line)
             return line
         except EOFError:
             return None
         except KeyboardInterrupt:
-            return None
+            print("")  # move past the ^C echo; the caller re-prompts
+            return ""
     sys.stdout.write(prompt)
     sys.stdout.flush()
     try:
         line = sys.stdin.readline()
+    except KeyboardInterrupt:
+        print("")
+        return ""
     except Exception:
         return None
     if line == "":  # EOF

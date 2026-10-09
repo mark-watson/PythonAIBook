@@ -19,6 +19,7 @@
 # active provider profile in the harness config; nothing provider-specific is
 # compiled in here.
 
+import json
 import os
 import threading
 
@@ -29,6 +30,7 @@ from harness_config import (config_active_provider, provider_api_key_env,
                             provider_model, generation_ref)
 from chat_loop import chat as chat_star
 from chat_loop import chat_with_tools as chat_with_tools_star
+from chat_loop import MAX_ITERATIONS_DEFAULT
 import fireworks_ai  # for the shared debug_log toggle
 
 # The provider dict MLX requests consult for endpoint/model/generation.
@@ -39,7 +41,6 @@ mlx_active_provider = None
 # The OpenAI-compatible endpoint returns reasoning in the assistant message's
 # 'reasoning' field, which chat_loop.py ignores (it only reads 'content' and
 # 'tool_calls'), so there is no separate thinking toggle to wire up here.
-MLX_THINK = False
 
 # Non-streaming request: the whole generation must complete within this
 # window. Local models on large weights can be slow, so be generous.
@@ -54,7 +55,9 @@ def current_provider_json():
 # ---------------------------------------------------------------------------
 # Session stats (thread-safe). mlx_lm.server reports prompt_tokens /
 # completion_tokens on every /v1/chat/completions response. Local inference is
-# free, so stats are informational only -- estimated cost is always $0.
+# free, so stats are informational only -- there is no cost estimate here.
+# Both a reset and a print function exist so this module mirrors the
+# fireworks_ai.py interface that agent.py calls.
 
 _stats_lock = threading.Lock()
 _session_prompt_tokens = 0
@@ -115,6 +118,8 @@ def post_mlx(payload):
         resp = requests.post(endpoint, headers=headers, json=request_body,
                              timeout=(MLX_CONNECT_TIME, MLX_MAX_TIME))
         data = resp.json()
+    except (KeyboardInterrupt, SystemExit):
+        raise  # let Ctrl-C reach the REPL as a cancelled turn
     except Exception as e:  # noqa: BLE001
         raise RuntimeError("mlx-serve: HTTP error: {}".format(e))
     if fireworks_ai.debug_log:
@@ -130,7 +135,6 @@ def post_mlx(payload):
 
 
 def json_dumps(x):
-    import json
     try:
         return json.dumps(x)
     except Exception:
@@ -145,6 +149,12 @@ def json_dumps(x):
 
 def m_gen_param(key):
     return generation_ref(provider_generation(current_provider_json()), key, None)
+
+
+def m_max_iterations():
+    """Loop budget: profile "generation": {"max_iterations": N} or the default."""
+    n = m_gen_param("max_iterations")
+    return n if isinstance(n, int) and n > 0 else MAX_ITERATIONS_DEFAULT
 
 
 def m_model_id():
@@ -163,9 +173,9 @@ def mlx_chat(messages, model_id=None, max_tokens=None, temperature=None):
 
 
 def mlx_chat_with_tools(messages, tools, model_id=None, max_tokens=None,
-                        temperature=None, max_iterations=20):
+                        temperature=None, max_iterations=None):
     return chat_with_tools_star(post_mlx, messages, tools,
                                 model_id=model_id or m_model_id(),
                                 max_tokens=max_tokens if max_tokens is not None else m_gen_param("max_tokens"),
                                 temperature=temperature if temperature is not None else m_gen_param("temperature"),
-                                max_iterations=max_iterations)
+                                max_iterations=max_iterations or m_max_iterations())

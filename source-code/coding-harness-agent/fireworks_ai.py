@@ -12,17 +12,18 @@
 # in here.
 
 import json
+import os
 import threading
 
 import requests
 
-import harness_config as hc
 from harness_config import (config_active_provider, provider_api_key_env,
                             provider_endpoint, provider_generation,
                             provider_model, provider_pricing, pricing_ref,
                             generation_ref)
 from chat_loop import chat as chat_star
 from chat_loop import chat_with_tools as chat_with_tools_star
+from chat_loop import MAX_ITERATIONS_DEFAULT
 
 # ---------------------------------------------------------------------------
 # Modes and timeouts
@@ -33,13 +34,11 @@ debug_log = False  # shared /debug toggle (agent.py flips this)
 # wall-clock cap on generation: a long response that keeps producing
 # tokens simply keeps streaming. The only remaining timeouts are:
 #   CONNECT_MAX_TIME    -- seconds to establish the TCP connection.
-#   HEADER_MAX_TIME     -- seconds to wait for response headers (TTFT).
-#   STREAM_IDLE_TIMEOUT -- seconds of *silence* from the server before we
-#                          give up (requests' read timeout applies per-chunk).
-#                          Tokens arriving periodically never trip this; only
-#                          a genuinely stalled connection does.
+#   STREAM_IDLE_TIMEOUT -- seconds the server may stay silent, both while
+#                          waiting for response headers (time to first token)
+#                          and between chunks. Tokens arriving periodically
+#                          never trip this; only a stalled connection does.
 CONNECT_MAX_TIME = 10
-HEADER_MAX_TIME = 600
 STREAM_IDLE_TIMEOUT = 300
 
 # ---------------------------------------------------------------------------
@@ -91,10 +90,17 @@ def completion_cost(tokens):
     return rate_cost(tokens, pricing_ref(active_pricing(), "output"))
 
 
+def session_snapshot():
+    """-> (prompt, cached, completion, total) token totals, read under one lock."""
+    with _stats_lock:
+        return (_session_prompt_tokens, _session_cached_tokens,
+                _session_completion_tokens, _session_total_tokens)
+
+
 # Cached input tokens are reported by the server in
 # usage.prompt_tokens_details.cached_tokens and are part of prompt_tokens;
 # bill them at the discounted rate and subtract them from the uncached pool.
-def session_cost():
+def session_cost(snapshot=None):
     """-> number, or None when the active profile declares no pricing at all."""
     rates = active_pricing()
     inp = pricing_ref(rates, "input")
@@ -102,22 +108,15 @@ def session_cost():
     out = pricing_ref(rates, "output")
     if inp is None and cached is None and out is None:
         return None
-    with _stats_lock:
-        pt = _session_prompt_tokens
-        ca = _session_cached_tokens
-        ct = _session_completion_tokens
+    pt, ca, ct = snapshot or session_snapshot()[:3]
     return ((rate_cost(max(0, pt - ca), inp) or 0)
             + (rate_cost(ca, cached) or 0)
             + (rate_cost(ct, out) or 0))
 
 
 def print_session_stats():
-    with _stats_lock:
-        pt = _session_prompt_tokens
-        ct = _session_completion_tokens
-        tt = _session_total_tokens
-        ca = _session_cached_tokens
-    cost = session_cost()
+    pt, ca, ct, tt = session_snapshot()
+    cost = session_cost((pt, ca, ct))
     rates = active_pricing()
     print("")
     print("Session token usage:")
@@ -156,8 +155,6 @@ def accumulate_usage(data):
 #
 # The env var name comes from the active provider profile's api_key_env when
 # a harness config is loaded; falls back to FIREWORKS_API_KEY.
-
-import os  # noqa: E402
 
 
 def get_api_key():
@@ -315,6 +312,8 @@ def post_fireworks(payload):
                              timeout=(CONNECT_MAX_TIME, STREAM_IDLE_TIMEOUT))
         data = parse_sse_response(resp)
         resp.close()
+    except (KeyboardInterrupt, SystemExit):
+        raise  # let Ctrl-C reach the REPL as a cancelled turn
     except Exception as e:  # noqa: BLE001
         raise RuntimeError("fireworks-ai: HTTP error: {}".format(e))
     if debug_log:
@@ -351,6 +350,12 @@ def gen_param(key):
     return generation_ref(provider_generation(config_active_provider()), key, None)
 
 
+def gen_max_iterations():
+    """Loop budget: profile "generation": {"max_iterations": N} or the default."""
+    n = gen_param("max_iterations")
+    return n if isinstance(n, int) and n > 0 else MAX_ITERATIONS_DEFAULT
+
+
 def chat(messages, model_id=None, max_tokens=None, temperature=None):
     return chat_star(post_fireworks, messages,
                      model_id=model_id or active_model_id(),
@@ -359,9 +364,9 @@ def chat(messages, model_id=None, max_tokens=None, temperature=None):
 
 
 def chat_with_tools(messages, tools, model_id=None, max_tokens=None,
-                    temperature=None, max_iterations=20):
+                    temperature=None, max_iterations=None):
     return chat_with_tools_star(post_fireworks, messages, tools,
                                 model_id=model_id or active_model_id(),
                                 max_tokens=max_tokens if max_tokens is not None else gen_param("max_tokens"),
                                 temperature=temperature if temperature is not None else gen_param("temperature"),
-                                max_iterations=max_iterations)
+                                max_iterations=max_iterations or gen_max_iterations())

@@ -27,7 +27,23 @@ from harness_config import (config_active_provider, config_active_provider_name,
                             provider_generation, provider_model, provider_type)
 from tools import ENABLED_TOOLS, register_all
 
-VERSION = "0.2.0"
+
+def version():
+    """Prefer the installed distribution's version so pyproject.toml is the
+    single source of truth; fall back for a source checkout that is not
+    installed (plain `python agent.py`)."""
+    try:
+        from importlib.metadata import PackageNotFoundError, version as dist_version
+        try:
+            return dist_version("coding-harness-agent")
+        except PackageNotFoundError:
+            pass
+    except Exception:  # noqa: BLE001
+        pass
+    return "0.2.0"
+
+
+VERSION = version()
 
 # ---------------------------------------------------------------------------
 # Prompts
@@ -36,14 +52,18 @@ SYSTEM_PROMPT_TEMPLATE = (
     "You are an interactive coding assistant working in the directory {cwd}.\n\n"
     "Rules:\n"
     "- Use read_file, list_dir, and grep to understand the code BEFORE proposing edits.\n"
-    "- To EDIT an existing file: read_file it first, then pass its exact current contents\n"
-    "  as `old` to propose_edit.\n"
+    "- To EDIT an existing file: read_file it first. Then use replace_in_file with a\n"
+    "  unique snippet copied exactly (including indentation) as old_string. This is\n"
+    "  the cheap path and the one you should prefer.\n"
+    "- Use propose_edit only when you are rewriting most of a file, and then pass its\n"
+    "  exact current contents as `old`.\n"
     "- To CREATE a new file: call propose_edit with the empty string \"\" as `old` and\n"
     "  the full desired contents as `new`. Do not call read_file first for a file that\n"
     "  does not exist yet.\n"
-    "- One file per propose_edit call. Keep diffs small and focused.\n"
-    "- If the user rejects an edit or `make check` fails, ask for clarification instead\n"
-    "  of retrying blindly.\n"
+    "- One change per call. Keep diffs small and focused.\n"
+    "- Every edit is gated: the user sees a diff and approves it, and `make check`\n"
+    "  runs afterwards. If an edit is rejected or `make check` fails, read the error\n"
+    "  and fix it rather than re-sending the same change.\n"
     "- run_shell only accepts whitelisted commands: make, ls, pwd, cat, uv.\n"
     "- When you are done, reply with a short natural-language summary of what changed."
 )
@@ -192,7 +212,7 @@ def apply_harness_flags():
         tools.quiet_mode = True
     if cfg.get("plain"):
         cli_plain = True
-        approval.color_enabled = False
+        approval.set_color_enabled(False)
     if cfg.get("debug"):
         fireworks_ai.debug_log = True
     s = cfg.get("search")
@@ -225,7 +245,7 @@ def apply_env_overrides():
         tools.quiet_mode = True
     if os.environ.get("CODING_AGENT_PLAIN"):
         cli_plain = True
-        approval.color_enabled = False
+        approval.set_color_enabled(False)
     if os.environ.get("CODING_AGENT_DEBUG"):
         fireworks_ai.debug_log = True
 
@@ -238,6 +258,14 @@ def read_all_stdin():
         return sys.stdin.read()
     except Exception:
         return ""
+
+
+def stdin_is_pipe():
+    """True when stdin is not an interactive terminal (pipe, file, CI)."""
+    try:
+        return not sys.stdin.isatty()
+    except Exception:  # noqa: BLE001
+        return False
 
 
 def build_prompt(positional, prompt_parts, stdin_text):
@@ -353,6 +381,7 @@ def reset_conversation():
     prompt = SYSTEM_PROMPT_TEMPLATE.replace("{cwd}", cwd)
     messages.clear()
     messages.append({"role": "system", "content": prompt})
+    tools.make_check_failed = False
 
 
 def print_banner():
@@ -407,6 +436,27 @@ PREVIEW_WIDTH = 60
 PREVIEW_MAX_LINES = 3
 
 
+def transcript_entry(msg):
+    """One message rendered for the /compact transcript.
+
+    Tool-call arguments and tool output are included: they are exactly the
+    details (paths, snippets, errors) the summary must carry forward."""
+    role = msg.get("role", "?")
+    header = "### {}".format(role)
+    if role == "tool" and msg.get("name"):
+        header += " {}".format(msg["name"])
+    body = []
+    content = msg.get("content", "")
+    if isinstance(content, str) and content.strip() != "":
+        body.append(content)
+    tcs = msg.get("tool_calls")
+    if isinstance(tcs, list):
+        for tc in tcs:
+            f = tc.get("function") or {}
+            body.append("tool call {} {}".format(f.get("name", "?"), f.get("arguments", "")))
+    return "{}\n{}".format(header, "\n".join(body) if body else "(no content)")
+
+
 def wrap_preview(s):
     """Wrap s at PREVIEW_WIDTH (breaking on the last space in the window when
     possible) into at most PREVIEW_MAX_LINES lines; "…" marks text that still
@@ -458,13 +508,7 @@ def compact_context():
     print("Compacting {} messages ({} chars)…".format(len(messages), before))
     transcript_parts = []
     for m in messages:
-        tcs = m.get("tool_calls")
-        header = "### {}".format(m.get("role", "?"))
-        if isinstance(tcs, list) and tcs:
-            header += " (tool calls: {})".format(
-                ", ".join((tc.get("function") or {}).get("name", "?") for tc in tcs))
-        content = m.get("content", "")
-        transcript_parts.append("{}\n{}".format(header, content if isinstance(content, str) else ""))
+        transcript_parts.append(transcript_entry(m))
     transcript = "\n\n".join(transcript_parts)
     try:
         summary = llm_chat([
@@ -504,6 +548,7 @@ Commands:
   /search brave     enable Brave search
   /search exa       enable Exa search
   /tokens           show session token usage and estimated cost
+  /tokens reset     zero the session token counters
   /skills           list available skills in ~/.agents/skills
   /<skill-name>     load that skill into the conversation
   /quit             exit
@@ -554,7 +599,12 @@ def handle_slash_command(line):
         fireworks_ai.debug_log = not fireworks_ai.debug_log
         print("Debug logging {}".format("ON" if fireworks_ai.debug_log else "OFF"))
         return "continue"
-    if line == "/tokens":
+    if line == "/tokens" or line == "/tokens reset":
+        if line.endswith(" reset"):
+            fireworks_ai.reset_session_stats()
+            mlx_serve.mlx_reset_session_stats()
+            print("Session token counters reset.")
+            return "continue"
         if using_mlx():
             mlx_serve.mlx_print_session_stats()
         else:
@@ -690,12 +740,62 @@ INTENT_LABELS = {
 }
 
 
+def messages_contain(msgs, substr):
+    """Case-insensitive substring search over message content."""
+    sub = substr.lower()
+    return any(sub in str(m.get("content", "")).lower() for m in msgs)
+
+
+def infer_exit_code(turn_messages):
+    """Map a one-shot turn onto a process exit code.
+
+    tools.make_check_failed is the authoritative signal for a failed check:
+    tools.py sets it when an approved write leaves `make check` non-zero, so
+    the code does not depend on matching words inside old tool output. Any
+    rejection anywhere in the turn counts, even if a later turn carried on,
+    because the change the run was asked for was refused.
+    """
+    if tools.make_check_failed:
+        return EXIT_CHECK_FAILED
+    if messages_contain(turn_messages, "user rejected") or messages_contain(turn_messages, "user skipped"):
+        return EXIT_REJECTED
+    return EXIT_OK
+
+
+def rejected_last_turn(turn_messages):
+    """True when a turn ENDED with the user rejecting or skipping a change.
+
+    This is the narrower test used to decide whether a one-shot retry is
+    worthwhile: a rejection the model already worked around is not.
+    """
+    tool_msgs = [m for m in turn_messages if m.get("role") == "tool"]
+    if not tool_msgs:
+        return False
+    last = str(tool_msgs[-1].get("content", "")).lower()
+    return "user rejected" in last or "user skipped" in last
+
+
+ONE_SHOT_RETRY_PROMPT = (
+    "The previous edit was rejected. Make a smaller, safer change and propose "
+    "it again in one call."
+)
+
+
 def send_to_model(user_line):
+    """Run one turn and return the messages that turn added to the transcript.
+
+    A coding or hybrid turn appends to the persistent `messages` history; a
+    general turn is stateless and returns [] so the coding transcript is not
+    touched.
+    """
     global messages
     intent = classify_intent(user_line)
     if not cli_quiet:
-        print("[intent: {} → {}]".format(intent, INTENT_LABELS[intent]))
+        print("[intent: {} → {}]".format(intent,
+                                         INTENT_LABELS.get(intent, "coding tools")))
     if intent == "general":
+        # A general question is answered statelessly: no coding system prompt
+        # and no tools, so the coding transcript is left untouched.
         content = maybe_search(user_line, True) or user_line
         msgs = [
             {"role": "system", "content": GENERAL_SYSTEM_PROMPT},
@@ -703,35 +803,15 @@ def send_to_model(user_line):
         ]
         reply = llm_chat(msgs)
         print("\n{}".format(clean(reply)))
-    elif intent == "coding":
-        updated = messages + [{"role": "user", "content": user_line}]
-        reply, new_messages = llm_chat_with_tools(updated, ENABLED_TOOLS)
-        messages = new_messages
-        print("\n{}".format(clean(reply)))
-    else:  # hybrid
-        content = maybe_search(user_line, False) or user_line
-        updated = messages + [{"role": "user", "content": content}]
-        reply, new_messages = llm_chat_with_tools(updated, ENABLED_TOOLS)
-        messages = new_messages
-        print("\n{}".format(clean(reply)))
+        return []
 
-
-# ---------------------------------------------------------------------------
-# One-shot helpers: infer exit code from tool results
-
-def tool_messages_contain(substr):
-    sub = substr.lower()
-    return any(m.get("role") == "tool"
-               and sub in str(m.get("content", "")).lower()
-               for m in messages)
-
-
-def infer_exit_code():
-    if tool_messages_contain("make check failed"):
-        return EXIT_CHECK_FAILED
-    if tool_messages_contain("user rejected") or tool_messages_contain("user skipped"):
-        return EXIT_REJECTED
-    return EXIT_OK
+    content = maybe_search(user_line, intent == "hybrid" and search_enabled) or user_line
+    updated = messages + [{"role": "user", "content": content}]
+    start = len(updated)
+    reply, new_messages = llm_chat_with_tools(updated, ENABLED_TOOLS)
+    messages = new_messages
+    print("\n{}".format(clean(reply)))
+    return new_messages[start:]
 
 
 def run_one_shot(prompt):
@@ -739,11 +819,21 @@ def run_one_shot(prompt):
     register_all()
     reset_conversation()
     # One-shot still respects quiet/plain but banner is suppressed anyway
+    retried = False
     try:
-        send_to_model(prompt)
-        exit_code = infer_exit_code()
+        turn = send_to_model(prompt)
+        if rejected_last_turn(turn) and not retried:
+            # A one-shot run has no human to steer, so give the model exactly
+            # one chance to come back with a smaller change.
+            retried = True
+            print("\n[change rejected — retrying once with a smaller request]")
+            turn = send_to_model(ONE_SHOT_RETRY_PROMPT)
+        exit_code = infer_exit_code(turn)
     except SystemExit:
         raise
+    except KeyboardInterrupt:
+        sys.stderr.write("\ncancelled\n")
+        exit_with_code(EXIT_MODEL_ERROR)
     except Exception as e:  # noqa: BLE001
         sys.stderr.write("Error talking to model: {}\n".format(e))
         exit_with_code(EXIT_MODEL_ERROR)
@@ -780,16 +870,31 @@ def configured_model_ids():
 
 
 def completion_candidates(word):
-    """Readline completes the word under the cursor rather than the whole
-    line, so the command set and the argument sets are merged and filtered by
-    prefix. Tab in the middle of prose only reacts to words that actually
-    begin a known name (command, provider profile, engine, or model id)."""
-    matching = lambda xs: [x for x in xs if x.startswith(word)]  # noqa: E731
-    if word.startswith("/"):
-        return matching(SLASH_COMMANDS)
-    return (matching(config_provider_names())
-            + matching(SEARCH_ENGINES)
-            + matching(configured_model_ids()))
+    """-> list of completion strings for the word under the cursor.
+
+    Readline completes the word as *it* splits it, and the split differs
+    between the two implementations the harness runs on. GNU Readline keeps a
+    leading "/" in the word, so completing "/t" hands us "/t" and expects
+    "/tokens" back. libedit (the macOS backend) treats "/" as a word
+    separator, so the same keystrokes hand us "t" and expect "tokens" back --
+    the slash stays on the line either way.
+
+    Getting this wrong used to be visible rather than merely unhelpful: with
+    "t" matching no command, libedit fell back to *filename* completion and
+    inserted a file name into the middle of "/tokens". So both spellings are
+    accepted here, and the slash is put back only when it came with the word.
+    """
+    had_slash = word.startswith("/")
+    variants = [word, "/" + word] if not had_slash else [word]
+    names = config_provider_names() + SEARCH_ENGINES + configured_model_ids()
+    known = (SLASH_COMMANDS if any(v.startswith("/") for v in variants) else []) + names
+    out = []
+    for candidate in known:
+        if candidate in out or not any(candidate.startswith(v) for v in variants):
+            continue
+        out.append(candidate if had_slash or not candidate.startswith("/")
+                   else candidate[1:])
+    return out
 
 
 def setup_line_input():
@@ -831,6 +936,11 @@ def run_repl():
             continue
         try:
             send_to_model(trimmed)
+        except KeyboardInterrupt:
+            # Ctrl-C cancels the turn, not the session; the transcript keeps
+            # whatever was already committed to it.
+            print("\n[cancelled]")
+            sys.stdout.flush()
         except Exception as e:  # noqa: BLE001
             print("\nError talking to model: {}".format(e))
             sys.stdout.flush()
@@ -853,9 +963,9 @@ def build_arg_parser():
     parser.add_argument("-p", "--prompt", action="append", default=[],
                         metavar="TEXT", help="prompt text, repeatable, joined with newlines")
     parser.add_argument("--stdin", action="store_true",
-                        help="read prompt from stdin (pipe/heredoc)")
+                        help="read prompt text from stdin (pipe/heredoc)")
     parser.add_argument("-y", "--yes", action="store_true",
-                        help="auto-approve propose_edit after showing diff")
+                        help="auto-approve edits after showing the diff")
     parser.add_argument("--dry-run", action="store_true",
                         help="show diffs but do not write files")
     parser.add_argument("--provider", metavar="NAME",
@@ -908,7 +1018,7 @@ def cli_main(argv=None):
         tools.quiet_mode = True
     if args.plain:
         cli_plain = True
-        approval.color_enabled = False
+        approval.set_color_enabled(False)
     if args.yes:
         tools.auto_approve = True
     if args.dry_run:
@@ -930,11 +1040,19 @@ def cli_main(argv=None):
         set_current_model(args.model.strip())
     if args.cwd:
         resolve_cwd(args.cwd)
-    # Build prompt from all sources
-    stdin_text = read_all_stdin() if args.stdin else None
+    # Build the prompt from every source. Reading stdin when it is a pipe is
+    # implied even without --stdin, so `git diff | coding-agent -p "..."` works
+    # either way.
+    piped = stdin_is_pipe()
+    stdin_text = read_all_stdin() if (args.stdin or piped) else None
     prompt = build_prompt(args.positional, args.prompt, stdin_text)
     if prompt != "":
         run_one_shot(prompt)
+    elif args.stdin:
+        # `--stdin` with nothing on the pipe would otherwise look like a
+        # request for the interactive REPL while stdin is already at EOF.
+        sys.stderr.write("error: --stdin was given but stdin is empty\n")
+        exit_with_code(EXIT_BAD_ARGS)
     else:
         run_repl()
 

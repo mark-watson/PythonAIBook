@@ -1,4 +1,4 @@
-.PHONY: help run sync lock check lint install uninstall build completions clean distclean
+.PHONY: help run sync lock check lint test install uninstall build completions clean distclean
 
 PYTHON ?= python3
 PREFIX ?= /usr/local
@@ -13,6 +13,7 @@ help:
 	@echo "  lock         regenerate uv.lock"
 	@echo "  check        byte-compile all Python sources"
 	@echo "  lint         alias for check"
+	@echo "  test         run the smoke tests under tests/"
 	@echo "  install      install as a global tool via 'uv tool install .'"
 	@echo "  uninstall    remove the global tool"
 	@echo "  build        build sdist + wheel into dist/ via uv build"
@@ -33,6 +34,9 @@ check: lint
 
 lint:
 	uv run python -m py_compile $(PY_MODULES)
+
+test:
+	uv run python -m unittest discover -s tests -v
 
 install:
 	uv tool install .

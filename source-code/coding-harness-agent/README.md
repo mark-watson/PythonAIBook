@@ -37,9 +37,10 @@ One-shot prompt:
 uv run agent.py -p "add type hints to search.py"
 ```
 
-Pipe a prompt through stdin:
+Pipe a prompt through stdin (with or without `--stdin`):
 
 ```
+git diff | uv run agent.py -p "review this diff"
 git diff | uv run agent.py --stdin -p "review this diff"
 ```
 
@@ -89,7 +90,7 @@ Precedence: CLI flags > environment variables > config file > built-in defaults.
 | Flag | Meaning |
 | --- | --- |
 | `-p, --prompt TEXT` | Prompt text. Repeat or combine with positional words. |
-| `--stdin` | Read prompt text from stdin. |
+| `--stdin` | Read prompt text from stdin (implied when stdin is a pipe). |
 | `positional PROMPT` | Words after the flags form the prompt. |
 | `-y, --yes` | Auto-approve edits. |
 | `--dry-run` | Show diffs but do not write files. |
@@ -105,11 +106,23 @@ Precedence: CLI flags > environment variables > config file > built-in defaults.
 
 - `read_file` — read a file.
 - `list_dir` — list a directory.
-- `grep` — recursive regex search.
+- `grep` — recursive regex search that skips hidden files and directories.
 - `run_shell` — run a whitelisted command (`make`, `ls`, `pwd`, `cat`, `uv`).
-- `propose_edit` — show a unified diff and ask for approval. Nothing is written until you approve.
+- `propose_edit` — whole-file edit: show a unified diff, ask for approval, write, then run `make check`.
+- `replace_in_file` — surgical edit: replace one unique snippet, same approval flow and `make check` gate.
 
-The tools skip hidden and internal files (dotfiles, `~`, and `#...#` names).
+The tools refuse hidden and internal paths (any path component that is a dotfile, ends in `~`, or is wrapped in `#...#`) and anything outside the working directory. `grep` and `list_dir` skip those entries rather than reporting them.
+
+Two limits are worth stating plainly. `run_shell`'s whitelist decides *which programs* may run, not *what they do*: `make` and `uv run` execute project code by design. And the set of arguments the model can reach is bounded only by the path checks, so review diffs before approving them.
+
+## Tests
+
+The tool layer, the agentic loop, and the CLI are covered by offline smoke tests: the loop takes a `post_fn` callback, so a fake model is just a list of canned responses.
+
+```
+make test        # uv run python -m unittest discover -s tests -v
+uv run --extra test pytest -q
+```
 
 ## Make targets
 
@@ -118,6 +131,7 @@ make run          # start the REPL with uv
 make sync         # create/update .venv
 make lock         # regenerate uv.lock
 make check        # byte-compile all sources
+make test         # run the smoke tests
 make install      # install coding-agent as a uv tool
 make build        # build sdist + wheel into dist/
 make completions  # generate bash/zsh/fish completions
@@ -138,6 +152,9 @@ make distclean    # clean plus remove .venv and uv.lock
 | `approval.py` | Diffs and interactive approve/reject. |
 | `line_input.py` | Readline-backed line editing with fallback. |
 | `search.py` | Brave Search and Exa web search helpers. |
+| `tests/` | Offline smoke tests (`make test`). |
+
+The chapter in `manuscript/coding-harness-agent.md` prints these modules in full. After editing a module, run `python tools/sync_listings.py --check` (or `--write`) from the repository root so the printed listings keep matching the source.
 
 ## License
 

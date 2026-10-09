@@ -19,6 +19,12 @@ ANSI_RESET = "\033[0m"
 color_enabled = True
 
 
+def set_color_enabled(enabled):
+    """Turn ANSI colors on/off (used by --plain and the plain/quiet config)."""
+    global color_enabled
+    color_enabled = bool(enabled)
+
+
 # ---------------------------------------------------------------------------
 # unified_diff : str str str str -> str
 # difflib-based replacement for running `diff -u` on two temporary files.
@@ -56,13 +62,15 @@ def print_colored_diff(diff_text):
 # prompt_yes_no_skip : -> 'yes' | 'no' | 'skip'
 
 def prompt_yes_no_skip():
+    """-> 'yes' | 'no' | 'skip'. EOF (no human present) counts as 'no'."""
     while True:
         sys.stdout.write("\nApply this change? [y]es / [n]o / [s]kip and tell the model why: ")
         sys.stdout.flush()
         try:
             line = input("")
         except EOFError:
-            line = ""
+            print("\n(no answer available: refusing the change)")
+            return "no"
         norm = (line or "").strip().lower()
         if norm in ("y", "yes"):
             return "yes"
