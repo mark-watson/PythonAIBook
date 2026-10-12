@@ -1,0 +1,2 @@
+- Matching is eager: all network work happens at assert/retract time, not at `run()`. `run()` only selects and fires.
+- RHS mutations are batched and replayed after the action returns, retracts before asserts, so the network never changes during an RHS.

@@ -1,0 +1,1 @@
+`WorkingMemory.assert_fact` constructs `WME(...)` directly with its own per-engine counter, so the global `_WMEIdGenerator` / `WME.create` / `reset_wme_ids` path is unused by the engine (only potentially by tests or external callers).

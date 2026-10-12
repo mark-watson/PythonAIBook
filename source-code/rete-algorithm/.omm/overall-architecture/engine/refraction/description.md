@@ -1,0 +1,1 @@
+`ReteEngine._fired: set[tuple[str, frozenset[int]]]` — prevents the same rule from firing twice on the same set of WME ids. Because `modify` creates a new WME id, a modified fact can legitimately re-trigger rules.

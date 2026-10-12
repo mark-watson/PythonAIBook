@@ -1,0 +1,17 @@
+created: 2026-10-12T14:37:33.411Z
+updated: 2026-10-12T14:37:48.442Z
+update_count: 7
+last_field: note
+git_commit: "0714e49"
+git_branch: main
+children:
+  - conflict
+  - context
+  - engine
+  - examples
+  - facts
+  - patterns
+  - public-api
+  - rete-network
+  - tests
+  - tokens

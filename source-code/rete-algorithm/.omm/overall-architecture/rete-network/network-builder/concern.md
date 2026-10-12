@@ -1,0 +1,2 @@
+- Only alpha memories are shared between rules; alpha test chains are rebuilt per distinct memory and beta nodes are never shared, so rules with common LHS prefixes duplicate join work.
+- New join/negative nodes are not activated with WMEs already in a (possibly shared) alpha memory, and a leading negated condition is never seeded with `EMPTY_TOKEN`.

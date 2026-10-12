@@ -1,0 +1,2 @@
+- If the negated condition is first in a rule (`parent=None`), nothing ever calls `left_activate(EMPTY_TOKEN)`, so the rule never fires.
+- `right_activate` builds `[nb for nb in newly_blocked]` inside a loop (quadratic, and the comprehension is a no-op copy).

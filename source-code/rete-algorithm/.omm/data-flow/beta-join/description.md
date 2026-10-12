@@ -1,0 +1,1 @@
+`rete/beta.py`: `JoinNode` / `NegativeNode` combine the new WME with stored partial-match `Token`s (or `EMPTY_TOKEN` for a first condition), enforcing shared-variable equality, and propagate extended tokens through `BetaMemory`s toward the rule's `ProductionNode`.

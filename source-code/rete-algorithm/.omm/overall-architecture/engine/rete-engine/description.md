@@ -1,0 +1,1 @@
+`ReteEngine` class: constructor resolves the conflict strategy (`"lex"` default, `"mea"`, `"priority-only"`, or a callable), creates the `ReteNetwork` and `WorkingMemory`. The `rule(*patterns, salience, name)` decorator registers the function as the RHS via `add_rule`, which compiles it into the network with the shared conflict-set list.

@@ -1,0 +1,1 @@
+`ProductionNode`: terminal node, one per rule. `left_activate` builds an `Instantiation` with `timestamp = max(wme.timestamp)` across the token and appends it to the engine's shared conflict-set list, indexing it by `id(token)`. `left_remove(wme)` and `left_remove_token(token)` remove matching instantiations from both its index and the conflict set.

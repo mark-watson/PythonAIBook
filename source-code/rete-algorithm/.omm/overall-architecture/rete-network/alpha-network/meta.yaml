@@ -1,0 +1,9 @@
+created: 2026-10-12T14:39:03.934Z
+updated: 2026-10-12T14:39:04.106Z
+update_count: 2
+last_field: concern
+kind: nested-class
+title: alpha-network
+children: []
+parentPath:
+  - rete-network

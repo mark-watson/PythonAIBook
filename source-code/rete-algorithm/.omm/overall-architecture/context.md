@@ -1,0 +1,1 @@
+Written as a teaching implementation for Mark Watson's Python AI book (see Design.md, README.md). Favors readability and idiomatic Python (dataclasses, decorators, `__slots__`) over raw throughput. No runtime dependencies; dev tooling is uv + ruff + pyrefly (strict, Python 3.14) + pytest, gated by `just check` and Claude Code hooks in `.claude/hooks/`.

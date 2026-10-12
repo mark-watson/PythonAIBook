@@ -1,0 +1,3 @@
+- Add back-fill (replay existing WMEs/tokens) when a rule is added to a populated engine, or document the ordering requirement and raise if violated.
+- Seed leading negated conditions with `EMPTY_TOKEN`.
+- Replace `Any`-typed node child lists with a `Protocol` for left/right activation.

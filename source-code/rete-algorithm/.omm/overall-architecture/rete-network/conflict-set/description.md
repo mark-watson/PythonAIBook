@@ -1,0 +1,1 @@
+`ReteEngine._conflict_set: list[Instantiation]`. It is created by the engine and passed by reference to every `ProductionNode` at rule-compile time. The network appends to it and removes from it; the engine reads it each cycle, filters by refraction, and hands the eligible list to the conflict strategy.

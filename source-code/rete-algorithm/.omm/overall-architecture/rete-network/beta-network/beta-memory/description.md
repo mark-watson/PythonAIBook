@@ -1,0 +1,1 @@
+`BetaMemory`: stores intermediate tokens (`tokens: list[Token]`) between conditions and left-activates its children. `left_remove(wme)` drops every token whose chain contains the WME; `left_remove_token(token)` drops descendants of a token (via `is_descendant`) and forwards to children.

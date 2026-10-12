@@ -1,0 +1,1 @@
+`rete/facts.py` — `Fact` (frozen-dataclass marker base for user facts) and `WME` (immutable `__slots__` wrapper holding `fact`, `id`, `timestamp`; hash/eq by `id` so identical facts asserted twice remain distinct). Also contains a module-level `_WMEIdGenerator`, `WME.create()` and `reset_wme_ids()`.

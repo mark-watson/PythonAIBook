@@ -1,0 +1,1 @@
+`WorkingMemory.retract` → `AlphaNetwork.remove_wme` looks up the WME's alpha memories via `wme_to_memories` → `AlphaMemory.remove` → `right_remove` on join/negative nodes → `BetaMemory.left_remove` / `ProductionNode.left_remove` drop tokens and instantiations containing the WME. For negative nodes, removing a blocker can instead *add* tokens downstream.

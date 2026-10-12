@@ -1,0 +1,2 @@
+- `_find_containing_memories` re-walks every chain for the fact type on every assert, doubling alpha-side work.
+- `_snapshot_memories` is a dead placeholder method.

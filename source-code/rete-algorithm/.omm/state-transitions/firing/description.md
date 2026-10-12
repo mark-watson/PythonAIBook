@@ -1,0 +1,1 @@
+The RHS is invoked as `action(ctx, **bindings)`, with binding names matched against the action's parameter names after the first. Mutations are queued on `ctx`; `ctx.print` messages are appended to the trace (if enabled) and printed to stderr after the action returns.

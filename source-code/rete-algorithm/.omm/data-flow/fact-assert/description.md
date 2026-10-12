@@ -1,0 +1,1 @@
+Entry point for new facts: `ReteEngine.assert_fact(fact)` from user code, or `RuleContext._apply` replaying `assert_fact` / `modify` calls queued by an RHS. `modify` = retract + `dataclasses.replace` assert.

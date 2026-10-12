@@ -1,0 +1,1 @@
+The retraction path scans tokens and the conflict-set list linearly at every level, so programs that churn facts (e.g. `example_network_security.py` consumes and retracts events) pay O(tokens × chain length) per retract.

@@ -1,0 +1,3 @@
+- Retraction is scan-based: `BetaMemory.left_remove` and `ProductionNode.left_remove` walk every stored token's full WME chain, and `conflict_set.remove` is an O(n) list removal using dataclass equality.
+- `NegativeNode` and `ProductionNode` key state by `id(token)`; Python can reuse ids after a token is garbage-collected.
+- Child dispatch is repeated `isinstance` ladders over `Any`-typed `children` lists.

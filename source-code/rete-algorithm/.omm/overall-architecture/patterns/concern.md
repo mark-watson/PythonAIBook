@@ -1,0 +1,1 @@
+Alpha-memory sharing is keyed on `repr(op)`. `In.__repr__` iterates a frozenset (order can vary for equal sets across processes, but stable within one), and `Test.__repr__` includes the function's address, so two `Test` conditions with identical logic but different lambdas never share alpha memories. Correctness is unaffected; only node sharing is lost.

@@ -1,0 +1,8 @@
+graph LR
+    rete-engine["ReteEngine\nrete/engine.py"]
+    rete-engine -->|"delegates assert/retract/modify"| working-memory["WorkingMemory\nrete/engine.py"]
+    rete-engine -->|"recognize-act loop: filter, choose, fire"| run-cycle["Run Cycle\nReteEngine._step_internal"]
+    run-cycle -->|"skips already-fired (rule, wme_ids)"| refraction["Refraction Set\nReteEngine._fired"]
+    working-memory -->|"add_wme / remove_wme"| rete-network["ReteNetwork\nrete/network.py"]
+    classDef external fill:#585b70,stroke:#585b70,color:#cdd6f4
+    class rete-network external

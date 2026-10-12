@@ -1,0 +1,1 @@
+The conflict set (`ReteEngine._conflict_set`, a `list[Instantiation]`), shared by reference with every `ProductionNode`. Each `Instantiation` carries the rule name, token, salience, action, conds and max WME timestamp used for ordering.

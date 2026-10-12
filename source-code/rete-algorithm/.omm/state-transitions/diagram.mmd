@@ -1,0 +1,11 @@
+graph TD
+    idle["Idle\nengine built, rules registered"]
+    idle -->|"assert_fact / retract / modify"| matching["Matching\nnetwork updates conflict set eagerly"]
+    matching -->|"run() or step()"| selecting["Selecting\nrefraction filter + strategy"]
+    selecting -->|"no eligible instantiation"| quiescent["Quiescent\nrun() returns fired count"]
+    selecting -->|"chosen Instantiation"| firing["Firing\nRHS executes with RuleContext"]
+    firing -->|"_apply deferred mutations"| matching
+    firing -->|"ctx.halt() called"| halted["Halted\nrun() returns after this firing"]
+    matching -->|"max_cycles reached"| quiescent
+    quiescent -->|"new facts asserted"| matching
+    halted -->|"run() called again"| selecting

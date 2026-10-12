@@ -22,6 +22,20 @@ A lightweight, embeddable, and idiomatic Python implementation of the Rete patte
 
 ---
 
+## Visualize Code Architecture with Oh My Mermaid
+
+Install `omm`:
+
+    npm install -g oh-my-mermaid && omm setup
+
+View diagrams:
+
+    omm view
+
+Open web browser to http://localhost:3000
+
+---
+
 ## Installation
 
 This project is configured to use [uv](https://github.com/astral-sh/uv) for dependency management and execution.

@@ -1,0 +1,1 @@
+Every WM change synchronously propagates through alpha and beta networks, adding or removing `Instantiation`s in the conflict set. This happens both for user calls and for `RuleContext._apply` after each firing (retracts first, then asserts).

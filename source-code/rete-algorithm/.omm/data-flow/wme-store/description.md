@@ -1,0 +1,1 @@
+`WorkingMemory._facts: dict[int, WME]` in `rete/engine.py`. Each assert gets the next per-engine timestamp, used as both WME id and recency timestamp. This is the authoritative fact set for `facts()`, `wmes()` and `clear()`.

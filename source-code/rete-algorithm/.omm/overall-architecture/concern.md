@@ -1,0 +1,3 @@
+- Rules must be registered before facts are asserted: `ReteNetwork.add_rule` does not back-fill existing WMEs into newly created alpha memories or new join nodes attached to shared ones.
+- A rule whose first condition is negated (`~Pat(...)` first) is never seeded with the empty token, so it can never fire.
+- Several internal structures are typed `Any` (`successors`, `children`, `RuleContext._engine`), which weakens the strict-typing guarantee at node boundaries.

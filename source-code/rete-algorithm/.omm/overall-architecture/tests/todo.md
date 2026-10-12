@@ -1,0 +1,1 @@
+No coverage for: the `mea` / `priority-only` strategies, `Match` / `In` / `Test` / `Ge` / `Le` operators, a leading negated condition, adding a rule after facts are asserted, or a negated condition being unblocked by retraction.

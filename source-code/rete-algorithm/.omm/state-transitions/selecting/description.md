@@ -1,0 +1,1 @@
+`_step_internal` builds the eligible list (conflict set minus `(rule_name, wme_ids)` pairs already in `_fired`) and calls the strategy (`lex` / `mea` / `priority-only` / custom). The chosen pair is added to `_fired` before the RHS runs.

@@ -1,0 +1,14 @@
+graph LR
+    fact-assert["Fact Assertion\nReteEngine.assert_fact / RuleContext._apply"]
+    fact-assert -->|"WME(fact, id=ts, timestamp=ts)"| wme-store["WME Store\nWorkingMemory._facts"]
+    wme-store -->|"network.add_wme"| alpha-filter["Alpha Filtering\nrete/alpha.py"]
+    alpha-filter -->|"WME stored in AlphaMemory, right-activate"| beta-join["Beta Joining\nrete/beta.py"]
+    beta-join -->|"complete Token → Instantiation"| agenda["Agenda\nReteEngine._conflict_set"]
+    agenda -->|"refraction filter + strategy picks one"| rule-firing["Rule Firing\nReteEngine._step_internal"]
+    rule-firing -->|"deferred asserts / retracts / modifies"| fact-assert
+    wme-store -->|"retract: network.remove_wme"| retraction["Retraction Path\nAlphaNetwork.remove_wme"]
+    retraction -->|"right_remove → drop tokens / instantiations"| agenda
+    classDef entry fill:#89b4fa,stroke:#89b4fa,color:#1e1e2e
+    classDef store fill:#a6e3a1,stroke:#a6e3a1,color:#1e1e2e
+    class fact-assert entry
+    class wme-store,agenda store

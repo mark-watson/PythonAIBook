@@ -1,0 +1,1 @@
+`AlphaNetwork.add_wme` (`rete/alpha.py`): exact-type dispatch → `AlphaTestNode` chain of single-field constant/predicate tests → `AlphaMemory.add`, which right-activates successor beta nodes. Records `wme_to_memories` for later retraction.

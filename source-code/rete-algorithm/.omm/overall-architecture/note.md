@@ -1,0 +1,1 @@
+`Design.md` is the long-form architecture write-up; `example_medical.py` is the worked example referenced there. Test suite: 16 tests in `rete/tests/test_engine.py` (pyproject `testpaths = ["rete/tests"]`).

@@ -1,0 +1,5 @@
+- Facts must be frozen dataclasses (hashable, and `modify` relies on `dataclasses.replace`).
+- RHS actions receive a `RuleContext` as first parameter; remaining parameters are filled by name from variable bindings.
+- All WM mutations from inside an RHS are deferred until the action returns (OPS5 semantics, no re-entrant network updates).
+- Single-threaded: no locking anywhere.
+- pyrefly strict typing applies to both `rete/` and the `example_*.py` scripts.

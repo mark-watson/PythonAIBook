@@ -1,0 +1,1 @@
+`ReteEngine._step_internal`: drop instantiations already in `_fired`, choose one with the configured strategy (`rete/conflict.py`), bind token variables to the action's keyword parameters by name, run the RHS with a fresh `RuleContext`, flush its print log to stderr, and `_apply` the queued mutations.

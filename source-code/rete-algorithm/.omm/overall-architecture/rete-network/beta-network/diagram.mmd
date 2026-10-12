@@ -1,0 +1,12 @@
+graph LR
+    alpha-memory["AlphaMemory\nrete/alpha.py"]
+    alpha-memory -->|"right_activate / right_remove"| join-node["JoinNode\nrete/beta.py"]
+    alpha-memory -->|"right_activate / right_remove (may block or unblock)"| negative-node["NegativeNode\nrete/beta.py"]
+    join-node -->|"extended Token"| beta-memory["BetaMemory\nrete/beta.py"]
+    negative-node -->|"unblocked Token"| beta-memory
+    beta-memory -->|"left_activate stored tokens"| join-node
+    beta-memory -->|"left_activate stored tokens"| negative-node
+    join-node -->|"complete Token (last cond)"| production-node["ProductionNode\nrete/beta.py"]
+    negative-node -->|"complete Token (last cond)"| production-node
+    classDef external fill:#585b70,stroke:#585b70,color:#cdd6f4
+    class alpha-memory external

@@ -1,0 +1,8 @@
+graph LR
+    network-builder["Network Builder\nrete/network.py"]
+    network-builder -->|"get-or-build test chain + AlphaMemory per Cond"| alpha-network["Alpha Network\nrete/alpha.py"]
+    network-builder -->|"chain Join/Negative nodes with BetaMemory, end in ProductionNode"| beta-network["Beta Network\nrete/beta.py"]
+    alpha-network -->|"AlphaMemory right-activates successors"| beta-network
+    beta-network -->|"ProductionNode appends / removes Instantiation"| conflict-set["Conflict Set\nReteEngine._conflict_set"]
+    classDef store fill:#a6e3a1,stroke:#a6e3a1,color:#1e1e2e
+    class conflict-set store

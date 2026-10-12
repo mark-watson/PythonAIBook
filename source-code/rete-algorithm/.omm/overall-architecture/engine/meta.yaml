@@ -1,0 +1,13 @@
+created: 2026-10-12T14:37:58.361Z
+updated: 2026-10-12T14:38:04.546Z
+update_count: 3
+last_field: concern
+kind: nested-class
+title: engine
+children:
+  - refraction
+  - rete-engine
+  - rete-network
+  - run-cycle
+  - working-memory
+parentPath: []

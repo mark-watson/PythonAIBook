@@ -1,0 +1,3 @@
+- `_fired` refraction set grows without bound and is never pruned when WMEs are retracted.
+- `_step_internal` rebuilds the eligible list (O(conflict set)) and calls `inspect.signature` on every firing.
+- `RuleContext.print` messages are always written to stderr, even when tracing is disabled.

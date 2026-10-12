@@ -1,0 +1,1 @@
+`rete/__init__.py` — the package facade. Re-exports `ReteEngine`, `WorkingMemory`, `RuleContext`, `Fact`, `WME`, and all pattern primitives (`Pat`, `cond`, `Cond`, `Var`, `Eq`, `Gt`, `Lt`, `Ge`, `Le`, `In`, `Contains`, `Match`, `Test`, `PatternOp`). Internal node classes (alpha/beta/network/tokens/conflict) are intentionally not exported.

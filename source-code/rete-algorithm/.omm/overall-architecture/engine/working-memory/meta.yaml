@@ -1,0 +1,9 @@
+created: 2026-10-12T14:38:16.217Z
+updated: 2026-10-12T14:38:16.218Z
+update_count: 1
+last_field: description
+kind: nested-class
+title: working-memory
+children: []
+parentPath:
+  - engine

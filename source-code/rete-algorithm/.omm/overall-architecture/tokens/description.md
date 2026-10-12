@@ -1,0 +1,1 @@
+`rete/tokens.py` — `Token`, an immutable linked chain (`parent`, `wme`, `bindings: frozenset[(name, value)]`) representing a partial match. `extend(wme, new_bindings)` creates a child token; `wmes()` / `wme_ids()` walk the chain; `binding_dict` materializes bindings. `EMPTY_TOKEN` is the root seed used by the first join node.

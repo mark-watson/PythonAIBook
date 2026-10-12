@@ -1,0 +1,12 @@
+created: 2026-10-12T14:39:03.255Z
+updated: 2026-10-12T14:39:03.430Z
+update_count: 2
+last_field: diagram
+kind: nested-class
+title: rete-network
+children:
+  - alpha-network
+  - beta-network
+  - conflict-set
+  - network-builder
+parentPath: []

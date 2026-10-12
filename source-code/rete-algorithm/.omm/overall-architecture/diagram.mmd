@@ -1,0 +1,15 @@
+graph LR
+    examples["Example Scripts\nexample_*.py"]
+    examples -->|"define Fact dataclasses, Pat/Var rules"| public-api["Public API\nrete/__init__.py"]
+    public-api -->|"re-exports"| engine["Engine\nrete/engine.py"]
+    public-api -->|"re-exports"| patterns["Patterns\nrete/patterns.py"]
+    public-api -->|"re-exports Fact, WME"| facts["Facts\nrete/facts.py"]
+    engine -->|"compiles rules, routes WMEs"| rete-network["Rete Network\nrete/network.py, alpha.py, beta.py"]
+    engine -->|"picks next instantiation"| conflict["Conflict Resolution\nrete/conflict.py"]
+    engine -->|"passes to RHS, applies deferred mutations"| context["Rule Context\nrete/context.py"]
+    rete-network -->|"appends Instantiations"| engine
+    rete-network -->|"reads Cond / PatternOp"| patterns
+    rete-network -->|"carries partial matches"| tokens["Tokens\nrete/tokens.py"]
+    tests["Test Suite\nrete/tests/test_engine.py"] -->|"exercises"| engine
+    classDef entry fill:#89b4fa,stroke:#89b4fa,color:#1e1e2e
+    class examples,tests entry
