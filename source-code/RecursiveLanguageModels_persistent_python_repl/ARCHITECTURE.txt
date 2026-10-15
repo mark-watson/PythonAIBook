@@ -1,0 +1,45 @@
+===============================================================================
+1. STANDARD JSON TOOL-CALLING AGENT (Context-Bound)
+===============================================================================
+
+  +-----------------------+       JSON Tool Call        +-------------------+
+  |      Primary LLM      | --------------------------> |  Wikidata API /   |
+  |                       |                             |  SPARQL Endpoint  |
+  |  [Message History]    | <-------------------------- |                   |
+  |  - Turn 1 Raw JSON    |     Massive Raw Payload     +-------------------+
+  |  - Turn 2 Raw JSON    |     (Appended directly
+  |  - Turn 3 Raw JSON    |      to LLM context!)
+  +-----------------------+
+   * Bottleneck: Multi-hop joins happen in token space; hub entities quickly
+     exhaust context limits and degrade attention.
+
+
+===============================================================================
+2. RLM PERSISTENT PYTHON REPL HARNESS (State-Decoupled)
+===============================================================================
+
+  +-----------------------+     1. Python Code Block    +-------------------+
+  |      Primary LLM      | --------------------------> |  Persistent REPL  |
+  |   (Reasoning Loop)    |                             |  (`repl_globals`) |
+  |                       | <-------------------------- |                   |
+  |  [Clean History]      |   4. Concise `stdout` only  |  Variables:       |
+  |  - Compact Code       |      (Truncated <= 10k)     |  `films = [...]`  |
+  |  - Printed Summaries  |                             |  `matches = ...`  |
+  +-----------------------+                             +---------+---------+
+                                                                  |
+                         2. Graph Primitives & Sub-Calls          | 3. Grounding
+              +---------------------------------------------------+    Check
+              |                         |                         |
+              v                         v                         v
+    +-------------------+     +-------------------+     +-------------------+
+    |   SQLite Cache    |     | Stateless Sub-LLM |     | `visited_entities`|
+    | (`wikidata_api`,  |     |  (`llm_query` /   |     |   Set Verifier    |
+    |  `sparql`, `llm`) |     |    `llm_map`)     |     |   on `FINAL()`    |
+    +---------+---------+     +-------------------+     +-------------------+
+              |
+              | (Cache Miss)
+              v
+    +-------------------+
+    | Live Wikidata API |
+    | & SPARQL Endpoint |
+    +-------------------+
