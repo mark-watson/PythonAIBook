@@ -9,7 +9,7 @@ This chapter builds that UI with [Textual](https://textual.textualize.io/), a Py
 | `agent_bridge.py` | Adapts the agent library's `print()` output and `input()` approval prompts to any UI. It does not import Textual. |
 | `harness_tui.py` | The Textual app: conversation log, status panel, prompt, and approval dialog. |
 
-Here is the screen layout:
+Rendered on your laptop, the new text UI looks beautiful. This representation of the screen layout just shows UI element positioning (run example with `uv run harness_tui.py` to see what it looks like):
 
 ```
 ┌ Coding Harness ──────────────────────────────────────────────────────┐
