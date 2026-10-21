@@ -1,10 +1,6 @@
 version = 1
-revision = 3
+revision = 5
 requires-python = ">=3.14"
-
-[options]
-exclude-newer = "2026-07-08T16:27:10.39598Z"
-exclude-newer-span = "P4D"
 
 [[package]]
 name = "chess"
